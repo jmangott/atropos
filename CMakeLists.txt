@@ -34,26 +34,41 @@ endif()
 # BLAS options #
 ################
 
+# BLAS and LAPACK
 option("MKL_ENABLED" OFF)
+if(NOT ${MKL_ENABLED})
+  include_directories("${PROJECT_BINARY_DIR}/extern/OpenBLAS/opt/OpenBLAS/include")
+endif()
 find_package(Threads REQUIRED)
 
 ##############
 # Add Ensign #
 ##############
 
-FetchContent_Declare(Ensign
-  PREFIX "${PROJECT_BINARY_DIR}/extern/Ensign"
-  GIT_REPOSITORY "https://github.com/leinkemmer/Ensign.git"
-  GIT_TAG "development"
-  # CONFIGURE_COMMAND cmake ../Ensign
-  # BUILD_COMMAND make
-  # INSTALL_COMMAND ""
-  # UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
-)
-FetchContent_MakeAvailable(Ensign)
-add_subdirectory(Ensign)
-# set(ENSIGN_DIR ${PROJECT_BINARY_DIR}/extern/Ensign/src/Ensign/src)
-# include_directories("${PROJECT_BINARY_DIR}/extern/Ensign/src/Ensign/include")
+# set(FETCHCONTENT_BASE_DIR ${fc_base})
+# FetchContent_Declare(Ensign
+#   # PREFIX "${PROJECT_BINARY_DIR}/extern/Ensign"
+#   GIT_REPOSITORY "https://github.com/leinkemmer/Ensign.git"
+#   GIT_TAG 8ca0ebb15697936fb82d59b53a91fc78349a93ae # development
+#   # CONFIGURE_COMMAND # cmake ../Ensign
+#   # BUILD_COMMAND # make
+#   # BUILD_IN_SOURCE 1
+#   # INSTALL_COMMAND ""
+#   # UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
+#   # BINARY_DIR 
+# )
+# # FetchContent_MakeAvailable(Ensign)
+# set(ENSIGN_DIR ${PROJECT_BINARY_DIR}/ensign-src)
+# FetchContent_Populate(Ensign QUIET BINARY_DIR ${ENSIGN_DIR})
+# add_subdirectory(${ensign_SOURCE_DIR} ${ensign_BINARY_DIR})
+# # add_subdirectory("${PROJECT_BINARY_DIR}/_deps/ensign-src/include" ${ensign_BINARY_DIR})
+# # add_subdirectory(${CMAKE_BINARY_DIR}/_deps/Ensign)
+# include_directories("${PROJECT_BINARY_DIR}/_deps/ensign-src/include")
+
+set(ENSIGN_DIR ${CMAKE_SOURCE_DIR}/extern/Ensign)
+set(ENSIGN_BUILD ${CMAKE_SOURCE_DIR}/extern/Ensign/build)
+add_subdirectory(${ENSIGN_DIR} ${ENSIGN_BUILD})
+include_directories(${ENSIGN_DIR}/include)
 
 ##############################################################
 # Define the actual files and folders that make up the build #

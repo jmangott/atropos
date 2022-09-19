@@ -1,0 +1,4 @@
+[submodule "Ensign"]
+	path = extern/Ensign
+	url = https://github.com/leinkemmer/Ensign
+	branch = development
