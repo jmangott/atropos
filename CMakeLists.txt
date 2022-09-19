@@ -30,17 +30,6 @@ else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(CMAKE_CXX_FLAGS_PROFILE "-g1 -O3 -fno-inline -fno-optimize-sibling-calls")
 endif()
 
-################
-# BLAS options #
-################
-
-# BLAS and LAPACK
-option("MKL_ENABLED" OFF)
-if(NOT ${MKL_ENABLED})
-  include_directories("${PROJECT_BINARY_DIR}/extern/OpenBLAS/opt/OpenBLAS/include")
-endif()
-find_package(Threads REQUIRED)
-
 ##############
 # Add Ensign #
 ##############
@@ -68,7 +57,6 @@ find_package(Threads REQUIRED)
 set(ENSIGN_DIR ${CMAKE_SOURCE_DIR}/extern/Ensign)
 set(ENSIGN_BUILD ${CMAKE_SOURCE_DIR}/extern/Ensign/build)
 add_subdirectory(${ENSIGN_DIR} ${ENSIGN_BUILD})
-include_directories(${ENSIGN_DIR}/include)
 
 ##############################################################
 # Define the actual files and folders that make up the build #
@@ -79,6 +67,4 @@ set(SRC ${CMAKE_SOURCE_DIR}/src)
 set(INC ${CMAKE_SOURCE_DIR}/include)
 set(BIN ${CMAKE_SOURCE_DIR}/bin)
 
-# Add directories
-include_directories(${INC})
 add_subdirectory(${SRC} ${BIN})

@@ -18,7 +18,24 @@ set(ENSIGN_FILES_GPU ${ENSIGN_DIR}/src/lr/lr.cu
 set(SRC_FILES ${SRC}/main.cpp
 )
 
-add_executable(kinetic-cme main.cpp ${ENSIGN_FILES})
+add_executable(kinetic-cme ${SRC_FILES} ${ENSIGN_FILES})
+
+# include project-specific header files
+target_include_directories(kinetic-cme PRIVATE ${INC})
+
+# include Ensing header files
+target_include_directories(kinetic-cme PRIVATE ${ENSIGN_DIR}/include)
+
+# include BLAS and LAPACK
+option("MKL_ENABLED" OFF)
+if(NOT ${MKL_ENABLED})
+  set(OPENBLAS_LIBRARIES "${ENSIGN_BUILD}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
+  target_include_directories(kinetic-cme PRIVATE "${ENSIGN_BUILD}/extern/OpenBLAS/opt/OpenBLAS/include")
+endif()
+find_package(Threads REQUIRED)
+
+# include fftw
+target_include_directories(kinetic-cme PRIVATE "${ENSIGN_BUILD}/extern/fftw/include")
+set(FFTW_LIBRARIES "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3_omp.a")
 
 target_link_libraries(kinetic-cme ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} Threads::Threads "-lgfortran")
-                  
