@@ -1,33 +1,28 @@
 #ifndef REACTIONS_HPP
 #define REACTIONS_HPP
 
-#include <algorithm>
-#include <string>
-#include <vector>
+#include "reaction_class.hpp"
 
-class myreact;
+std::vector<double> xx;
+std::vector<std::string> nn;
 
-class mysys
-{
-public:
-    std::vector<double> &x;
-    std::vector<std::string> species_names;
-    mysys(std::vector<double> &_x, std::vector<std::string> _names);
-    std::vector<myreact *> reactions;
-    size_t mu();
-};
+mysys mysys1(xx, nn);
 
-class myreact
-{
-public:
-    std::vector<int> nu;
-    double propensity();
-    myreact(std::vector<int> _nu, double (*_prop_function)(std::vector<double>), mysys &_ref_system);
-    virtual ~myreact();
-
-private:
-    double (*prop_function)(std::vector<double>);
-    mysys &ref_system;
-};
+myreact myreact1(
+    {-1, 0}, [](std::vector<double> y)
+    { return y[0]; },
+    mysys1);
+myreact myreact2(
+    {0, -1}, [](std::vector<double> y)
+    { return y[1]; },
+    mysys1);
+myreact myreact3(
+    {1, 0}, [](std::vector<double> y)
+    { return 1.0 / (1.0 + y[1]); },
+    mysys1);
+myreact myreact4(
+    {0, 1}, [](std::vector<double> y)
+    { return 1.0 / (1.0 + y[0]); },
+    mysys1);
 
 #endif

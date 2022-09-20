@@ -1,3 +1,7 @@
+#################################################################
+# Define a short hand for the source files and the Ensign files #
+#################################################################
+
 set(ENSIGN_FILES ${ENSIGN_DIR}/src/lr/lr.cpp
                  ${ENSIGN_DIR}/src/lr/coefficients.cpp
                  ${ENSIGN_DIR}/src/generic/utility.cpp
@@ -16,18 +20,24 @@ set(ENSIGN_FILES_GPU ${ENSIGN_DIR}/src/lr/lr.cu
                      ${ENSIGN_DIR}/src/generic/netcdf.cpp)
 
 set(SRC_FILES ${SRC}/main.cpp
+              ${SRC}/reaction_class.cpp
               ${SRC}/reactions.cpp
 )
 
+# Set up the executable
 add_executable(kinetic-cme ${SRC_FILES} ${ENSIGN_FILES})
 
-# include project-specific header files
+######################################
+# Include header files and libraries #
+######################################
+
+# Include project-specific header files
 target_include_directories(kinetic-cme PRIVATE ${INC})
 
-# include Ensing header files
+# Include Ensing header files
 target_include_directories(kinetic-cme PRIVATE ${ENSIGN_DIR}/include)
 
-# include BLAS and LAPACK
+# Include BLAS and LAPACK
 option("MKL_ENABLED" OFF)
 if(NOT ${MKL_ENABLED})
   set(OPENBLAS_LIBRARIES "${ENSIGN_BUILD}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
@@ -35,8 +45,9 @@ if(NOT ${MKL_ENABLED})
 endif()
 find_package(Threads REQUIRED)
 
-# include fftw
+# Include fftw
 target_include_directories(kinetic-cme PRIVATE "${ENSIGN_BUILD}/extern/fftw/include")
 set(FFTW_LIBRARIES "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3_omp.a")
 
+# Link the libraries
 target_link_libraries(kinetic-cme ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} Threads::Threads "-lgfortran")

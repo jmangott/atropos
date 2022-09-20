@@ -1,7 +1,7 @@
-#include "reactions.hpp"
+#include "reaction_class.hpp"
 
-using std::vector;
 using std::string;
+using std::vector;
 
 mysys::mysys(vector<double> &_x, vector<string> _names) : x(_x), species_names(_names) {}
 
