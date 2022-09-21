@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+// TODO: replace vector `reactions` in mysys by a map and include in myreact a public variable `name`, which acts as key for the `reactions` map
+
 class myreact;
 
 class mysys
