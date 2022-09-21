@@ -1,6 +1,8 @@
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -13,12 +15,14 @@
 
 using std::cout;
 using std::endl;
+using std::ifstream;
+using std::stringstream;
 using std::string;
 using std::vector;
 
 int main()
 {
-    constexpr int r = 10; // desired rank
+    constexpr int r = 5; // rank
     constexpr size_t d = 2;
  
     std::fill_n(std::back_inserter(xx), d, 1.0);
@@ -30,7 +34,6 @@ int main()
 
     array<Index, d> n_xx = {50, 50}; // number of grid points for each species population
     array<double, d> lim_xx = {10.0, 10.0}; // limits for the population number
-
 
     int m1 = d / 2;
     int m2 = d - m1;
@@ -44,15 +47,64 @@ int main()
         h_xx[ii] = lim_xx[ii] / (n_xx[ii] - 1);
     }
 
+    // cout << mysystem.reactions[0]->propensity() << endl;
 
+    // Set up S, X1 and X2h for t = 0
+    multi_array<double, 1> ss({r});
+    multi_array<double, 2> xx1({n_xx[0], r});
+    multi_array<double, 2> xx2h({n_xx[1], r});
 
-    // NOTE: this quantity should be never formed in the real implementation!
-    multi_array<double, 2> cc({d, d});
-    multi_array<double, 2> p({m1, m2});
+    string line;
 
-    cout << mysystem.reactions[0]->propensity() << endl;
+    // Read in S
+    ifstream s_input_file("../input/s.csv");
+    int ii = 0;
+    while (getline (s_input_file, line))
+    {
+        ss(ii) = stod(line);
+        ii++;
+    }
+    s_input_file.close();
 
-    // Set up the probability for t = 0
+    // Read in X1
+    ii = 0;
+    int jj = 0;
+    stringstream ssline;
+    string element;
+
+    ifstream xx1_input_file("../input/u.csv");
+    while (getline (xx1_input_file, line))
+    {
+        ssline.str(line);
+        while (getline(ssline, element, ','))
+        {
+            xx1(ii, jj) = stod(element);
+            jj++;
+        }
+        ii++;
+        jj = 0;
+        ssline.clear();
+    }
+    xx1_input_file.close();
+
+    // Read in X2
+    ii = 0;
+    jj = 0;
+
+    ifstream xx2h_input_file("../input/vh.csv");
+    while (getline (xx2h_input_file, line))
+    {
+        ssline.str(line);
+        while (getline(ssline, element, ','))
+        {
+            xx2h(ii, jj) = stod(element);
+            jj++;
+        }
+        ii++;
+        jj = 0;
+        ssline.clear();
+    }
+    xx2h_input_file.close();
 
     return 0;
 }

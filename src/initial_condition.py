@@ -26,5 +26,7 @@ p0 = p0 / np.sum(p0)
 u, s, vh = np.linalg.svd(p0, full_matrices = False, hermitian = True)
 
 # use only the first r singular values
-np.savetxt("u_output.csv", u[:, :r], delimiter=",")
-np.savetxt("vh_output.csv", vh[:, :r], delimiter=",")
+fmt = '%1.8f'
+np.savetxt("input/u.csv", u[:, :r], delimiter=",", fmt = fmt)
+np.savetxt("input/s.csv", s[:r], delimiter=",", fmt = fmt)
+np.savetxt("input/vh.csv", vh[:, :r], delimiter = ",", fmt = fmt)
