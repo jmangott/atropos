@@ -47,12 +47,34 @@ int main()
         h_xx[ii] = lim_xx[ii] / (n_xx[ii] - 1);
     }
 
+    Index dxx1_mult = n_xx[0];
+    Index dxx2_mult = n_xx[1];
+
+    vector<const double *> x1, x2;
+
+    // Check if reaction class works
     // cout << mysystem.reactions[0]->propensity() << endl;
+
+    // For coefficients
+    multi_array<double, 2> C1v({r, r});
+    multi_array<double, 2> C1w({r, r});
+
+    multi_array<double, 2> C2v({r, r});
+    multi_array<double, 2> C2w({r, r});
+
+    multi_array<complex<double>, 2> C2vc({r, r});
+    multi_array<complex<double>, 2> C2wc({r, r});
+
+    multi_array<double, 1> we_v({dxx2_mult});
+    multi_array<double, 1> we_w({dxx2_mult});
+
+    // Temporary objects for multiplication
+    multi_array<double, 2> tmpX({dxx1_mult, r});
 
     // Set up S, X1 and X2h for t = 0
     multi_array<double, 1> ss({r});
-    multi_array<double, 2> xx1({n_xx[0], r});
-    multi_array<double, 2> xx2h({n_xx[1], r});
+    multi_array<double, 2> xx1({dxx1_mult, r});
+    multi_array<double, 2> xx2h({dxx2_mult, r});
 
     string line;
 
@@ -105,6 +127,33 @@ int main()
         ssline.clear();
     }
     xx2h_input_file.close();
+
+    x1.push_back(xx1.begin());
+    x2.push_back(xx2h.begin());
+    
+    // Set up the low-rank structure and the inner products
+    lr2<double> lr_sol(r, {dxx1_mult, dxx2_mult});
+
+    // TODO: check if inner product is set up correctly
+    std::function<double(double *, double *)> ip_xx1 = inner_product_from_const_weight(h_xx[0], dxx1_mult);
+    std::function<double(double *, double *)> ip_xx2 = inner_product_from_const_weight(h_xx[1], dxx2_mult);
+
+    blas_ops blas;
+    initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
+
+    /////////////////////////////////////////////
+    ////////////////// K-STEP ///////////////////
+    /////////////////////////////////////////////
+
+    tmpX = lr_sol.X;
+    blas.matmul(tmpX, lr_sol.S, lr_sol.X);
+
+    // TODO:
+    // Insert here function for calculating the second argument of coeff(lr_sol.V, ..., we_v, etc.)
+    //                                                                              ^
+
+    coeff(lr_sol.V, lr_sol.V, we_v, C1v, blas);
+    coeff(lr_sol.V, lr_sol.V, we_w, C1w, blas);
 
     return 0;
 }
