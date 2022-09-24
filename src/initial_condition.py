@@ -1,31 +1,51 @@
+from telnetlib import theNULL
 import numpy as np
 
 r = 5
-x_max = 10
 n_x = 50
+x_max1 = np.array([10])
+x_max2 = np.array([10])
+dim1 = np.array([n_x])
+dim2 = np.array([n_x])
 
-# set up p0
+# Set up p0
 def eval_p0(x):
     C = 0.5 * np.array([[75, -15], [-15, 75]])
     Cinv = np.linalg.inv(C)
     mu = np.array([30, 5])
     return np.exp(-0.5 * np.transpose(x - mu) @ Cinv @ (x - mu))
 
-p0 = np.zeros((n_x, n_x))
-for i in range(n_x):
-    x1 = i * x_max / (n_x - 1.0)
-    for j in range(n_x):
-        x2 = j * x_max / (n_x - 1.0)
-        x = np.array([x1, x2])
+p0 = np.zeros((np.prod(dim1), np.prod(dim2)))
+for i in range(np.prod(dim1)):
+    n1_vec = np.zeros(dim1.size)
+    stride1 = 1
+    for k, el_dim1 in enumerate(dim1):
+        if k == dim1.size - 1:
+            n1_vec[k] = (i / stride1)
+        else:
+            n1_vec[k] = np.floor(np.mod(i, el_dim1) / stride1)
+            stride1 = stride1 * el_dim1
+    x1 = n1_vec * x_max1 / (dim1 - 1.0)
+    for j in range(np.prod(dim2)):
+        n2_vec = np.zeros(dim2.size)
+        stride2 = 1
+        for l, el_dim2 in enumerate(dim2):
+            if l == dim2.size - 1:
+                n2_vec[k] = (j / stride1)
+            else:
+                n2_vec[k] = np.floor(np.mod(j, el_dim2) / stride2)
+                stride2 = stride2 * el_dim2
+        x2 = n2_vec * x_max2 / (dim2 - 1.0)
+        x = np.concatenate([x1, x2])
         p0[i, j] = eval_p0(x)
 
-# normalize p0
+# Normalize p0
 p0 = p0 / np.sum(p0)
 
 # SVD of p0
 u, s, vh = np.linalg.svd(p0, full_matrices = False, hermitian = True)
 
-# use only the first r singular values
+# Use only the first r singular values
 fmt = '%1.8f'
 np.savetxt("input/u.csv", u[:, :r], delimiter=",", fmt = fmt)
 np.savetxt("input/s.csv", s[:r], delimiter=",", fmt = fmt)
