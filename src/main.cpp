@@ -32,13 +32,12 @@ int main()
     double tstar = 1.0; // final time
     double tau = tstar / nsteps; // time step size
 
-    array<Index, d> n_xx = {50, 50}; // number of grid points for each species population
+    array<Index, d> n_xx = {51, 51}; // number of grid points for each species population
     array<double, d> lim_xx = {10.0, 10.0}; // limits for the population number
 
     int m1 = d / 2;
     int m2 = d - m1;
     double x_max = 10.0;
-    int n = 100;
 
     // Initial datum generation
     array<double, 2> h_xx;
