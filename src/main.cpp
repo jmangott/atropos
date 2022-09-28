@@ -23,7 +23,7 @@ using std::vector;
 int main()
 {
     constexpr int r = 5; // rank
-    constexpr size_t d = 2;
+    constexpr size_t d = 2; // # species
  
     std::fill_n(std::back_inserter(xx), d, 1.0);
     nn = {"A1", "B2"};
@@ -51,9 +51,6 @@ int main()
 
     vector<const double *> x1, x2;
 
-    // Check if reaction class works
-    // cout << mysystem.reactions[0]->propensity() << endl;
-
     // For coefficients
     multi_array<double, 2> C1v({r, r});
     multi_array<double, 2> C1w({r, r});
@@ -73,7 +70,12 @@ int main()
     // Set up S, X1 and X2h for t = 0
     multi_array<double, 1> ss({r});
     multi_array<double, 2> xx1({dxx1_mult, r});
-    multi_array<double, 2> xx2h({dxx2_mult, r});
+    multi_array<double, 2> xx2({dxx2_mult, r});
+
+
+    /////////////////////////////////////////////
+    /////////// READ IN S, X1 and X2 ////////////
+    /////////////////////////////////////////////
 
     string line;
 
@@ -112,44 +114,59 @@ int main()
     ii = 0;
     jj = 0;
 
-    ifstream xx2h_input_file("../input/vh.csv");
-    while (getline (xx2h_input_file, line))
+    ifstream xx2_input_file("../input/vh.csv");
+    while (getline (xx2_input_file, line))
     {
         ssline.str(line);
         while (getline(ssline, element, ','))
         {
-            xx2h(ii, jj) = stod(element);
+            xx2(ii, jj) = stod(element);
             jj++;
         }
         ii++;
         jj = 0;
         ssline.clear();
     }
-    xx2h_input_file.close();
+    xx2_input_file.close();
 
     x1.push_back(xx1.begin());
-    x2.push_back(xx2h.begin());
+    x2.push_back(xx2.begin());
     
     // Set up the low-rank structure and the inner products
     lr2<double> lr_sol(r, {dxx1_mult, dxx2_mult});
 
-    // TODO: check if inner product is set up correctly
     std::function<double(double *, double *)> ip_xx1 = inner_product_from_const_weight(h_xx[0], dxx1_mult);
     std::function<double(double *, double *)> ip_xx2 = inner_product_from_const_weight(h_xx[1], dxx2_mult);
 
     blas_ops blas;
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
+
     /////////////////////////////////////////////
     ////////////////// K-STEP ///////////////////
     /////////////////////////////////////////////
 
     tmpX = lr_sol.X;
-    blas.matmul(tmpX, lr_sol.S, lr_sol.X);
+    blas.matmul(tmpX, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
 
     // TODO:
     // Insert here function for calculating the second argument of coeff(lr_sol.V, ..., we_v, etc.)
-    //                                                                              ^
+    
+    vector<double> sigma1, sigma2;
+    double sigma1_sum;
+    
+    // NOTE: when the partition requires a permutation of the original order of species,
+    // then also the nu vectors and similar quantities have to be permuted
+
+    for(auto it : mysystem.reactions) {
+        sigma1_sum = 0;
+        for (int i = 0; i < m1; i++)
+        {
+            sigma1_sum =+ it->nu[i] * pow(n_xx[0], i);
+        }
+        sigma1.push_back(sigma1_sum);
+        cout << sigma1_sum << endl;
+    }
 
     coeff(lr_sol.V, lr_sol.V, we_v, C1v, blas);
     coeff(lr_sol.V, lr_sol.V, we_w, C1w, blas);
