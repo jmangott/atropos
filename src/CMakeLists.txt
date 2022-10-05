@@ -48,5 +48,16 @@ find_package(Threads REQUIRED)
 target_include_directories(kinetic-cme PRIVATE "${ENSIGN_BUILD}/extern/fftw/include")
 set(FFTW_LIBRARIES "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3_omp.a")
 
+# Include NetCDF
+# find_package(NetCDF)
+# if(${NETCDF_FOUND})
+#   include_directories(${NETCDF_INCLUDE_DIR})
+#   message("test: ${NETCDF_INCLUDE_DIR}")
+#   add_definitions("-D__NETCDF__")
+# else()
+#   message("NetCDF has _not_ been found. If you want to write snapshots to disk please set the path in CMake appropriately.")
+#   set(NETCDF_LIBRARIES "")
+# endif()
+
 # Link the libraries
 target_link_libraries(kinetic-cme ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} Threads::Threads "-lgfortran")
