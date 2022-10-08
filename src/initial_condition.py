@@ -1,10 +1,10 @@
 import numpy as np
 
 r = 5
-kk1 = np.array([5])
-kk2 = np.array([5])
-x_max1 = np.array([10])
-x_max2 = np.array([10])
+kk1 = np.array([1])
+kk2 = np.array([1])
+x_max1 = np.array([50])
+x_max2 = np.array([50])
 dim1 = kk1 * x_max1 + 1
 dim2 = kk2 * x_max2 + 1
 
@@ -18,8 +18,9 @@ def eval_p0(x):
 
 # Fill p0 according to the initial condition
 p0 = np.zeros((np.prod(dim1), np.prod(dim2)))
+n1_vec = np.zeros(dim1.size)
+n2_vec = np.zeros(dim2.size)
 for i in range(np.prod(dim1)):
-    n1_vec = np.zeros(dim1.size)
     stride1 = 1
     for k, el_dim1 in enumerate(dim1):
         if k == dim1.size - 1:
@@ -29,7 +30,6 @@ for i in range(np.prod(dim1)):
             stride1 = stride1 * el_dim1
     x1 = n1_vec * x_max1 / (dim1 - 1.0)
     for j in range(np.prod(dim2)):
-        n2_vec = np.zeros(dim2.size)
         stride2 = 1
         for l, el_dim2 in enumerate(dim2):
             if l == dim2.size - 1:
@@ -50,5 +50,5 @@ u, s, vh = np.linalg.svd(p0, full_matrices = False)
 # Use only the first `r` singular values
 fmt = '%1.8f'
 np.savetxt("input/u.csv", u[:, :r], delimiter=",", fmt = fmt)
-np.savetxt("input/s.csv", s[:r], delimiter=",", fmt = fmt)
+np.savetxt("input/s.csv", np.diag(s[:r]), delimiter=",", fmt = fmt)
 np.savetxt("input/vh.csv", vh[:, :r], delimiter = ",", fmt = fmt)
