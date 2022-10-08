@@ -23,8 +23,10 @@ class myreact
 {
 public:
     std::vector<int> nu;
+    std::vector<size_t> depends_on; 
     double propensity();
-    myreact(std::vector<int> _nu, double (*_prop_function)(std::vector<double>), mysys &_ref_system);
+    double propensity(std::vector<double> x);
+    myreact(std::vector<int> _nu, std::vector<size_t> _depends_on, double (*_prop_function)(std::vector<double>), mysys &_ref_system);
     virtual ~myreact();
 
 private:
