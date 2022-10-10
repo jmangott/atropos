@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -15,6 +16,7 @@
 using std::cout;
 using std::endl;
 using std::ifstream;
+using std::map;
 using std::stringstream;
 using std::string;
 using std::vector;
@@ -44,17 +46,14 @@ vector<double> IndexToState(Index idx, vector<Index> interval)
 
 
 // Calculate the integration weight for coefficients C2 and D2 (depending on `alpha1` and `mu`)
-multi_array<double, 1> CalculateWeightX2(int d, int m1, int m2, vector<Index> n_xx1, vector<Index> n_xx2, Index dxx2_mult, vector<double> h_xx2, int alpha1, int mu)
+multi_array<double, 1> CalculateWeightX2(int d, vector<Index> n_xx1, vector<Index> n_xx2, Index dxx2_mult, vector<double> h_xx2, vector<double> n1, int mu)
 {
+    size_t m1 = n_xx1.size();
+    size_t m2 = n_xx2.size();
     vector<double> a_vec(dxx2_mult, 0);
     vector<double> n_tot(d, 0);
-    vector<double> n1(m1, 0);
     vector<double> n2(m2, 0);
     multi_array<double, 1> w_x2({dxx2_mult});
-
-    n1 = IndexToState(alpha1, n_xx1);
-    for (size_t i = 0; i < n1.size(); i++)
-        n_tot[i] = n1[i];
 
     for (int alpha2 = 0; alpha2 < dxx2_mult; alpha2++)
     {
@@ -67,35 +66,35 @@ multi_array<double, 1> CalculateWeightX2(int d, int m1, int m2, vector<Index> n_
     double h_xx2_mult = 1;
     for (auto &ele : h_xx2)
         h_xx2_mult *= ele;
-    for (size_t i = 0; i < a_vec.size(); i++)
+    for (int i = 0; i < int(a_vec.size()); i++)
         w_x2(i) = a_vec[i] * h_xx2_mult;
 
     return w_x2;
 }
 
 
-// TODO: Change to void ..., pass output by reference
-// Calculate array where rows are shifted by index_shift
-multi_array<double, 2> ShiftMultiArrayRows(int r, Index dxx2_mult, vector<int> k_xx2, vector<const double *> &input_pointer, int index_shift)
+// Calculate array_shift, where rows of input_pointer are shifted by index_shift
+void ShiftMultiArrayCols(multi_array<double, 2> &array_shift, vector<int> k_vec, vector<const double *> &input_pointer, int index_shift)
 {
+    int n_rows = array_shift.shape()[0];
+    int n_cols = array_shift.shape()[1];
     vector<const double *> pointer_shift = input_pointer;
-    for (int i = 0; i < r; i++)
-        pointer_shift[i] += int(k_xx2[0] * index_shift);
+    for (int i = 0; i < n_cols; i++)
+        pointer_shift[i] += int(k_vec[0] * index_shift);
 
-    multi_array<double, 2> array_shift({dxx2_mult, r});
-    for (int j = 0; j < r; j++)
+    for (int j = 0; j < n_cols; j++)
     {
-        for (Index i = 0; i < dxx2_mult; i++)
+        for (int i = 0; i < n_rows; i++)
         {
-            if ((k_xx2[0] * index_shift < 0) &&
-                (i < -k_xx2[0] * index_shift))
+            if ((k_vec[0] * index_shift < 0) &&
+                (i < -k_vec[0] * index_shift))
             {
                 array_shift(i, j) = input_pointer[j][0];
             }
-            else if ((k_xx2[0] * index_shift > 0) &&
-                     (i >= (dxx2_mult - k_xx2[0] * index_shift)))
+            else if ((k_vec[0] * index_shift > 0) &&
+                     (i >= (n_rows - k_vec[0] * index_shift)))
             {
-                array_shift(i, j) = input_pointer[j][dxx2_mult - 1];
+                array_shift(i, j) = input_pointer[j][n_rows - 1];
             }
             else
             {
@@ -103,8 +102,76 @@ multi_array<double, 2> ShiftMultiArrayRows(int r, Index dxx2_mult, vector<int> k
             }
         }
     }
+}
 
-    return array_shift;
+
+// TODO: Use .netcdf instead of .csv
+
+// Read in a .csv file and store it as a multi_array<double, 2>
+void ReadInMultiArray(multi_array<double, 2> output_array, string filename)
+{
+    int ii = 0;
+    int jj = 0;
+    string line;
+    ifstream input_file(filename);
+    stringstream ss_line;
+    string element;
+
+    while (getline(input_file, line))
+    {
+        ss_line.str(line);
+        while (getline(ss_line, element, ','))
+        {
+            output_array(ii, jj) = stod(element);
+            jj++;
+        }
+        ii++;
+        jj = 0;
+        ss_line.clear();
+    }
+    input_file.close();
+}
+
+
+// Calculate coefficients C2 and D2 for all values of`dep_vec` for a given reaction `mu`
+void CalculateCoefficientsX2(vector<multi_array<double, 2>> &c2_vec, vector<multi_array<double, 2>> &d2_vec, int r, int d, vector<Index> n_xx1, vector<Index> n_xx2, int dxx2_mult, vector<double> h_xx2, vector<int> k_xx2, vector<const double *> &x2, lr2<double> lr_sol, blas_ops blas, int index_shift, int mu, vector<int> dep_vec)
+{
+    multi_array<double, 2> c2({r, r});
+    multi_array<double, 2> d2({r, r});
+    multi_array<double, 1> w_x2({dxx2_mult});
+    vector<double> n1(n_xx1.size(), 0);
+    vector<double> n1_coeff;
+    vector<Index> n_xx1_coeff;
+
+    // Calculate the shifted X2
+    multi_array<double, 2> xx2_shift({dxx2_mult, r});
+    ShiftMultiArrayCols(xx2_shift, k_xx2, x2, index_shift);
+
+    int dxx1_coeff_mult = 1;
+    for (auto ele : dep_vec)
+    {
+        dxx1_coeff_mult *= ele;
+        n_xx1_coeff.push_back(n_xx1[ele]);
+    }
+
+    for (int i = 0; i < dxx1_coeff_mult; i++)
+    {
+        n1_coeff = IndexToState(i, n_xx1_coeff);
+
+        // Convert n1_coeff to a vector with size kM1
+        for (size_t j = 0; j < dep_vec.size(); j++)
+            n1[dep_vec[j]] = n1_coeff[j];
+
+        w_x2 = CalculateWeightX2(d, n_xx1, n_xx2, dxx2_mult, h_xx2, n1, mu);
+
+        // Calculate coefficient C2
+        coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
+        c2_vec.push_back(c2);
+
+        // Calculate coefficient D2
+        coeff(lr_sol.V, lr_sol.V, w_x2, d2, blas);
+        d2_vec.push_back(d2);
+    }
 }
 
 
@@ -175,75 +242,12 @@ int main()
     multi_array<double, 2> xx1({dxx1_mult, kR});
     multi_array<double, 2> xx2({dxx2_mult, kR});
 
-
-    /////////////////////////////////////////////
-    /////////// READ IN S, X1 and X2 ////////////
-    /////////////////////////////////////////////
-
-    // TODO: Use .netcdf instead of .csv
-    // TODO: Write one function for the reading in of the three arrays
-
-    string line;
-
-    // Read in S
-    ifstream s_input_file("../input/s.csv");
-    int ii = 0;
-    int jj = 0;
-    stringstream ssline;
-    string element;
-
-    while (getline(s_input_file, line))
-    {
-        ssline.str(line);
-        while (getline(ssline, element, ','))
-        {
-            ss(ii, jj) = stod(element);
-            jj++;
-        }
-        ii++;
-        jj = 0;
-        ssline.clear();
-    }
-    s_input_file.close();
-
-    // Read in X1
-    ii = 0;
-    jj = 0;
-
-    ifstream xx1_input_file("../input/u.csv");
-    while (getline (xx1_input_file, line))
-    {
-        ssline.str(line);
-        while (getline(ssline, element, ','))
-        {
-            xx1(ii, jj) = stod(element);
-            jj++;
-        }
-        ii++;
-        jj = 0;
-        ssline.clear();
-    }
-    xx1_input_file.close();
-
-    // Read in X2
-    ii = 0;
-    jj = 0;
-
-    ifstream xx2_input_file("../input/vh.csv");
-    while (getline (xx2_input_file, line))
-    {
-        ssline.str(line);
-        while (getline(ssline, element, ','))
-        {
-            xx2(ii, jj) = stod(element);
-            jj++;
-        }
-        ii++;
-        jj = 0;
-        ssline.clear();
-    }
-    xx2_input_file.close();
-
+    // Read in S, X1 and X2
+    ReadInMultiArray(ss, "../input/s.csv");
+    ReadInMultiArray(xx1, "../input/u.csv");
+    ReadInMultiArray(xx2, "../input/vh.csv");
+    
+    // Point to the beginning of every column of X1 and X2
     double *it1 = xx1.begin();
     double *it2 = xx2.begin();
     for (size_t i = 0; i < kR; i++)
@@ -290,12 +294,12 @@ int main()
     // TODO: rewrite the whole section as function, e.g. calcC2(mu, alpha_tilde1)
     // (or independent of alpha_tilde1)
 
-    int mu = 2;
+    int mu = 1;
     int alpha_tilde1 = 30;
 
     // Calculate the shifted X2
     multi_array<double, 2> xx2_shift({dxx2_mult, kR});
-    xx2_shift = ShiftMultiArrayRows(kR, dxx2_mult, k_xx2, x2, sigma2[mu]);
+    ShiftMultiArrayCols(xx2_shift, k_xx2, x2, sigma2[mu]);
 
     // for (int i = 0; i < dxx2_mult; i++)
     // {
@@ -311,13 +315,24 @@ int main()
     for (auto & ele : dep_vec)
         (ele < kM1) ? dep_vec1.push_back(ele) : dep_vec2.push_back(ele);
 
-    w_x2 = CalculateWeightX2(kD, kM1, kM2, n_xx1, n_xx2, dxx2_mult, h_xx2, alpha_tilde1, mu);
+    vector<double> n1;
+    n1 = IndexToState(alpha_tilde1, n_xx1);
+    w_x2 = CalculateWeightX2(kD, n_xx1, n_xx2, dxx2_mult, h_xx2, n1, mu);
 
     // Calculate coefficient C2
     coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
 
     // Calculate coefficient D2
     coeff(lr_sol.V, lr_sol.V, w_x2, d2, blas);
+
+    for (int i = 0; i < kR; i++)
+    {
+        for (int j = 0; j < kR; j++)
+        {
+            cout << c2(i, j) << " ";
+        }
+        cout << endl;
+    }
 
     return 0;
 }
