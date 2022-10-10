@@ -108,7 +108,7 @@ void ShiftMultiArrayCols(multi_array<double, 2> &array_shift, vector<int> k_vec,
 // TODO: Use .netcdf instead of .csv
 
 // Read in a .csv file and store it as a multi_array<double, 2>
-void ReadInMultiArray(multi_array<double, 2> output_array, string filename)
+void ReadInMultiArray(multi_array<double, 2> &output_array, string filename)
 {
     int ii = 0;
     int jj = 0;
@@ -134,44 +134,25 @@ void ReadInMultiArray(multi_array<double, 2> output_array, string filename)
 
 
 // Calculate coefficients C2 and D2 for all values of`dep_vec` for a given reaction `mu`
-void CalculateCoefficientsX2(vector<multi_array<double, 2>> &c2_vec, vector<multi_array<double, 2>> &d2_vec, int r, int d, vector<Index> n_xx1, vector<Index> n_xx2, int dxx2_mult, vector<double> h_xx2, vector<int> k_xx2, vector<const double *> &x2, lr2<double> lr_sol, blas_ops blas, int index_shift, int mu, vector<int> dep_vec)
+void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> &d2, int r, int d, vector<Index> n_xx1, vector<Index> n_xx2, vector<Index> n_xx1_coeff, int dxx2_mult, vector<double> h_xx2, vector<int> k_xx2, vector<const double *> &x2, lr2<double> lr_sol, blas_ops blas, int index_shift, int mu, int alpha_tilde1, vector<size_t> dep_vec)
 {
-    multi_array<double, 2> c2({r, r});
-    multi_array<double, 2> d2({r, r});
     multi_array<double, 1> w_x2({dxx2_mult});
     vector<double> n1(n_xx1.size(), 0);
     vector<double> n1_coeff;
-    vector<Index> n_xx1_coeff;
 
     // Calculate the shifted X2
     multi_array<double, 2> xx2_shift({dxx2_mult, r});
     ShiftMultiArrayCols(xx2_shift, k_xx2, x2, index_shift);
 
-    int dxx1_coeff_mult = 1;
-    for (auto ele : dep_vec)
-    {
-        dxx1_coeff_mult *= ele;
-        n_xx1_coeff.push_back(n_xx1[ele]);
-    }
+    n1_coeff = IndexToState(alpha_tilde1, n_xx1_coeff);
 
-    for (int i = 0; i < dxx1_coeff_mult; i++)
-    {
-        n1_coeff = IndexToState(i, n_xx1_coeff);
+    // Convert n1_coeff to a vector with size kM1
+    for (size_t j = 0; j < dep_vec.size(); j++)
+        n1[dep_vec[j]] = n1_coeff[j];
 
-        // Convert n1_coeff to a vector with size kM1
-        for (size_t j = 0; j < dep_vec.size(); j++)
-            n1[dep_vec[j]] = n1_coeff[j];
-
-        w_x2 = CalculateWeightX2(d, n_xx1, n_xx2, dxx2_mult, h_xx2, n1, mu);
-
-        // Calculate coefficient C2
-        coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
-        c2_vec.push_back(c2);
-
-        // Calculate coefficient D2
-        coeff(lr_sol.V, lr_sol.V, w_x2, d2, blas);
-        d2_vec.push_back(d2);
-    }
+    w_x2 = CalculateWeightX2(d, n_xx1, n_xx2, dxx2_mult, h_xx2, n1, mu);
+    coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
+    coeff(lr_sol.V, lr_sol.V, w_x2, d2, blas);
 }
 
 
@@ -289,41 +270,25 @@ int main()
         sigma2.push_back(sigma2_sum);
     }
 
-    // Calculate C^2 for given mu and alpha_tilde1
-
-    // TODO: rewrite the whole section as function, e.g. calcC2(mu, alpha_tilde1)
-    // (or independent of alpha_tilde1)
-
-    int mu = 1;
+    // Calculate C2 and D2 for given mu and alpha_tilde1
+    int mu = 2;
     int alpha_tilde1 = 30;
-
-    // Calculate the shifted X2
-    multi_array<double, 2> xx2_shift({dxx2_mult, kR});
-    ShiftMultiArrayCols(xx2_shift, k_xx2, x2, sigma2[mu]);
-
-    // for (int i = 0; i < dxx2_mult; i++)
-    // {
-    //     for (int j = 0; j < kR; j++)
-    //     {
-    //         cout << xx2_shift(i, j) << " ";
-    //     }
-    //     cout << endl;
-    // }
 
     vector<size_t> dep_vec, dep_vec1, dep_vec2;
     dep_vec = mysystem.reactions[0]->depends_on;
     for (auto & ele : dep_vec)
         (ele < kM1) ? dep_vec1.push_back(ele) : dep_vec2.push_back(ele);
 
-    vector<double> n1;
-    n1 = IndexToState(alpha_tilde1, n_xx1);
-    w_x2 = CalculateWeightX2(kD, n_xx1, n_xx2, dxx2_mult, h_xx2, n1, mu);
+    int dxx1_coeff_mult = 1;
+    vector<Index> n_xx1_coeff;
 
-    // Calculate coefficient C2
-    coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
+    for (auto ele : dep_vec1)
+    {
+        dxx1_coeff_mult *= ele;
+        n_xx1_coeff.push_back(n_xx1[ele]);
+    }
 
-    // Calculate coefficient D2
-    coeff(lr_sol.V, lr_sol.V, w_x2, d2, blas);
+    CalculateCoefficientsX2(c2, d2, kR, kD, n_xx1, n_xx2, n_xx1_coeff, dxx2_mult, h_xx2, k_xx2, x2, lr_sol, blas, sigma2[mu], mu, alpha_tilde1, dep_vec1);
 
     for (int i = 0; i < kR; i++)
     {
