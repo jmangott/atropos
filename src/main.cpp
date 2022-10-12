@@ -21,32 +21,52 @@ using std::stringstream;
 using std::string;
 using std::vector;
 
-// TODO: Improve speed by using a lookup table (?)
+// Convert vector containing the population numbers to combined index
+Index StateToIndex(vector<double> state_vec, vector<Index> interval, vector<double> limit)
+{
+    Index combined_index;
+    Index state_index;
 
+    for (size_t i = 0; i < interval.size(); i++)
+    {
+        state_index = int(state_vec[i] * (interval[i] - 1.0) / limit[i]);
+        combined_index += state_index * pow(interval[i], i);
+    }
+    return combined_index;
+}
+
+
+// TODO: Improve speed by using a lookup table (?)
 // Convert combined index to vector containing the population numbers
-vector<double> IndexToState(Index idx, vector<Index> interval)
+vector<double> IndexToState(Index combined_index, vector<Index> interval, vector<double> limit)
 {
     int stride = 1;
     size_t dim = interval.size();
+    double state_index;
     vector<double> state_vec(dim, 0);
     for (size_t k = 0; k < dim; k++)
     {
         if (k == (dim - 1))
         {
-            state_vec[k] = (int(idx / stride));
+            state_index = (int(combined_index / stride));
         }
         else
         {
-            state_vec[k] = (int((idx % interval[k]) / stride));
+            state_index = (int((combined_index % interval[k]) / stride));
             stride *= interval[k];
         }
+        if ((std::abs(interval[k] - 1.0) < 1.0e-10) &&
+            (std::abs(interval[k] - 1.0 - limit[k]) < 1.0e-10))
+            state_vec[k] = 0;
+        else
+            state_vec[k] = state_index * limit[k] / (interval[k] - 1.0);
     }
     return state_vec;
 }
 
 
 // Calculate the integration weight for coefficients C2 and D2 (depending on `alpha1` and `mu`)
-multi_array<double, 1> CalculateWeightX2(int d, vector<Index> n_xx1, vector<Index> n_xx2, Index dxx2_mult, vector<double> h_xx2, vector<double> n1, int mu)
+multi_array<double, 1> CalculateWeightX2(int d, vector<Index> n_xx1, vector<Index> n_xx2, vector<double> lim_xx2, Index dxx2_mult, vector<double> h_xx2, vector<double> n1, int mu)
 {
     size_t m1 = n_xx1.size();
     size_t m2 = n_xx2.size();
@@ -55,14 +75,21 @@ multi_array<double, 1> CalculateWeightX2(int d, vector<Index> n_xx1, vector<Inde
     vector<double> n2(m2, 0);
     multi_array<double, 1> w_x2({dxx2_mult});
 
+    for (size_t i = 0; i < m1; i++)
+    {
+        n_tot[i] = n1[i];
+    }
+
+    // Calculate propensity vector
     for (int alpha2 = 0; alpha2 < dxx2_mult; alpha2++)
     {
-        n2 = IndexToState(alpha2, n_xx2);
-        for (size_t i = 0; i < n2.size(); i++)
-            n_tot[m1 + i] = n1[i];
+        n2 = IndexToState(alpha2, n_xx2, lim_xx2);
+        for (size_t i = 0; i < m2; i++)
+            n_tot[m1 + i] = n2[i];
         a_vec[alpha2] = mysystem.reactions[mu]->propensity(n_tot);
     }
 
+    // Calculate integration weight
     double h_xx2_mult = 1;
     for (auto &ele : h_xx2)
         h_xx2_mult *= ele;
@@ -134,23 +161,15 @@ void ReadInMultiArray(multi_array<double, 2> &output_array, string filename)
 
 
 // Calculate coefficients C2 and D2 for all values of`dep_vec` for a given reaction `mu`
-void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> &d2, int r, int d, vector<Index> n_xx1, vector<Index> n_xx2, vector<Index> n_xx1_coeff, int dxx2_mult, vector<double> h_xx2, vector<int> k_xx2, vector<const double *> &x2, lr2<double> lr_sol, blas_ops blas, int index_shift, int mu, int alpha_tilde1, vector<size_t> dep_vec)
+void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> &d2, int r, int d, vector<Index> n_xx1, vector<Index> n_xx2, vector<double> lim_xx1, vector<Index> n_xx1_coeff, vector<double> lim_xx1_coeff, int dxx2_mult, vector<double> h_xx2, vector<int> k_xx2, vector<const double *> &x2, lr2<double> lr_sol, blas_ops blas, int index_shift, int mu, vector<double> n1, vector<size_t> dep_vec)
 {
     multi_array<double, 1> w_x2({dxx2_mult});
-    vector<double> n1(n_xx1.size(), 0);
-    vector<double> n1_coeff;
 
     // Calculate the shifted X2
     multi_array<double, 2> xx2_shift({dxx2_mult, r});
     ShiftMultiArrayCols(xx2_shift, k_xx2, x2, index_shift);
 
-    n1_coeff = IndexToState(alpha_tilde1, n_xx1_coeff);
-
-    // Convert n1_coeff to a vector with size kM1
-    for (size_t j = 0; j < dep_vec.size(); j++)
-        n1[dep_vec[j]] = n1_coeff[j];
-
-    w_x2 = CalculateWeightX2(d, n_xx1, n_xx2, dxx2_mult, h_xx2, n1, mu);
+    w_x2 = CalculateWeightX2(d, n_xx1, n_xx2, lim_xx1, dxx2_mult, h_xx2, n1, mu);
     coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
     coeff(lr_sol.V, lr_sol.V, w_x2, d2, blas);
 }
@@ -180,8 +199,8 @@ int main()
     vector<Index> n_xx2(kM2, 51);
 
     // Limits for the population number in partition 1 and 2
-    vector<int> lim_xx1(kM1, 50);
-    vector<int> lim_xx2(kM2 ,50);
+    vector<double> lim_xx1(kM1, 50);
+    vector<double> lim_xx2(kM2 ,50);
 
     // Initial datum generation
     vector<double> h_xx1(kM1, 0);
@@ -275,20 +294,31 @@ int main()
     int alpha_tilde1 = 30;
 
     vector<size_t> dep_vec, dep_vec1, dep_vec2;
+    int dxx1_coeff_mult, dxx1_reduced_mult;
+    vector<Index> n_xx1_coeff, n_xx1_reduced;
+    vector<double> n1_coeff, n1_reduced, n1_zero(kM1, 0);
+    vector<double> lim_xx1_coeff, lim_xx1_reduced;
+    dxx1_coeff_mult = 1;
     dep_vec = mysystem.reactions[0]->depends_on;
-    for (auto & ele : dep_vec)
+    int alpha1;
+
+    for (auto &ele : dep_vec)
         (ele < kM1) ? dep_vec1.push_back(ele) : dep_vec2.push_back(ele);
 
-    int dxx1_coeff_mult = 1;
-    vector<Index> n_xx1_coeff;
-
-    for (auto ele : dep_vec1)
+    for (auto &ele : dep_vec1)
     {
-        dxx1_coeff_mult *= ele;
+        dxx1_coeff_mult *= n_xx1[ele];
         n_xx1_coeff.push_back(n_xx1[ele]);
+        lim_xx1_coeff.push_back(lim_xx1[ele]);
     }
 
-    CalculateCoefficientsX2(c2, d2, kR, kD, n_xx1, n_xx2, n_xx1_coeff, dxx2_mult, h_xx2, k_xx2, x2, lr_sol, blas, sigma2[mu], mu, alpha_tilde1, dep_vec1);
+    n1_coeff = IndexToState(alpha_tilde1, n_xx1_coeff, lim_xx1_coeff);
+    for (size_t i = 0; i < dep_vec1.size(); i++)
+    {
+        n1_zero[dep_vec1[i]] = n1_coeff[i];
+    }
+
+    CalculateCoefficientsX2(c2, d2, kR, kD, n_xx1, n_xx2, lim_xx1, n_xx1_coeff, lim_xx1_coeff, dxx2_mult, h_xx2, k_xx2, x2, lr_sol, blas, sigma2[mu], mu, n1_zero, dep_vec1);
 
     for (int i = 0; i < kR; i++)
     {
@@ -297,6 +327,61 @@ int main()
             cout << c2(i, j) << " ";
         }
         cout << endl;
+    }
+
+    for (size_t mu = 0; mu < mysystem.mu(); mu++)
+    {
+        dep_vec = mysystem.reactions[mu]->depends_on;
+        dep_vec1 = {};
+        dep_vec2 = {};
+        dxx1_coeff_mult = 1;
+        dxx1_reduced_mult = 1;
+        n_xx1_reduced = n_xx1;
+        lim_xx1_reduced = lim_xx1;
+        std::fill(n1_zero.begin(), n1_zero.end(), 0);
+        for (auto &ele : dep_vec)
+        {
+            if (ele < kM1)
+            {
+                dep_vec1.push_back(ele);
+                dxx1_coeff_mult *= n_xx1[ele];
+                n_xx1_coeff.push_back(n_xx1[ele]);
+                n_xx1_reduced[ele] = 1;
+                lim_xx1_reduced[ele] = 0;
+            }
+            else
+            {
+                dep_vec2.push_back(ele);
+            }
+        }
+
+        for (auto &ele : n_xx1_reduced)
+        {
+            dxx1_reduced_mult *= ele;
+        }
+        
+        // Construct n_xx1_reduced and dxx1_mult_reduced
+        for (int i = 0; i < dxx1_coeff_mult; i++)
+        {
+            n1_coeff = IndexToState(i, n_xx1_coeff, lim_xx1_coeff);
+            
+            // Convert n1_coeff to a vector with size kM1
+            for (size_t j = 0; j < dep_vec.size(); j++)
+                n1_zero[dep_vec1[j]] = n1_coeff[j];
+
+            for (int j = 0; j < dxx1_reduced_mult; j++)
+            {
+                n1_reduced = IndexToState(j, n_xx1_reduced, lim_xx1_reduced);
+                // n1_reduced contains now the real population number
+                for (size_t j = 0; j < dep_vec.size(); j++)
+                    n1_reduced[dep_vec1[j]] = n1_coeff[j];
+                alpha1 = StateToIndex(n1_reduced, n_xx1, lim_xx1);
+
+                CalculateCoefficientsX2(c2, d2, kR, kD, n_xx1, n_xx2, lim_xx1, n_xx1_coeff, lim_xx1_coeff, dxx2_mult, h_xx2, k_xx2, x2, lr_sol, blas, sigma2[mu], mu, n1_zero, dep_vec1);
+
+
+            }
+        }
     }
 
     return 0;
