@@ -24,7 +24,7 @@ using std::vector;
 // Convert vector containing the population numbers to combined index
 Index StateToIndex(vector<double> state_vec, vector<Index> interval, vector<double> limit)
 {
-    Index combined_index;
+    Index combined_index = 0;
     Index state_index;
 
     for (size_t i = 0; i < interval.size(); i++)
@@ -66,10 +66,11 @@ vector<double> IndexToState(Index combined_index, vector<Index> interval, vector
 
 
 // Calculate the integration weight for coefficients C2 and D2 (depending on `alpha1` and `mu`)
-multi_array<double, 1> CalculateWeightX2(int d, vector<Index> n_xx1, vector<Index> n_xx2, vector<double> lim_xx2, Index dxx2_mult, vector<double> h_xx2, vector<double> n1, int mu)
+multi_array<double, 1> CalculateWeightX2(vector<Index> n_xx1, vector<Index> n_xx2, vector<double> lim_xx2, Index dxx2_mult, vector<double> h_xx2, vector<double> n1, int mu)
 {
     size_t m1 = n_xx1.size();
     size_t m2 = n_xx2.size();
+    size_t d = m1 + m2;
     vector<double> a_vec(dxx2_mult, 0);
     vector<double> n_tot(d, 0);
     vector<double> n2(m2, 0);
@@ -100,36 +101,62 @@ multi_array<double, 1> CalculateWeightX2(int d, vector<Index> n_xx1, vector<Inde
 }
 
 
-// Calculate array_shift, where rows of input_pointer are shifted by index_shift
-void ShiftMultiArrayCols(multi_array<double, 2> &array_shift, vector<int> k_vec, vector<const double *> &input_pointer, int index_shift)
+// Calculate `output_array`, where rows of `input_array` are shifted by `shift`
+void ShiftMultiArrayCols(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift)
 {
-    int n_rows = array_shift.shape()[0];
-    int n_cols = array_shift.shape()[1];
-    vector<const double *> pointer_shift = input_pointer;
-    for (int i = 0; i < n_cols; i++)
-        pointer_shift[i] += int(k_vec[0] * index_shift);
+    int n_rows = output_array.shape()[0];
+    int n_cols = output_array.shape()[1];
 
     for (int j = 0; j < n_cols; j++)
     {
         for (int i = 0; i < n_rows; i++)
         {
-            if ((k_vec[0] * index_shift < 0) &&
-                (i < -k_vec[0] * index_shift))
+            if ((shift < 0) && (i < -shift))
             {
-                array_shift(i, j) = input_pointer[j][0];
+                output_array(i, j) = input_array(0, j);
             }
-            else if ((k_vec[0] * index_shift > 0) &&
-                     (i >= (n_rows - k_vec[0] * index_shift)))
+            else if ((shift > 0) && (i >= (n_rows - shift)))
             {
-                array_shift(i, j) = input_pointer[j][n_rows - 1];
+                output_array(i, j) = input_array(n_rows - 1, j);
             }
             else
             {
-                array_shift(i, j) = pointer_shift[j][i];
+                output_array(i, j) = input_array(i, j);
             }
         }
     }
 }
+
+
+// void ShiftMultiArrayCols(multi_array<double, 2> &array_shift, int k_factor, vector<const double *> &input_pointer, int index_shift)
+// {
+//     int n_rows = array_shift.shape()[0];
+//     int n_cols = array_shift.shape()[1];
+//     vector<const double *> pointer_shift = input_pointer;
+//     for (int i = 0; i < n_cols; i++)
+//         pointer_shift[i] += int(k_factor * index_shift);
+
+//     for (int j = 0; j < n_cols; j++)
+//     {
+//         for (int i = 0; i < n_rows; i++)
+//         {
+//             if ((k_factor * index_shift < 0) &&
+//                 (i < -k_factor * index_shift))
+//             {
+//                 array_shift(i, j) = input_pointer[j][0];
+//             }
+//             else if ((k_factor * index_shift > 0) &&
+//                      (i >= (n_rows - k_factor * index_shift)))
+//             {
+//                 array_shift(i, j) = input_pointer[j][n_rows - 1];
+//             }
+//             else
+//             {
+//                 array_shift(i, j) = pointer_shift[j][i];
+//             }
+//         }
+//     }
+// }
 
 
 // TODO: Use .netcdf instead of .csv
@@ -161,15 +188,16 @@ void ReadInMultiArray(multi_array<double, 2> &output_array, string filename)
 
 
 // Calculate coefficients C2 and D2 for all values of`dep_vec` for a given reaction `mu`
-void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> &d2, int r, int d, vector<Index> n_xx1, vector<Index> n_xx2, vector<double> lim_xx1, vector<Index> n_xx1_coeff, vector<double> lim_xx1_coeff, int dxx2_mult, vector<double> h_xx2, vector<int> k_xx2, vector<const double *> &x2, lr2<double> lr_sol, blas_ops blas, int index_shift, int mu, vector<double> n1, vector<size_t> dep_vec)
+void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> &d2, vector<Index> n_xx1, vector<Index> n_xx2, vector<double> lim_xx1, vector<double> h_xx2, lr2<double> &lr_sol, blas_ops blas, int shift, int mu, vector<double> n1)
 {
+    Index dxx2_mult = lr_sol.V.shape()[0];
     multi_array<double, 1> w_x2({dxx2_mult});
 
     // Calculate the shifted X2
-    multi_array<double, 2> xx2_shift({dxx2_mult, r});
-    ShiftMultiArrayCols(xx2_shift, k_xx2, x2, index_shift);
+    multi_array<double, 2> xx2_shift(lr_sol.V.shape());
+    ShiftMultiArrayCols(xx2_shift, lr_sol.V, shift);
 
-    w_x2 = CalculateWeightX2(d, n_xx1, n_xx2, lim_xx1, dxx2_mult, h_xx2, n1, mu);
+    w_x2 = CalculateWeightX2(n_xx1, n_xx2, lim_xx1, dxx2_mult, h_xx2, n1, mu);
     coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
     coeff(lr_sol.V, lr_sol.V, w_x2, d2, blas);
 }
@@ -277,15 +305,18 @@ int main()
     blas.matmul(tmp_x, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
     
     vector<int> sigma1, sigma2;
-    int sigma2_sum;
+    int sigma1_sum, sigma2_sum;
     
     // NOTE: when the partition requires a permutation of the original order of species,
     // then also the nu vectors and similar quantities have to be permuted
 
     for(auto it : mysystem.reactions) {
         sigma2_sum = 0;
+        for (size_t i = 0; i < kM1; i++)
+            sigma1_sum += it->nu[i] * pow(n_xx1[i], i);
         for (size_t i = 0; i < kM2; i++)
-            sigma2_sum =+ it->nu[i] * pow(n_xx2[i], i);
+            sigma2_sum += it->nu[i] * pow(n_xx2[i], i);
+        sigma1.push_back(sigma1_sum);
         sigma2.push_back(sigma2_sum);
     }
 
@@ -302,6 +333,8 @@ int main()
     dep_vec = mysystem.reactions[0]->depends_on;
     int alpha1;
 
+
+    // This section is for testing purposes
     for (auto &ele : dep_vec)
         (ele < kM1) ? dep_vec1.push_back(ele) : dep_vec2.push_back(ele);
 
@@ -318,7 +351,7 @@ int main()
         n1_zero[dep_vec1[i]] = n1_coeff[i];
     }
 
-    CalculateCoefficientsX2(c2, d2, kR, kD, n_xx1, n_xx2, lim_xx1, n_xx1_coeff, lim_xx1_coeff, dxx2_mult, h_xx2, k_xx2, x2, lr_sol, blas, sigma2[mu], mu, n1_zero, dep_vec1);
+    CalculateCoefficientsX2(c2, d2, n_xx1, n_xx2, lim_xx1, h_xx2, lr_sol, blas, k_xx2[0] * sigma2[mu], mu, n1_zero);
 
     for (int i = 0; i < kR; i++)
     {
@@ -329,6 +362,29 @@ int main()
         cout << endl;
     }
 
+    cout << endl;
+
+    multi_array<double, 2> prod_c2K({dxx1_mult, kR});
+    multi_array<double, 2> prod_c2K_shift({dxx1_mult, kR});
+    multi_array<double, 2> prod_d2K({dxx1_mult, kR});
+
+
+    // Calculate matrix-vector multiplication of C2*K and D2*K
+    for (int j = 0; j < kR; j++)
+    {
+        prod_c2K(alpha_tilde1, j) = 0.0;
+        for (int l = 0; l < kR; l++)
+        {
+            prod_c2K(alpha_tilde1, j) += c2(j, l) * lr_sol.X(alpha_tilde1, l);
+            prod_d2K(alpha_tilde1, j) += d2(j, l) * lr_sol.X(alpha_tilde1, l);
+        }
+    }
+
+    // Shift prod_c2K
+    ShiftMultiArrayCols(prod_c2K_shift, prod_c2K, -k_xx1[0] * sigma1[mu]);
+
+
+    // This is the real code for updating K
     for (size_t mu = 0; mu < mysystem.mu(); mu++)
     {
         dep_vec = mysystem.reactions[mu]->depends_on;
@@ -338,7 +394,7 @@ int main()
         dxx1_reduced_mult = 1;
         n_xx1_reduced = n_xx1;
         lim_xx1_reduced = lim_xx1;
-        std::fill(n1_zero.begin(), n1_zero.end(), 0);
+        std::fill(n1_zero.begin(), n1_zero.end(), 0.0);
         for (auto &ele : dep_vec)
         {
             if (ele < kM1)
@@ -347,7 +403,7 @@ int main()
                 dxx1_coeff_mult *= n_xx1[ele];
                 n_xx1_coeff.push_back(n_xx1[ele]);
                 n_xx1_reduced[ele] = 1;
-                lim_xx1_reduced[ele] = 0;
+                lim_xx1_reduced[ele] = 0.0;
             }
             else
             {
@@ -360,7 +416,7 @@ int main()
             dxx1_reduced_mult *= ele;
         }
         
-        // Construct n_xx1_reduced and dxx1_mult_reduced
+        // Loop through all species in partition 1 on which the propensity for reaction mu depends
         for (int i = 0; i < dxx1_coeff_mult; i++)
         {
             n1_coeff = IndexToState(i, n_xx1_coeff, lim_xx1_coeff);
@@ -369,16 +425,32 @@ int main()
             for (size_t j = 0; j < dep_vec.size(); j++)
                 n1_zero[dep_vec1[j]] = n1_coeff[j];
 
-            for (int j = 0; j < dxx1_reduced_mult; j++)
+            // Loop through the remaining species in partition 1
+            for (int k = 0; k < dxx1_reduced_mult; k++)
             {
-                n1_reduced = IndexToState(j, n_xx1_reduced, lim_xx1_reduced);
+                n1_reduced = IndexToState(k, n_xx1_reduced, lim_xx1_reduced);
                 // n1_reduced contains now the real population number
-                for (size_t j = 0; j < dep_vec.size(); j++)
-                    n1_reduced[dep_vec1[j]] = n1_coeff[j];
+                for (size_t l = 0; l < dep_vec1.size(); l++)
+                    n1_reduced[dep_vec1[l]] = n1_coeff[l];
                 alpha1 = StateToIndex(n1_reduced, n_xx1, lim_xx1);
 
-                CalculateCoefficientsX2(c2, d2, kR, kD, n_xx1, n_xx2, lim_xx1, n_xx1_coeff, lim_xx1_coeff, dxx2_mult, h_xx2, k_xx2, x2, lr_sol, blas, sigma2[mu], mu, n1_zero, dep_vec1);
+                CalculateCoefficientsX2(c2, d2, n_xx1, n_xx2, lim_xx1, h_xx2, lr_sol, blas, k_xx2[0] * sigma2[mu], mu, n1_zero);
 
+                // if (mu == 2 && alpha1 == 30)
+                // {
+                //     for (int k = 0; k < n1_reduced.size(); k++) cout << n1_reduced[k] << " ";
+                //     cout << endl;
+                //     cout << "mu: " << mu << ", alpha1: " << alpha1 << ", j: " << j << endl;
+                //     for (int i = 0; i < kR; i++)
+                //     {
+                //         for (int j = 0; j < kR; j++)
+                //         {
+                //             cout << c2(i, j) << " ";
+                //         }
+                //         cout << endl;
+                //     }
+                //     cout << endl;
+                // }
 
             }
         }
