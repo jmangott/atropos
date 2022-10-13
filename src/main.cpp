@@ -22,8 +22,22 @@ using std::stringstream;
 using std::string;
 using std::vector;
 
-// Convert vector containing the population numbers to combined index
-Index StateToIndex(vector<double> state_vec, vector<Index> interval, vector<double> limit)
+
+// Convert index vector to state vector
+vector<double> IndexToState(vector<int> index_vec, vector<Index> interval, vector<double> limit)
+{
+    size_t dim = index_vec.size();
+    vector<double> state_vec(dim, 0.0);
+    for (size_t i = 0; i < dim; i++)
+    {
+        state_vec[i] = index_vec[i] * limit[i] / (interval[i] - 1.0);
+    }
+    return state_vec;
+}
+
+
+// Convert index vector associated with the population numbers to combined index
+Index VecIndexToCombIndex(vector<double> state_vec, vector<Index> interval, vector<double> limit)
 {
     Index combined_index = 0;
     Index state_index;
@@ -37,14 +51,13 @@ Index StateToIndex(vector<double> state_vec, vector<Index> interval, vector<doub
 }
 
 
-// TODO: Improve speed by using a lookup table (?)
-// Convert combined index to vector containing the population numbers
-vector<double> IndexToState(Index combined_index, vector<Index> interval, vector<double> limit)
+// Convert combined index to index vector associated with the population numbers
+vector<double> CombIndexToVecIndex(Index combined_index, vector<Index> interval, vector<double> limit)
 {
     int stride = 1;
     size_t dim = interval.size();
     double state_index;
-    vector<double> state_vec(dim, 0);
+    vector<double> state_vec(dim, 0.0);
     for (size_t k = 0; k < dim; k++)
     {
         if (k == (dim - 1))
@@ -85,7 +98,7 @@ multi_array<double, 1> CalculateWeightX2(vector<Index> n_xx1, vector<Index> n_xx
     // Calculate propensity vector
     for (int alpha2 = 0; alpha2 < dxx2_mult; alpha2++)
     {
-        n2 = IndexToState(alpha2, n_xx2, lim_xx2);
+        n2 = CombIndexToVecIndex(alpha2, n_xx2, lim_xx2);
         for (size_t i = 0; i < m2; i++)
             n_tot[m1 + i] = n2[i];
         a_vec[alpha2] = mysystem.reactions[mu]->propensity(n_tot);
@@ -107,7 +120,10 @@ void ShiftMultiArrayCols(multi_array<double, 2> &output_array, multi_array<doubl
 {
     if ((output_array.shape()[0] != input_array.shape()[0]) ||
         (output_array.shape()[1] != input_array.shape()[1]))
-        throw std::length_error("Dimensions of output_array and input_array must be the same.");
+    {
+        std::cerr << "ERROR: Dimensions of output_array and input_array must be the same!";
+        std::abort();
+    }
 
     int n_rows = output_array.shape()[0];
     int n_cols = output_array.shape()[1];
@@ -131,37 +147,6 @@ void ShiftMultiArrayCols(multi_array<double, 2> &output_array, multi_array<doubl
         }
     }
 }
-
-
-// void ShiftMultiArrayCols(multi_array<double, 2> &array_shift, int k_factor, vector<const double *> &input_pointer, int index_shift)
-// {
-//     int n_rows = array_shift.shape()[0];
-//     int n_cols = array_shift.shape()[1];
-//     vector<const double *> pointer_shift = input_pointer;
-//     for (int i = 0; i < n_cols; i++)
-//         pointer_shift[i] += int(k_factor * index_shift);
-
-//     for (int j = 0; j < n_cols; j++)
-//     {
-//         for (int i = 0; i < n_rows; i++)
-//         {
-//             if ((k_factor * index_shift < 0) &&
-//                 (i < -k_factor * index_shift))
-//             {
-//                 array_shift(i, j) = input_pointer[j][0];
-//             }
-//             else if ((k_factor * index_shift > 0) &&
-//                      (i >= (n_rows - k_factor * index_shift)))
-//             {
-//                 array_shift(i, j) = input_pointer[j][n_rows - 1];
-//             }
-//             else
-//             {
-//                 array_shift(i, j) = pointer_shift[j][i];
-//             }
-//         }
-//     }
-// }
 
 
 // TODO: Use .netcdf instead of .csv
@@ -192,7 +177,7 @@ void ReadInMultiArray(multi_array<double, 2> &output_array, string filename)
 }
 
 
-// Calculate coefficients C2 and D2 for all values of`dep_vec` for a given reaction `mu`
+// Calculate coefficients C2 and D2 for all values of `dep_vec` for a given reaction `mu`
 void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> &d2, vector<Index> n_xx1, vector<Index> n_xx2, vector<double> lim_xx1, vector<double> h_xx2, lr2<double> &lr_sol, blas_ops blas, int shift, int mu, vector<double> n1)
 {
     Index dxx2_mult = lr_sol.V.shape()[0];
@@ -201,15 +186,7 @@ void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> 
     // Calculate the shifted X2
     multi_array<double, 2> xx2_shift(lr_sol.V.shape());
 
-    try
-    {
-        ShiftMultiArrayCols(xx2_shift, lr_sol.V, shift);
-    }
-
-    catch(std::length_error &e)
-    {
-        std::cerr << e.what() << endl;
-    }
+    ShiftMultiArrayCols(xx2_shift, lr_sol.V, shift);
 
     w_x2 = CalculateWeightX2(n_xx1, n_xx2, lim_xx1, dxx2_mult, h_xx2, n1, mu);
     coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
@@ -229,9 +206,9 @@ int main()
     std::fill_n(std::back_inserter(xx), kD, 1.0);
     nn = {"A1", "B2"};
 
-    // Index nsteps = 1000; // # time steps
-    // double tstar = 1.0; // final time
-    // double tau = tstar / nsteps; // time step size
+    Index nsteps = 1000; // # time steps
+    double tstar = 1.0; // final time
+    double tau = tstar / nsteps; // time step size
 
     constexpr size_t kM1 = kD / 2;
     constexpr size_t kM2 = kD - kM1;
@@ -335,53 +312,28 @@ int main()
         sigma2.push_back(sigma2_sum);
     }
 
-    // Calculate C2 and D2 for given mu and alpha_tilde1
-    int mu = 2;
-    int alpha_tilde1 = 30;
-
     vector<size_t> dep_vec, dep_vec1, dep_vec2;
-    int dxx1_coeff_mult, dxx1_reduced_mult;
     vector<Index> n_xx1_coeff, n_xx1_reduced;
     vector<double> n1_coeff, n1_reduced, n1_zero(kM1, 0);
     vector<double> lim_xx1_coeff, lim_xx1_reduced;
-    dxx1_coeff_mult = 1;
+    Index dxx1_coeff_mult, dxx1_reduced_mult;
     dep_vec = mysystem.reactions[0]->depends_on;
     int alpha1;
-
-
-    // This section is for testing purposes
-    for (auto &ele : dep_vec)
-        (ele < kM1) ? dep_vec1.push_back(ele) : dep_vec2.push_back(ele);
-
-    for (auto &ele : dep_vec1)
-    {
-        dxx1_coeff_mult *= n_xx1[ele];
-        n_xx1_coeff.push_back(n_xx1[ele]);
-        lim_xx1_coeff.push_back(lim_xx1[ele]);
-    }
-
-    n1_coeff = IndexToState(alpha_tilde1, n_xx1_coeff, lim_xx1_coeff);
-    for (size_t i = 0; i < dep_vec1.size(); i++)
-    {
-        n1_zero[dep_vec1[i]] = n1_coeff[i];
-    }
-
-    CalculateCoefficientsX2(c2, d2, n_xx1, n_xx2, lim_xx1, h_xx2, lr_sol, blas, k_xx2[0] * sigma2[mu], mu, n1_zero);
 
     multi_array<double, 2> prod_c2K({dxx1_mult, kR});
     multi_array<double, 2> prod_c2K_shift({dxx1_mult, kR});
     multi_array<double, 2> prod_d2K({dxx1_mult, kR});
 
-
-    // This is the real code for updating K
     for (size_t mu = 0; mu < mysystem.mu(); mu++)
     {
         dep_vec = mysystem.reactions[mu]->depends_on;
-        dep_vec1 = {};
-        dep_vec2 = {};
+        dep_vec1.clear();
+        dep_vec2.clear();
         dxx1_coeff_mult = 1;
         dxx1_reduced_mult = 1;
+        n_xx1_coeff.clear();
         n_xx1_reduced = n_xx1;
+        lim_xx1_coeff.clear();
         lim_xx1_reduced = lim_xx1;
         std::fill(n1_zero.begin(), n1_zero.end(), 0.0);
         for (auto &ele : dep_vec)
@@ -392,6 +344,7 @@ int main()
                 dxx1_coeff_mult *= n_xx1[ele];
                 n_xx1_coeff.push_back(n_xx1[ele]);
                 n_xx1_reduced[ele] = 1;
+                lim_xx1_coeff.push_back(lim_xx1[ele]);
                 lim_xx1_reduced[ele] = 0.0;
             }
             else
@@ -404,24 +357,25 @@ int main()
         {
             dxx1_reduced_mult *= ele;
         }
-        
+
         // Loop through all species in partition 1 on which the propensity for reaction mu depends
         for (int i = 0; i < dxx1_coeff_mult; i++)
         {
-            n1_coeff = IndexToState(i, n_xx1_coeff, lim_xx1_coeff);
+            n1_coeff = CombIndexToVecIndex(i, n_xx1_coeff, lim_xx1_coeff);
             
             // Convert n1_coeff to a vector with size kM1
-            for (size_t j = 0; j < dep_vec.size(); j++)
+            for (size_t j = 0; j < dep_vec1.size(); j++)
                 n1_zero[dep_vec1[j]] = n1_coeff[j];
 
             // Loop through the remaining species in partition 1
             for (int k = 0; k < dxx1_reduced_mult; k++)
             {
-                n1_reduced = IndexToState(k, n_xx1_reduced, lim_xx1_reduced);
+                n1_reduced = CombIndexToVecIndex(k, n_xx1_reduced, lim_xx1_reduced);
+                
                 // n1_reduced contains now the real population number
                 for (size_t l = 0; l < dep_vec1.size(); l++)
                     n1_reduced[dep_vec1[l]] = n1_coeff[l];
-                alpha1 = StateToIndex(n1_reduced, n_xx1, lim_xx1);
+                alpha1 = VecIndexToCombIndex(n1_reduced, n_xx1, lim_xx1);
 
                 CalculateCoefficientsX2(c2, d2, n_xx1, n_xx2, lim_xx1, h_xx2, lr_sol, blas, k_xx2[0] * sigma2[mu], mu, n1_zero);
 
@@ -434,23 +388,15 @@ int main()
                     prod_c2K(alpha1, j) = 0.0;
                     for (int l = 0; l < kR; l++)
                     {
-                        prod_c2K(alpha1, j) += c2(j, l) * lr_sol.X(alpha_tilde1, l);
-                        prod_d2K(alpha1, j) += d2(j, l) * lr_sol.X(alpha_tilde1, l);
+                        prod_c2K(alpha1, j) += tau * c2(j, l) * lr_sol.X(alpha1, l);
+                        prod_d2K(alpha1, j) += tau * d2(j, l) * lr_sol.X(alpha1, l);
                     }
                 }
-
                 // Shift prod_c2K
-                try
-                {
-                    ShiftMultiArrayCols(prod_c2K_shift, prod_c2K, -k_xx1[0] * sigma1[mu]);
-                }
+                ShiftMultiArrayCols(prod_c2K_shift, prod_c2K, -k_xx1[0] * sigma1[mu]);
 
-                catch (std::length_error &e)
-                {
-                    std::cerr << e.what() << endl;
-                }
-
-                lr_sol.X += (prod_c2K_shift - prod_d2K);
+                prod_c2K_shift -= prod_d2K;
+                lr_sol.X += prod_c2K_shift;
             }
         }
     }
