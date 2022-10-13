@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -104,6 +105,10 @@ multi_array<double, 1> CalculateWeightX2(vector<Index> n_xx1, vector<Index> n_xx
 // Calculate `output_array`, where rows of `input_array` are shifted by `shift`
 void ShiftMultiArrayCols(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift)
 {
+    if ((output_array.shape()[0] != input_array.shape()[0]) ||
+        (output_array.shape()[1] != input_array.shape()[1]))
+        throw std::length_error("Dimensions of output_array and input_array must be the same.");
+
     int n_rows = output_array.shape()[0];
     int n_cols = output_array.shape()[1];
 
@@ -121,7 +126,7 @@ void ShiftMultiArrayCols(multi_array<double, 2> &output_array, multi_array<doubl
             }
             else
             {
-                output_array(i, j) = input_array(i, j);
+                output_array(i, j) = input_array(i + shift, j);
             }
         }
     }
@@ -195,7 +200,16 @@ void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> 
 
     // Calculate the shifted X2
     multi_array<double, 2> xx2_shift(lr_sol.V.shape());
-    ShiftMultiArrayCols(xx2_shift, lr_sol.V, shift);
+
+    try
+    {
+        ShiftMultiArrayCols(xx2_shift, lr_sol.V, shift);
+    }
+
+    catch(std::length_error &e)
+    {
+        std::cerr << e.what() << endl;
+    }
 
     w_x2 = CalculateWeightX2(n_xx1, n_xx2, lim_xx1, dxx2_mult, h_xx2, n1, mu);
     coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
@@ -311,6 +325,7 @@ int main()
     // then also the nu vectors and similar quantities have to be permuted
 
     for(auto it : mysystem.reactions) {
+        sigma1_sum = 0;
         sigma2_sum = 0;
         for (size_t i = 0; i < kM1; i++)
             sigma1_sum += it->nu[i] * pow(n_xx1[i], i);
@@ -353,35 +368,9 @@ int main()
 
     CalculateCoefficientsX2(c2, d2, n_xx1, n_xx2, lim_xx1, h_xx2, lr_sol, blas, k_xx2[0] * sigma2[mu], mu, n1_zero);
 
-    for (int i = 0; i < kR; i++)
-    {
-        for (int j = 0; j < kR; j++)
-        {
-            cout << c2(i, j) << " ";
-        }
-        cout << endl;
-    }
-
-    cout << endl;
-
     multi_array<double, 2> prod_c2K({dxx1_mult, kR});
     multi_array<double, 2> prod_c2K_shift({dxx1_mult, kR});
     multi_array<double, 2> prod_d2K({dxx1_mult, kR});
-
-
-    // Calculate matrix-vector multiplication of C2*K and D2*K
-    for (int j = 0; j < kR; j++)
-    {
-        prod_c2K(alpha_tilde1, j) = 0.0;
-        for (int l = 0; l < kR; l++)
-        {
-            prod_c2K(alpha_tilde1, j) += c2(j, l) * lr_sol.X(alpha_tilde1, l);
-            prod_d2K(alpha_tilde1, j) += d2(j, l) * lr_sol.X(alpha_tilde1, l);
-        }
-    }
-
-    // Shift prod_c2K
-    ShiftMultiArrayCols(prod_c2K_shift, prod_c2K, -k_xx1[0] * sigma1[mu]);
 
 
     // This is the real code for updating K
@@ -436,22 +425,32 @@ int main()
 
                 CalculateCoefficientsX2(c2, d2, n_xx1, n_xx2, lim_xx1, h_xx2, lr_sol, blas, k_xx2[0] * sigma2[mu], mu, n1_zero);
 
-                // if (mu == 2 && alpha1 == 30)
-                // {
-                //     for (int k = 0; k < n1_reduced.size(); k++) cout << n1_reduced[k] << " ";
-                //     cout << endl;
-                //     cout << "mu: " << mu << ", alpha1: " << alpha1 << ", j: " << j << endl;
-                //     for (int i = 0; i < kR; i++)
-                //     {
-                //         for (int j = 0; j < kR; j++)
-                //         {
-                //             cout << c2(i, j) << " ";
-                //         }
-                //         cout << endl;
-                //     }
-                //     cout << endl;
-                // }
+                // Calculate matrix-vector multiplication of C2*K and D2*K
+                set_zero(prod_c2K);
+                set_zero(prod_d2K);
 
+                for (int j = 0; j < kR; j++)
+                {
+                    prod_c2K(alpha1, j) = 0.0;
+                    for (int l = 0; l < kR; l++)
+                    {
+                        prod_c2K(alpha1, j) += c2(j, l) * lr_sol.X(alpha_tilde1, l);
+                        prod_d2K(alpha1, j) += d2(j, l) * lr_sol.X(alpha_tilde1, l);
+                    }
+                }
+
+                // Shift prod_c2K
+                try
+                {
+                    ShiftMultiArrayCols(prod_c2K_shift, prod_c2K, -k_xx1[0] * sigma1[mu]);
+                }
+
+                catch (std::length_error &e)
+                {
+                    std::cerr << e.what() << endl;
+                }
+
+                lr_sol.X += (prod_c2K_shift - prod_d2K);
             }
         }
     }
