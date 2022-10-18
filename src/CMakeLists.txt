@@ -21,6 +21,8 @@ set(ENSIGN_FILES_GPU ${ENSIGN_DIR}/src/lr/lr.cu
 
 set(SRC_FILES ${SRC}/main.cpp
               ${SRC}/reaction_class.cpp
+              ${SRC}/index_functions.cpp
+              ${SRC}/io_functions.cpp
 )
 
 # Set up the executable

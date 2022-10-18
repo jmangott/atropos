@@ -2,31 +2,30 @@
 #define REACTION_CLASS_HPP
 
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include <vector>
 
-// TODO: replace vector `reactions` in mysys by a map and include in myreact a public variable `name`, which acts as key for the `reactions` map
+typedef ptrdiff_t Index;
 
 class myreact;
 
 class mysys
 {
 public:
-    std::vector<double> &x;
     std::vector<std::string> species_names;
-    mysys(std::vector<double> &_x, std::vector<std::string> _names);
+    mysys(std::vector<std::string> _names);
     std::vector<myreact *> reactions;
-    size_t mu();
+    std::vector<myreact *>::size_type mu();
 };
 
 class myreact
 {
 public:
     std::vector<int> nu;
-    std::vector<size_t> depends_on; 
-    double propensity();
+    std::vector<Index> depends_on; 
     double propensity(std::vector<double> x);
-    myreact(std::vector<int> _nu, std::vector<size_t> _depends_on, double (*_prop_function)(std::vector<double>), mysys &_ref_system);
+    myreact(std::vector<int> _nu, std::vector<Index> _depends_on, double (*_prop_function)(std::vector<double>), mysys &_ref_system);
     virtual ~myreact();
 
 private:

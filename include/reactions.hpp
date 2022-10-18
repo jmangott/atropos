@@ -3,10 +3,9 @@
 
 #include "reaction_class.hpp"
 
-std::vector<double> xx;
 std::vector<std::string> nn;
 
-mysys mysystem(xx, nn);
+mysys mysystem(nn);
 
 myreact myreact0(
     {-1, 0}, {0}, [](std::vector<double> y)
