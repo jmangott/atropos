@@ -68,7 +68,7 @@ vector<Index> CombIndexToVecIndex(Index comb_index, vector<Index> interval)
     return vec_index;
 }
 
-void CalculateShiftAmount(vector<Index> &sigma1, vector<Index> &sigma2, mysys mysystem, multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2)
+void CalculateShiftAmount(vector<Index> &sigma1, vector<Index> &sigma2, mysys mysystem, multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, multi_array<Index, 1> k_xx1, multi_array<Index, 1> k_xx2)
 {
     Index sigma1_sum, sigma2_sum;
     Index m1 = n_xx1.shape()[0];
@@ -82,9 +82,9 @@ void CalculateShiftAmount(vector<Index> &sigma1, vector<Index> &sigma2, mysys my
         sigma1_sum = 0;
         sigma2_sum = 0;
         for (Index i = 0; i < m1; i++)
-            sigma1_sum += it->nu[i] * pow(n_xx1(i), i);
+            sigma1_sum += it->nu[i] * pow(n_xx1(i), i) * k_xx1(i);
         for (Index i = 0; i < m2; i++)
-            sigma2_sum += it->nu[i] * pow(n_xx2(i), i);
+            sigma2_sum += it->nu[i] * pow(n_xx2(i), i) * k_xx2(i);
         sigma1.push_back(sigma1_sum);
         sigma2.push_back(sigma2_sum);
     }

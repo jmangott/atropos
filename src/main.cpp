@@ -80,6 +80,119 @@ void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> 
 }
 
 
+// Perform K-Step with time step size `tau`
+void PerformKStep(multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, multi_array<double, 1> h_xx2, multi_array<double, 1> lim_xx1, multi_array<double, 1> lim_xx2, vector<Index> sigma1, vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, double tau)
+{
+    Index dxx1_mult = lr_sol.X.shape()[0];
+    Index dxx2_mult = lr_sol.V.shape()[0];
+    Index r = lr_sol.V.shape()[1];
+    Index m1 = n_xx1.shape()[0];
+
+    // For coefficients
+    multi_array<double, 2> c2({r, r});
+    multi_array<double, 2> d2({r, r});
+
+    multi_array<double, 1> w_x2({dxx2_mult});
+
+    vector<Index> dep_vec, dep_vec1, dep_vec2;
+    vector<Index> n_xx1_coeff;
+    multi_array<Index, 1> n_xx1_reduced({m1});
+    vector<Index> vec_index1_coeff;
+    multi_array<Index, 1> vec_index1_reduced({m1});
+    multi_array<Index, 1> vec_index1_zero({m1});
+    vector<double> lim_xx1_coeff;
+    multi_array<double, 1> lim_xx1_reduced({m1});
+    Index dxx1_coeff_mult, dxx1_reduced_mult;
+    dep_vec = mysystem.reactions[0]->depends_on;
+    Index alpha1;
+
+    multi_array<double, 2> prod_c2K({dxx1_mult, r});
+    multi_array<double, 2> prod_c2K_shift({dxx1_mult, r});
+    multi_array<double, 2> prod_d2K({dxx1_mult, r});
+
+    for (size_t mu = 0; mu < mysystem.mu(); mu++)
+    {
+        dep_vec = mysystem.reactions[mu]->depends_on;
+        dep_vec1.clear();
+        dep_vec2.clear();
+        dxx1_coeff_mult = 1;
+        dxx1_reduced_mult = 1;
+        n_xx1_coeff.clear();
+        n_xx1_reduced = n_xx1;
+        lim_xx1_coeff.clear();
+        lim_xx1_reduced = lim_xx1;
+
+        for (auto &ele : vec_index1_zero)
+            ele = 0;
+
+        for (auto const &ele : dep_vec)
+        {
+            if (ele < m1)
+            {
+                dep_vec1.push_back(ele);
+                dxx1_coeff_mult *= n_xx1(ele);
+                n_xx1_coeff.push_back(n_xx1(ele));
+                n_xx1_reduced(ele) = 1;
+                lim_xx1_coeff.push_back(lim_xx1(ele));
+                lim_xx1_reduced(ele) = 0.0;
+            }
+            else
+            {
+                dep_vec2.push_back(ele);
+            }
+        }
+
+        for (auto const &ele : n_xx1_reduced)
+        {
+            dxx1_reduced_mult *= ele;
+        }
+
+        // Loop through all species in partition 1 on which the propensity for reaction mu depends
+        for (Index i = 0; i < dxx1_coeff_mult; i++)
+        {
+            vec_index1_coeff = CombIndexToVecIndex(i, n_xx1_coeff);
+            
+            // Convert vec_index1_coeff to a vector with size kM1
+            for (vector<Index>::size_type j = 0; j < dep_vec1.size(); j++)
+                vec_index1_zero(dep_vec1[j]) = vec_index1_coeff[j];
+
+            // Loop through the remaining species in partition 1
+            for (Index k = 0; k < dxx1_reduced_mult; k++)
+            {
+                vec_index1_reduced = CombIndexToVecIndex(k, n_xx1_reduced);
+                
+                // vec_index1_reduced contains now the real population number
+                for (vector<Index>::size_type l = 0; l < dep_vec1.size(); l++)
+                    vec_index1_reduced(dep_vec1[l]) = vec_index1_coeff[l];
+                alpha1 = VecIndexToCombIndex(vec_index1_reduced, n_xx1);
+
+                CalculateCoefficientsX2(c2, d2, n_xx1, n_xx2, lim_xx1, lim_xx2, h_xx2, lr_sol, blas, sigma2[mu], vec_index1_zero, mu);
+
+                // Calculate matrix-vector multiplication of C2*K and D2*K
+                set_zero(prod_c2K);
+                set_zero(prod_d2K);
+
+                for (int j = 0; j < r; j++)
+                {
+                    prod_c2K(alpha1, j) = 0.0;
+                    for (int l = 0; l < r; l++)
+                    {
+                        prod_c2K(alpha1, j) += tau * c2(j, l) * lr_sol.X(alpha1, l);
+                        prod_d2K(alpha1, j) += tau * d2(j, l) * lr_sol.X(alpha1, l);
+                    }
+                }
+                // Shift prod_c2K
+                ShiftMultiArrayCols(prod_c2K_shift, prod_c2K, -sigma1[mu]);
+
+                // Calculate X1 = shift(C2 * K) - D2 * K
+                prod_c2K_shift -= prod_d2K;
+                lr_sol.X += prod_c2K_shift;
+            }
+        }
+    }
+}
+
+
 int main()
 {
     /////////////////////////////////////////////
@@ -91,7 +204,6 @@ int main()
 
     constexpr Index kN = 51;
     constexpr Index kK = 1;
-    constexpr Index kZero = 0;
  
     nn = {"S1", "S2"};
 
@@ -205,7 +317,7 @@ int main()
 
     // Calculate the shift amount for all reactions (this has to be done only once)
     vector<Index> sigma1, sigma2;
-    CalculateShiftAmount(sigma1, sigma2, mysystem, n_xx1, n_xx2);
+    CalculateShiftAmount(sigma1, sigma2, mysystem, n_xx1, n_xx2, k_xx1, k_xx2);
 
 
     /////////////////////////////////////////////
@@ -214,102 +326,7 @@ int main()
 
     tmp_x = lr_sol.X;
     blas.matmul(tmp_x, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
-
-    vector<Index> dep_vec, dep_vec1, dep_vec2;
-    vector<Index> n_xx1_coeff;
-    multi_array<Index, 1> n_xx1_reduced({kM1});
-    vector<Index> vec_index1_coeff;
-    multi_array<Index, 1> vec_index1_reduced({kM1});
-    multi_array<Index, 1> vec_index1_zero({kM1});
-    vector<double> lim_xx1_coeff;
-    multi_array<double, 1> lim_xx1_reduced({kM1});
-    Index dxx1_coeff_mult, dxx1_reduced_mult;
-    dep_vec = mysystem.reactions[0]->depends_on;
-    Index alpha1;
-
-    multi_array<double, 2> prod_c2K({dxx1_mult, kR});
-    multi_array<double, 2> prod_c2K_shift({dxx1_mult, kR});
-    multi_array<double, 2> prod_d2K({dxx1_mult, kR});
-
-    for (size_t mu = 0; mu < mysystem.mu(); mu++)
-    {
-        dep_vec = mysystem.reactions[mu]->depends_on;
-        dep_vec1.clear();
-        dep_vec2.clear();
-        dxx1_coeff_mult = 1;
-        dxx1_reduced_mult = 1;
-        n_xx1_coeff.clear();
-        n_xx1_reduced = n_xx1;
-        lim_xx1_coeff.clear();
-        lim_xx1_reduced = lim_xx1;
-
-        for (auto &ele : vec_index1_zero)
-            ele = kZero;
-
-        for (auto const &ele : dep_vec)
-        {
-            if (ele < kM1)
-            {
-                dep_vec1.push_back(ele);
-                dxx1_coeff_mult *= n_xx1(ele);
-                n_xx1_coeff.push_back(n_xx1(ele));
-                n_xx1_reduced(ele) = 1;
-                lim_xx1_coeff.push_back(lim_xx1(ele));
-                lim_xx1_reduced(ele) = 0.0;
-            }
-            else
-            {
-                dep_vec2.push_back(ele);
-            }
-        }
-
-        for (auto const &ele : n_xx1_reduced)
-        {
-            dxx1_reduced_mult *= ele;
-        }
-
-        // Loop through all species in partition 1 on which the propensity for reaction mu depends
-        for (Index i = 0; i < dxx1_coeff_mult; i++)
-        {
-            vec_index1_coeff = CombIndexToVecIndex(i, n_xx1_coeff);
-            
-            // Convert vec_index1_coeff to a vector with size kM1
-            for (vector<Index>::size_type j = 0; j < dep_vec1.size(); j++)
-                vec_index1_zero(dep_vec1[j]) = vec_index1_coeff[j];
-
-            // Loop through the remaining species in partition 1
-            for (Index k = 0; k < dxx1_reduced_mult; k++)
-            {
-                vec_index1_reduced = CombIndexToVecIndex(k, n_xx1_reduced);
-                
-                // vec_index1_reduced contains now the real population number
-                for (vector<Index>::size_type l = 0; l < dep_vec1.size(); l++)
-                    vec_index1_reduced(dep_vec1[l]) = vec_index1_coeff[l];
-                alpha1 = VecIndexToCombIndex(vec_index1_reduced, n_xx1);
-
-                CalculateCoefficientsX2(c2, d2, n_xx1, n_xx2, lim_xx1, lim_xx2, h_xx2, lr_sol, blas, k_xx2(0) * sigma2[mu], vec_index1_zero, mu);
-
-                // Calculate matrix-vector multiplication of C2*K and D2*K
-                set_zero(prod_c2K);
-                set_zero(prod_d2K);
-
-                for (int j = 0; j < kR; j++)
-                {
-                    prod_c2K(alpha1, j) = 0.0;
-                    for (int l = 0; l < kR; l++)
-                    {
-                        prod_c2K(alpha1, j) += tau * c2(j, l) * lr_sol.X(alpha1, l);
-                        prod_d2K(alpha1, j) += tau * d2(j, l) * lr_sol.X(alpha1, l);
-                    }
-                }
-                // Shift prod_c2K
-                ShiftMultiArrayCols(prod_c2K_shift, prod_c2K, -k_xx1(0) * sigma1[mu]);
-
-                prod_c2K_shift -= prod_d2K;
-                lr_sol.X += prod_c2K_shift;
-            }
-        }
-    }
+    PerformKStep(n_xx1, n_xx2, h_xx2, lim_xx1, lim_xx2, sigma1, sigma2, lr_sol, blas, tau);
 
     return 0;
 }
