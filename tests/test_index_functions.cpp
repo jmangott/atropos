@@ -2,9 +2,8 @@
 #include <catch2/catch.hpp>
 
 #include "index_functions.hpp"
-#include "reactions.hpp"
 
-TEST_CASE("K-Step", "[k_step]")
+TEST_CASE("index_functions", "[index_functions]")
 {
     SECTION("VecIndexToState")
     {
@@ -23,5 +22,10 @@ TEST_CASE("K-Step", "[k_step]")
 
         state_vec = VecIndexToState(vec_index, interval, limit);
         REQUIRE(bool(state_vec == comparison_vec));
+    }
+
+    SECTION("VecIndexToCombIndex")
+    {
+        
     }
 }
