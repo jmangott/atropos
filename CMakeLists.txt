@@ -4,6 +4,7 @@ project(kinetic-cme
         DESCRIPTION "Dynamical low-rank solver for the kinetic CME"
         HOMEPAGE_URL https://git.uibk.ac.at/c7021158/kinetic-cme
         LANGUAGES CXX)
+enable_testing()
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,26 +46,24 @@ set(BIN ${CMAKE_SOURCE_DIR}/bin)
 
 # Add Ensign
 ExternalProject_Add(Ensign
+  PREFIX "${EXTERNALS_DIR}"
   GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
   GIT_TAG "development"
-  SOURCE_DIR "${EXTERNALS_DIR}/Ensign"
-  PATCH_COMMAND mkdir build
-  BINARY_DIR "${EXTERNALS_DIR}/Ensign/build"
+  BUILD_IN_SOURCE 1
   INSTALL_COMMAND ""
   UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
 )
-set(ENSIGN_DIR ${EXTERNALS_DIR}/Ensign)
-set(ENSIGN_BUILD ${EXTERNALS_DIR}/Ensign/build)
+set(ENSIGN_DIR ${EXTERNALS_DIR}/src/Ensign)
 
 # Find BLAS and LAPACK
 option("MKL_ENABLED" OFF)
 if(NOT ${MKL_ENABLED})
-  set(OPENBLAS_LIBRARIES "${ENSIGN_BUILD}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
+  set(OPENBLAS_LIBRARIES "${ENSIGN_DIR}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
 endif()
 find_package(Threads REQUIRED)
 
 # Set fftw
-set(FFTW_LIBRARIES "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3_omp.a")
+set(FFTW_LIBRARIES "${ENSIGN_DIR}/extern/fftw/lib/libfftw3.a" "${ENSIGN_DIR}/extern/fftw/lib/libfftw3_omp.a")
 
 # Find NetCDF
 # find_package(NetCDF)
@@ -108,8 +107,8 @@ set(SRC_FILES ${SRC}/reaction_class.cpp
 
 set(HEADER_FILES ${INC}
                  ${ENSIGN_DIR}/include
-                 ${ENSIGN_BUILD}/extern/OpenBLAS/opt/OpenBLAS/include
-                 ${ENSIGN_BUILD}/extern/fftw/include)
+                 ${ENSIGN_DIR}/extern/OpenBLAS/opt/OpenBLAS/include
+                 ${ENSIGN_DIR}/extern/fftw/include)
 
 ###################################
 # Add src and test subdirectories #
