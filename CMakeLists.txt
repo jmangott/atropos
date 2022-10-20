@@ -30,25 +30,6 @@ else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(CMAKE_CXX_FLAGS_PROFILE "-g1 -O3 -fno-inline -fno-optimize-sibling-calls")
 endif()
 
-##############
-# Add Ensign #
-##############
-
-ExternalProject_Add(Ensign
-  PREFIX "${EXTERNALS_DIR}"
-  GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
-  GIT_TAG "development"
-  SOURCE_DIR "${EXTERNALS_DIR}/Ensign"
-  BINARY_DIR "${EXTERNALS_DIR}/Ensign/build"
-  CONFIGURE_COMMAND cmake ..
-  INSTALL_COMMAND ""
-  UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
-)
-
-set(ENSIGN_DIR ${EXTERNALS_DIR}/Ensign)
-set(ENSIGN_BUILD ${EXTERNALS_DIR}/Ensign/build)
-# add_subdirectory(${ENSIGN_DIR} ${ENSIGN_BUILD})
-
 ##############################################################
 # Define the actual files and folders that make up the build #
 ##############################################################
@@ -58,21 +39,34 @@ set(SRC ${CMAKE_SOURCE_DIR}/src)
 set(INC ${CMAKE_SOURCE_DIR}/include)
 set(BIN ${CMAKE_SOURCE_DIR}/bin)
 
-######################################
-# Include header files and libraries #
-######################################
+############################################
+# Find external packages and set libraries #
+############################################
 
-# Include BLAS and LAPACK
+# Add Ensign
+ExternalProject_Add(Ensign
+  GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
+  GIT_TAG "development"
+  SOURCE_DIR "${EXTERNALS_DIR}/Ensign"
+  PATCH_COMMAND mkdir build
+  BINARY_DIR "${EXTERNALS_DIR}/Ensign/build"
+  INSTALL_COMMAND ""
+  UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
+)
+set(ENSIGN_DIR ${EXTERNALS_DIR}/Ensign)
+set(ENSIGN_BUILD ${EXTERNALS_DIR}/Ensign/build)
+
+# Find BLAS and LAPACK
 option("MKL_ENABLED" OFF)
 if(NOT ${MKL_ENABLED})
   set(OPENBLAS_LIBRARIES "${ENSIGN_BUILD}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
 endif()
 find_package(Threads REQUIRED)
 
-# Include fftw
+# Set fftw
 set(FFTW_LIBRARIES "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD}/extern/fftw/lib/libfftw3_omp.a")
 
-# Include NetCDF
+# Find NetCDF
 # find_package(NetCDF)
 # if(${NETCDF_FOUND})
 #   include_directories(${NETCDF_INCLUDE_DIR})
@@ -108,19 +102,14 @@ set(SRC_FILES ${SRC}/reaction_class.cpp
               ${SRC}/index_functions.cpp
               ${SRC}/io_functions.cpp)
 
-# add_library(libensign STATIC ${ENSIGN_FILES})
-
-# ########################
-# # Include header files #
-# ########################
+########################
+# Include header files #
+########################
 
 set(HEADER_FILES ${INC}
                  ${ENSIGN_DIR}/include
                  ${ENSIGN_BUILD}/extern/OpenBLAS/opt/OpenBLAS/include
-                 ${ENSIGN_BUILD}/extern/fftw/include
-)
-
-# target_include_directories(libensign PRIVATE ${HEADER_FILES})
+                 ${ENSIGN_BUILD}/extern/fftw/include)
 
 ###################################
 # Add src and test subdirectories #

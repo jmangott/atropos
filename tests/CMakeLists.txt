@@ -6,6 +6,7 @@ enable_testing()
 
 add_executable(k_step k_step.cpp ${SRC_FILES} ${ENSIGN_FILES})
 add_dependencies(k_step Ensign)
+set_source_files_properties(${ENSIGN_FILES} PROPERTIES GENERATED TRUE)
 
 add_test(NAME k_step COMMAND k_step)
 
