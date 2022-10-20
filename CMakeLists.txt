@@ -49,21 +49,21 @@ ExternalProject_Add(Ensign
   PREFIX "${EXTERNALS_DIR}"
   GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
   GIT_TAG "development"
-  BUILD_IN_SOURCE 1
   INSTALL_COMMAND ""
   UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
 )
-set(ENSIGN_DIR ${EXTERNALS_DIR}/src/Ensign)
+set(ENSIGN_SRC_DIR ${EXTERNALS_DIR}/src/Ensign)
+set(ENSIGN_BUILD_DIR ${EXTERNALS_DIR}/src/Ensign-build)
 
 # Find BLAS and LAPACK
 option("MKL_ENABLED" OFF)
 if(NOT ${MKL_ENABLED})
-  set(OPENBLAS_LIBRARIES "${ENSIGN_DIR}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
+  set(OPENBLAS_LIBRARIES "${ENSIGN_BUILD_DIR}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
 endif()
 find_package(Threads REQUIRED)
 
 # Set fftw
-set(FFTW_LIBRARIES "${ENSIGN_DIR}/extern/fftw/lib/libfftw3.a" "${ENSIGN_DIR}/extern/fftw/lib/libfftw3_omp.a")
+set(FFTW_LIBRARIES "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3_omp.a")
 
 # Find NetCDF
 # find_package(NetCDF)
@@ -80,22 +80,22 @@ set(FFTW_LIBRARIES "${ENSIGN_DIR}/extern/fftw/lib/libfftw3.a" "${ENSIGN_DIR}/ext
 # Define a short hand for source, the Ensign and header files #
 ###############################################################
 
-set(ENSIGN_FILES ${ENSIGN_DIR}/src/lr/lr.cpp
-                 ${ENSIGN_DIR}/src/lr/coefficients.cpp
-                 ${ENSIGN_DIR}/src/generic/utility.cpp
-                 ${ENSIGN_DIR}/src/generic/matrix.cpp
-                 ${ENSIGN_DIR}/src/generic/timer.cpp
-                 ${ENSIGN_DIR}/src/generic/fft.cpp
-                 ${ENSIGN_DIR}/src/generic/netcdf.cpp)
+set(ENSIGN_FILES ${ENSIGN_SRC_DIR}/src/lr/lr.cpp
+                 ${ENSIGN_SRC_DIR}/src/lr/coefficients.cpp
+                 ${ENSIGN_SRC_DIR}/src/generic/utility.cpp
+                 ${ENSIGN_SRC_DIR}/src/generic/matrix.cpp
+                 ${ENSIGN_SRC_DIR}/src/generic/timer.cpp
+                 ${ENSIGN_SRC_DIR}/src/generic/fft.cpp
+                 ${ENSIGN_SRC_DIR}/src/generic/netcdf.cpp)
 
-set(ENSIGN_FILES_GPU ${ENSIGN_DIR}/src/lr/lr.cu
-                     ${ENSIGN_DIR}/src/lr/coefficients.cu
-                     ${ENSIGN_DIR}/src/generic/utility.cu
-                     ${ENSIGN_DIR}/src/generic/matrix.cu
-                     ${ENSIGN_DIR}/src/generic/timer.cu
-                     ${ENSIGN_DIR}/src/generic/fft.cu
-                     ${ENSIGN_DIR}/src/generic/kernels.cu
-                     ${ENSIGN_DIR}/src/generic/netcdf.cpp)
+set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
+                     ${ENSIGN_SRC_DIR}/src/lr/coefficients.cu
+                     ${ENSIGN_SRC_DIR}/src/generic/utility.cu
+                     ${ENSIGN_SRC_DIR}/src/generic/matrix.cu
+                     ${ENSIGN_SRC_DIR}/src/generic/timer.cu
+                     ${ENSIGN_SRC_DIR}/src/generic/fft.cu
+                     ${ENSIGN_SRC_DIR}/src/generic/kernels.cu
+                     ${ENSIGN_SRC_DIR}/src/generic/netcdf.cpp)
 
 set(SRC_FILES ${SRC}/reaction_class.cpp
               ${SRC}/index_functions.cpp
@@ -106,9 +106,9 @@ set(SRC_FILES ${SRC}/reaction_class.cpp
 ########################
 
 set(HEADER_FILES ${INC}
-                 ${ENSIGN_DIR}/include
-                 ${ENSIGN_DIR}/extern/OpenBLAS/opt/OpenBLAS/include
-                 ${ENSIGN_DIR}/extern/fftw/include)
+                 ${ENSIGN_SRC_DIR}/include
+                 ${ENSIGN_BUILD_DIR}/extern/OpenBLAS/opt/OpenBLAS/include
+                 ${ENSIGN_BUILD_DIR}/extern/fftw/include)
 
 ###################################
 # Add src and test subdirectories #
