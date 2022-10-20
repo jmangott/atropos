@@ -205,8 +205,6 @@ int main()
     constexpr Index kN = 51;
     constexpr Index kK = 1;
  
-    nn = {"S1", "S2"};
-
     Index nsteps = 1000; // # time steps
     double tstar = 1.0; // final time
     double tau = tstar / nsteps; // time step size
