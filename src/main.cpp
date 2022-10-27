@@ -110,7 +110,7 @@ void PerformKStep(multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, mult
     multi_array<double, 2> prod_c2K_shift({dxx1_mult, r});
     multi_array<double, 2> prod_d2K({dxx1_mult, r});
 
-    for (size_t mu = 0; mu < mysystem.mu(); mu++)
+    for (vector<myreact *>::size_type mu = 0; mu < mysystem.mu(); mu++)
     {
         dep_vec = mysystem.reactions[mu]->depends_on;
         dep_vec1.clear();
@@ -172,10 +172,10 @@ void PerformKStep(multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, mult
                 set_zero(prod_c2K);
                 set_zero(prod_d2K);
 
-                for (int j = 0; j < r; j++)
+                for (Index j = 0; j < r; j++)
                 {
                     prod_c2K(alpha1, j) = 0.0;
-                    for (int l = 0; l < r; l++)
+                    for (Index l = 0; l < r; l++)
                     {
                         prod_c2K(alpha1, j) += tau * c2(j, l) * lr_sol.X(alpha1, l);
                         prod_d2K(alpha1, j) += tau * d2(j, l) * lr_sol.X(alpha1, l);

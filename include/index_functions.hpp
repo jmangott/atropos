@@ -27,7 +27,8 @@ std::vector<Index> CombIndexToVecIndex(Index comb_index, std::vector<Index> inte
 
 
 // Calculate for all reactions the number of indices by which arrays have to be shifted in order to calculate the coefficients C1, C2, D1, D2
-void CalculateShiftAmount(vector<Index> &sigma1, std::vector<Index> &sigma2, mysys mysystem, multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, multi_array<Index, 1> k_xx1, multi_array<Index, 1> k_xx2);
+void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2, mysys mysystem, multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, multi_array<Index, 1> k_xx1, multi_array<Index, 1> k_xx2);
+
 
 // Calculate `output_array`, where rows of `input_array` are shifted by `shift`
 void ShiftMultiArrayCols(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift);
