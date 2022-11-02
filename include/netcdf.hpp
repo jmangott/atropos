@@ -1,4 +1,6 @@
-#pragma once
+#ifndef NETCDF_HPP
+#define NETCDF_HPP
+
 #include <netcdf.h>
 
 #include <Eigen/Dense>
@@ -133,3 +135,5 @@ void read_nc(std::string fn, MatrixXd &U, MatrixXd &S, MatrixXd &V, vector<std::
     if ((retval = nc_close(ncid)))
         ERROR_NETCDF(retval);
 }
+
+#endif
