@@ -1,6 +1,9 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
+#include <generic/matrix.hpp>
+#include <generic/storage.hpp>
+
 #include "index_functions.hpp"
 
 TEST_CASE("index_functions", "[index_functions]")
@@ -38,7 +41,7 @@ TEST_CASE("index_functions", "[index_functions]")
         REQUIRE(bool(comb_index == comparison_index));
     }
 
-    SECTION("CombIndexToVecIndex")
+    SECTION("CombIndexToVecIndex1")
     {
         Index comb_index = 23084307895;
         multi_array<Index, 1> interval({10});
@@ -53,7 +56,7 @@ TEST_CASE("index_functions", "[index_functions]")
         REQUIRE(bool(vec_index == comparison_vec));
     }
 
-    SECTION("CombIndexToVecIndex_vector_output")
+    SECTION("CombIndexToVecIndex2")
     {
         Index comb_index = 79;
         vector<Index> interval;
@@ -101,7 +104,7 @@ TEST_CASE("index_functions", "[index_functions]")
         REQUIRE(bool(sigma2 == sigma2_comparison));
     }
 
-    SECTION("ShiftMultiArrayCols")
+    SECTION("ShiftMultiArrayRows1")
     {
         Index n_rows = 12;
         Index n_cols = 10;
@@ -115,7 +118,29 @@ TEST_CASE("index_functions", "[index_functions]")
         set_zero(comparison_array);
         for (Index i = 5; i < n_cols; i++)
             comparison_array(i - 5, i) = 1.0;
-        ShiftMultiArrayCols(output_array, input_array, 5);
+
+        ShiftMultiArrayRows(output_array, input_array, 5);
+        REQUIRE(bool(output_array == comparison_array));
+    }
+
+    SECTION("ShiftMultiArrayRows2")
+    {
+        Index n_rows = 12;
+        Index n_cols = 10;
+        multi_array<double, 2> input_array({n_rows, n_cols}), output_array({n_rows, n_cols});
+        multi_array<double, 2> comparison_array({n_rows, n_cols});
+
+        set_zero(input_array);
+        for (Index i = 0; i < n_cols; i++)
+            input_array(i, i) = 1.0;
+
+        set_zero(comparison_array);
+        for (Index i = 0; i < 5; i++)
+            comparison_array(i, 0) = 1.0;
+        for (Index i = 0; i < n_rows - 5; i++)
+            comparison_array(i + 5, i) = 1.0;
+
+        ShiftMultiArrayRows(output_array, input_array, -5);
         REQUIRE(bool(output_array == comparison_array));
     }
 }

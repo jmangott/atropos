@@ -5,10 +5,12 @@
 #include <stdexcept>
 #include <vector>
 
-#include <generic/matrix.hpp>
 #include <generic/storage.hpp>
 
 #include "reaction_class.hpp"
+
+// TODO: Create CombIndexToState (?)
+
 
 // Convert index vector to state vector
 multi_array<double, 1> VecIndexToState(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval, multi_array<double, 1> limit);
@@ -31,6 +33,6 @@ void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2
 
 
 // Calculate `output_array`, where rows of `input_array` are shifted by `shift`
-void ShiftMultiArrayCols(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift);
+void ShiftMultiArrayRows(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift);
 
 #endif

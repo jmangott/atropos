@@ -63,7 +63,7 @@ vector<Index> CombIndexToVecIndex(Index comb_index, vector<Index> interval)
 }
 
 
-void CalculateShiftAmount(vector<Index> &sigma1, vector<Index> &sigma2, mysys mysystem, multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, multi_array<Index, 1> k_xx1, multi_array<Index, 1> k_xx2)
+void CalculateShiftAmount(vector<Index> &sigma1, vector<Index> &sigma2, mysys reaction_system, multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, multi_array<Index, 1> k_xx1, multi_array<Index, 1> k_xx2)
 {
     Index stride1, stride2;
     Index sigma1_sum, sigma2_sum;
@@ -73,7 +73,7 @@ void CalculateShiftAmount(vector<Index> &sigma1, vector<Index> &sigma2, mysys my
     // NOTE: when the partition requires a permutation of the original order of species,
     // then also the nu vectors and similar quantities have to be permuted
 
-    for (auto &it : mysystem.reactions)
+    for (auto &it : reaction_system.reactions)
     {
         stride1 = 1;
         stride2 = 1;
@@ -95,7 +95,7 @@ void CalculateShiftAmount(vector<Index> &sigma1, vector<Index> &sigma2, mysys my
 }
 
 
-void ShiftMultiArrayCols(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift)
+void ShiftMultiArrayRows(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift)
 {
     if ((output_array.shape()[0] != input_array.shape()[0]) ||
         (output_array.shape()[1] != input_array.shape()[1]))
