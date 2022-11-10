@@ -1,3 +1,4 @@
+#include "grid_class.hpp"
 #include "index_functions.hpp"
 
 using std::vector;
@@ -60,38 +61,6 @@ vector<Index> CombIndexToVecIndex(Index comb_index, vector<Index> interval)
         }
     }
     return vec_index;
-}
-
-
-void CalculateShiftAmount(vector<Index> &sigma1, vector<Index> &sigma2, mysys reaction_system, multi_array<Index, 1> n_xx1, multi_array<Index, 1> n_xx2, multi_array<Index, 1> k_xx1, multi_array<Index, 1> k_xx2)
-{
-    Index stride1, stride2;
-    Index sigma1_sum, sigma2_sum;
-    Index m1 = n_xx1.shape()[0];
-    Index m2 = n_xx2.shape()[0];
-
-    // NOTE: when the partition requires a permutation of the original order of species,
-    // then also the nu vectors and similar quantities have to be permuted
-
-    for (auto &it : reaction_system.reactions)
-    {
-        stride1 = 1;
-        stride2 = 1;
-        sigma1_sum = 0;
-        sigma2_sum = 0;
-        for (Index i = 0; i < m1; i++)
-        {
-            sigma1_sum += it->nu[i] * stride1 * k_xx1(i);
-            stride1 *= n_xx1(i);
-        }
-        for (Index i = 0; i < m2; i++)
-        {
-            sigma2_sum += it->nu[i + m1] * stride2 * k_xx2(i);
-            stride2 *= n_xx2(i);
-        }
-        sigma1.push_back(sigma1_sum);
-        sigma2.push_back(sigma2_sum);
-    }
 }
 
 

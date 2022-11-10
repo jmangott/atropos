@@ -31,10 +31,7 @@ int main()
 
     grid_info<kM1, kM2> grid(kR, kN, kK);
 
-    InitializeAuxiliaryObjects(n_xx1, n_xx2, k_xx1, k_xx2, lim_xx1, lim_xx2, h_xx1, h_xx2, dxx1_mult, dxx2_mult, kM1, kM2, kN, kK);
-
     // Declare LR-specific objects
-
     // Temporary objects for multiplication
     multi_array<double, 2> tmp_x({grid.dx1, kR});
 
@@ -63,17 +60,17 @@ int main()
     {
         x1.push_back(it1);
         x2.push_back(it2);
-        it1 += kM1 * n_xx1(0);
-        it2 += kM2 * n_xx2(0);
+        it1 += kM1 * grid.n1(0);
+        it2 += kM2 * grid.n2(0);
     }
 
     // Set up the low-rank structure and the inner products
-    ip_xx1 = inner_product_from_const_weight(grid.h1[0], grid.dx1);
-    ip_xx2 = inner_product_from_const_weight(grid.h2[0], grid.dx2);
+    ip_xx1 = inner_product_from_const_weight(grid.h1(0), grid.dx1);
+    ip_xx2 = inner_product_from_const_weight(grid.h2(0), grid.dx2);
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
     // Calculate the shift amount for all reactions (this has to be done only once)
-    CalculateShiftAmount(sigma1, sigma2, mysystem, n_xx1, n_xx2, k_xx1, k_xx2);
+    CalculateShiftAmount<kM1, kM2>(sigma1, sigma2, mysystem, grid);
 
 
     /////////////////////////////////////////////
@@ -82,7 +79,7 @@ int main()
 
     tmp_x = lr_sol.X;
     blas.matmul(tmp_x, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
-    PerformKStep(n_xx1, n_xx2, h_xx2, lim_xx1, lim_xx2, sigma1, sigma2, lr_sol, blas, mysystem, kTau);
+    PerformKStep<kM1, kM2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
 
     return 0;
 }

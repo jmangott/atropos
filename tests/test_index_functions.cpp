@@ -4,6 +4,7 @@
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
 
+#include "grid_class.hpp"
 #include "index_functions.hpp"
 
 TEST_CASE("index_functions", "[index_functions]")
@@ -91,15 +92,23 @@ TEST_CASE("index_functions", "[index_functions]")
         vector<Index> sigma1, sigma2;
         vector<Index> sigma1_comparison, sigma2_comparison;
         
-        multi_array<Index, 1> n_xx1({2}), n_xx2({1});
-        multi_array<Index, 1> k_xx1({2}), k_xx2({1});
-        n_xx1(0) = 4; k_xx1(0) = 1;
-        n_xx1(1) = 3; k_xx1(1) = 2;
-        n_xx2(0) = 2; k_xx2(0) = 1;
+        const Index m1 = 2;
+        const Index m2 = 1;
+        multi_array<Index, 1> n1({m1});
+        multi_array<Index, 1> k1({m1});
+        multi_array<Index, 1> n2({m2});
+        multi_array<Index, 1> k2({m2});
+        n1(0) = 4;
+        n1(1) = 3;
+        k1(0) = 1;
+        k1(1) = 2;
+        n2(0) = 2;
+        k2(0) = 1;
+        grid_info<m1, m2> grid(2, n1, n2, k1, k2);
 
         sigma1_comparison = {-9, -8, 1, 8};
         sigma2_comparison = {0, -1, 0, 0};
-        CalculateShiftAmount(sigma1, sigma2, test_system, n_xx1, n_xx2, k_xx1, k_xx2);
+        CalculateShiftAmount<m1, m2>(sigma1, sigma2, test_system, grid);
         REQUIRE(bool(sigma1 == sigma1_comparison));
         REQUIRE(bool(sigma2 == sigma2_comparison));
     }
