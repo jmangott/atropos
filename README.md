@@ -5,12 +5,11 @@
 - CMake (3.22.1 or later)
 
 ## Installation
-The repository makes use of Ensign (cf. https://github.com/leinkemmer/Ensign) as a git submodule. The easiest way to obtain all the relevant sources is to execute
+Clone the repository via
 ```shell
-git clone --recursive https://git.uibk.ac.at/c7021158/kinetic-cme
+git clone https://git.uibk.ac.at/c7021158/kinetic-cme
 ```
-
-To build the program execute
+and build the program by executing
 ```shell
 mkdir build
 cd build
