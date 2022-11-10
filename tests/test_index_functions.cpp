@@ -125,8 +125,10 @@ TEST_CASE("index_functions", "[index_functions]")
             input_array(i, i) = 1.0;
 
         set_zero(comparison_array);
-        for (Index i = 5; i < n_cols; i++)
-            comparison_array(i - 5, i) = 1.0;
+        for (Index i = 0; i < 5; i++)
+            comparison_array(i, 0) = 1.0;
+        for (Index i = 0; i < n_rows - 5; i++)
+            comparison_array(i + 5, i) = 1.0;
 
         ShiftMultiArrayRows(output_array, input_array, 5);
         REQUIRE(bool(output_array == comparison_array));
@@ -144,10 +146,8 @@ TEST_CASE("index_functions", "[index_functions]")
             input_array(i, i) = 1.0;
 
         set_zero(comparison_array);
-        for (Index i = 0; i < 5; i++)
-            comparison_array(i, 0) = 1.0;
-        for (Index i = 0; i < n_rows - 5; i++)
-            comparison_array(i + 5, i) = 1.0;
+        for (Index i = 5; i < n_cols; i++)
+            comparison_array(i - 5, i) = 1.0;
 
         ShiftMultiArrayRows(output_array, input_array, -5);
         REQUIRE(bool(output_array == comparison_array));

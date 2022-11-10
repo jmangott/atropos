@@ -63,7 +63,6 @@ void CalculateCoefficientsX2(multi_array<double, 2> &c2, multi_array<double, 2> 
     multi_array<double, 1> w_x2({grid.dx2});
     multi_array<double, 2> xx2_shift(lr_sol.V.shape());
 
-    // TODO: check shift sign
     // Calculate the shifted X2 (the value -shift is due to *inverse* shift operation)
     // NOTE: shift^-1(V^T) != (shift^-1(V))^T
     // CASE 1: (shift^-1(V))^T
@@ -184,8 +183,7 @@ void PerformKStep(std::vector<Index> sigma1, vector<Index> sigma2, lr2<double> &
             }
         }
         // Shift prod_c2K
-        // TODO: check shift signature
-        ShiftMultiArrayRows(prod_KC2_shift, prod_KC2, +sigma1[mu]); // -sigma1[mu]
+        ShiftMultiArrayRows(prod_KC2_shift, prod_KC2, sigma1[mu]);
 
         // Calculate k_dot = shift(C2 * K) - D2 * K
         prod_KC2_shift -= prod_KD2;

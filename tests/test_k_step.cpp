@@ -213,8 +213,8 @@ TEST_CASE("k_step", "[k_step]")
 
             c2_1_comparison(0, 0) = 0.5;
             c2_1_comparison(0, 1) =-0.5;
-            c2_1_comparison(1, 0) =-0.5;
-            c2_1_comparison(1, 1) = 0.5;
+            c2_1_comparison(1, 0) = 0.5;
+            c2_1_comparison(1, 1) =-0.5;
 
             c2_2_comparison(0, 0) = 0.75;
             c2_2_comparison(0, 1) = 0.25;
@@ -223,11 +223,16 @@ TEST_CASE("k_step", "[k_step]")
 
             c2_3_comparison(0, 0) = 1.0 / (1.0 + state_vec1(0));
             c2_3_comparison(0, 1) = 0.0;
-            c2_3_comparison(1, 0) = 1.0 / (1.0 + state_vec1(0));
+            c2_3_comparison(1, 0) =-1.0 / (1.0 + state_vec1(0));
             c2_3_comparison(1, 1) = 0.0;
 
             d2_0_comparison = c2_0_comparison;
-            d2_1_comparison = c2_1_comparison;
+
+            d2_1_comparison(0, 0) = 0.5;
+            d2_1_comparison(0, 1) =-0.5;
+            d2_1_comparison(1, 0) =-0.5;
+            d2_1_comparison(1, 1) = 0.5;
+
             d2_2_comparison = c2_2_comparison;
 
             d2_3_comparison(0, 0) = 1.0 / (1.0 + state_vec1(0));
@@ -251,17 +256,9 @@ TEST_CASE("k_step", "[k_step]")
     // {
         multi_array<double, 2> ktau_comparison({2, 2});
         ktau_comparison = lr_sol.X;
-        ktau_comparison(1, 0) += -norm_2e;
-        cout << "K_comp" << endl;
-        cout << ktau_comparison(0, 0) << " " << ktau_comparison(0, 1) << endl;
-        cout << ktau_comparison(1, 0) << " " << ktau_comparison(1, 1) << endl;
-        cout << endl;
+        ktau_comparison(0, 0) += tau * norm_2e;
 
         PerformKStep<m1, m2>(sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
-        cout << "K(tau):" << endl;
-        cout << lr_sol.X(0, 0) << " " << lr_sol.X(0, 1) << endl;
-        cout << lr_sol.X(1, 0) << " " << lr_sol.X(1, 1) << endl;
-        cout << endl;
         REQUIRE(bool(lr_sol.X == ktau_comparison));
     // }
 }

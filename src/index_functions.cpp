@@ -81,17 +81,17 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, multi_array<doubl
     {
         for (Index i = 0; i < n_rows; i++)
         {
-            if ((shift < 0) && (i < -shift))
-            {
-                output_array(i, j) = input_array(0, j);
-            }
-            else if ((shift > 0) && (i >= (n_rows - shift)))
+            if ((shift < 0) && (i - shift >= n_rows))
             {
                 output_array(i, j) = input_array(n_rows - 1, j);
             }
+            else if ((shift > 0) && (i - shift < 0))
+            {
+                output_array(i, j) = input_array(0, j);
+            }
             else
             {
-                output_array(i, j) = input_array(i + shift, j);
+                output_array(i, j) = input_array(i - shift, j);
             }
         }
     }
