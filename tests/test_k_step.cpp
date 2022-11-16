@@ -201,10 +201,20 @@ TEST_CASE("k_step", "[k_step]")
             multi_array<double, 2> c2_0_comparison({2, 2}), c2_1_comparison({2, 2}), c2_2_comparison({2, 2}), c2_3_comparison({2, 2});
             multi_array<double, 2> d2_0_comparison({2, 2}), d2_1_comparison({2, 2}), d2_2_comparison({2, 2}), d2_3_comparison({2, 2});
 
-            CalculateCoefficientsX2<m1, m2>(c2_0, d2_0, lr_sol, blas, sigma2[0], vec_index1, test_system, grid, 0);
-            CalculateCoefficientsX2<m1, m2>(c2_1, d2_1, lr_sol, blas, sigma2[1], vec_index1, test_system, grid, 1);
-            CalculateCoefficientsX2<m1, m2>(c2_2, d2_2, lr_sol, blas, sigma2[2], vec_index1, test_system, grid, 2);
-            CalculateCoefficientsX2<m1, m2>(c2_3, d2_3, lr_sol, blas, sigma2[3], vec_index1, test_system, grid, 3);
+            multi_array<double, 2> xx2_shift0(lr_sol.V.shape());
+            multi_array<double, 2> xx2_shift1(lr_sol.V.shape());
+            multi_array<double, 2> xx2_shift2(lr_sol.V.shape());
+            multi_array<double, 2> xx2_shift3(lr_sol.V.shape());
+
+            ShiftMultiArrayRows(xx2_shift0, lr_sol.V, -sigma2[0]);
+            ShiftMultiArrayRows(xx2_shift1, lr_sol.V, -sigma2[1]);
+            ShiftMultiArrayRows(xx2_shift2, lr_sol.V, -sigma2[2]);
+            ShiftMultiArrayRows(xx2_shift3, lr_sol.V, -sigma2[3]);
+
+            CalculateCoefficientsX2<m1, m2>(c2_0, d2_0, lr_sol, blas, xx2_shift0, vec_index1, test_system, grid, 0);
+            CalculateCoefficientsX2<m1, m2>(c2_1, d2_1, lr_sol, blas, xx2_shift1, vec_index1, test_system, grid, 1);
+            CalculateCoefficientsX2<m1, m2>(c2_2, d2_2, lr_sol, blas, xx2_shift2, vec_index1, test_system, grid, 2);
+            CalculateCoefficientsX2<m1, m2>(c2_3, d2_3, lr_sol, blas, xx2_shift3, vec_index1, test_system, grid, 3);
 
             c2_0_comparison(0, 0) = state_vec1(0);
             c2_0_comparison(0, 1) = 0.0;
@@ -257,6 +267,7 @@ TEST_CASE("k_step", "[k_step]")
         multi_array<double, 2> ktau_comparison({2, 2});
         ktau_comparison = lr_sol.X;
         ktau_comparison(0, 0) += tau * norm_2e;
+        ktau_comparison(1, 1) += tau * 0.5 * norm_2e;
 
         PerformKStep<m1, m2>(sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
         REQUIRE(bool(lr_sol.X == ktau_comparison));

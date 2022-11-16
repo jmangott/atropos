@@ -16,6 +16,7 @@
 #include "k_step_functions.hpp"
 #include "parameters.hpp"
 #include "reactions.hpp"
+#include "s_step_functions.hpp"
 
 using std::cout;
 using std::endl;
@@ -47,6 +48,7 @@ int main()
     std::function<double(double *, double *)> ip_xx1;
     std::function<double(double *, double *)> ip_xx2;
     blas_ops blas;
+    gram_schmidt gs(&blas);
 
     vector<Index> sigma1, sigma2;
 
@@ -80,6 +82,18 @@ int main()
     tmp_x = lr_sol.X;
     blas.matmul(tmp_x, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
     PerformKStep<kM1, kM2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+    // Perform the QR decomposition K = X * S
+    gs(lr_sol.X, lr_sol.S, ip_xx1);
+
+    /////////////////////////////////////////////
+    ////////////////// S-STEP ///////////////////
+    /////////////////////////////////////////////
+
+    PerformSStep<kM1, kM2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+
+    /////////////////////////////////////////////
+    ////////////////// L-STEP ///////////////////
+    /////////////////////////////////////////////
 
     return 0;
 }

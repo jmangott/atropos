@@ -63,6 +63,6 @@ void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2
 
 // Calculate `output_array`, where rows of `input_array` are shifted by `shift`
 // NOTE: for positive values of `shift` rows are shifted to larger row indices
-void ShiftMultiArrayRows(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift);
+void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, int shift);
 
 #endif

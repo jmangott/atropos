@@ -64,7 +64,7 @@ vector<Index> CombIndexToVecIndex(Index comb_index, vector<Index> interval)
 }
 
 
-void ShiftMultiArrayRows(multi_array<double, 2> &output_array, multi_array<double, 2> &input_array, int shift)
+void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, int shift)
 {
     if ((output_array.shape()[0] != input_array.shape()[0]) ||
         (output_array.shape()[1] != input_array.shape()[1]))
