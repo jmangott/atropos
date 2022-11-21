@@ -23,28 +23,30 @@ using std::vector;
 
 TEST_CASE("s_step", "[s_step]")
 {
-    multi_array<double, 3> b_coeff_vec_shift0({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec_shift1({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec_shift2({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec_shift3({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec0({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec1({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec2({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec3({grid.dx1, grid.r, grid.r});
+    double inv_sqrt_e = 1 / std::sqrt(std::exp(1.0));
     InitializeTest(lr_sol, grid, ip_xx1, ip_xx2, blas);
     CalculateShiftAmount(sigma1, sigma2, test_system, grid);
 
-    multi_array<double, 3> b_coeff_vec_shift0_comparison({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec_shift1_comparison({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec_shift2_comparison({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec_shift3_comparison({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec0_comparison({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec1_comparison({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec2_comparison({grid.dx1, grid.r, grid.r});
-    multi_array<double, 3> b_coeff_vec3_comparison({grid.dx1, grid.r, grid.r});
-
     // SECTION("CalculateCoefficientsB")
     // {
+        multi_array<double, 3> b_coeff_vec_shift0({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift1({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift2({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift3({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec0({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec1({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec2({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec3({grid.dx1, grid.r, grid.r});
+
+        multi_array<double, 3> b_coeff_vec_shift0_comparison({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift1_comparison({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift2_comparison({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift3_comparison({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec0_comparison({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec1_comparison({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec2_comparison({grid.dx1, grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec3_comparison({grid.dx1, grid.r, grid.r});
+
         CalculateCoefficientsB(b_coeff_vec_shift0, b_coeff_vec0, lr_sol, blas, test_system, grid, 0, sigma2);
         CalculateCoefficientsB(b_coeff_vec_shift1, b_coeff_vec1, lr_sol, blas, test_system, grid, 1, sigma2);
         CalculateCoefficientsB(b_coeff_vec_shift2, b_coeff_vec2, lr_sol, blas, test_system, grid, 2, sigma2);
@@ -258,7 +260,6 @@ TEST_CASE("s_step", "[s_step]")
         f_coeff3_comparison(1, 1, 0, 1) = f_coeff3_comparison(1, 0, 0, 0);
         f_coeff3_comparison(1, 1, 1, 1) = f_coeff3_comparison(1, 0, 1, 0);
 
-
         REQUIRE(bool(e_coeff0 == e_coeff0_comparison));
         REQUIRE(bool(f_coeff0 == f_coeff0_comparison));
         REQUIRE(bool(e_coeff1 == e_coeff1_comparison));
@@ -268,4 +269,16 @@ TEST_CASE("s_step", "[s_step]")
         REQUIRE(bool(e_coeff3 == e_coeff3_comparison));
         REQUIRE(bool(f_coeff3 == f_coeff3_comparison));
     // }
+
+    // SECTION("PerformSStep")
+    // {
+        multi_array<double, 2> stau_comparison({2, 2});
+        stau_comparison = lr_sol.S;
+        stau_comparison(0, 1) -= tau * 0.5 * inv_sqrt_e;
+        stau_comparison(1, 0) -= tau * 0.5 * inv_sqrt_e;
+        stau_comparison(1, 1) += tau * inv_sqrt_e;
+
+        PerformSStep(sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
+        REQUIRE(bool(lr_sol.S == stau_comparison));
+        // }
 }

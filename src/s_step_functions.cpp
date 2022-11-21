@@ -105,7 +105,7 @@ void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &
                     for (Index l = 0; l < grid.r; l++)
                     {
                         s_dot(i, j) += tau * lr_sol.S(k, l) * e_coeff(i, j, k, l);
-                        s_dot(i, j) -= tau * lr_sol.S(k, l) * e_coeff(i, j, k, l);
+                        s_dot(i, j) -= tau * lr_sol.S(k, l) * f_coeff(i, j, k, l);
                     }
                 }
             }

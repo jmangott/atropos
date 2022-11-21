@@ -22,13 +22,6 @@ using std::vector;
 
 TEST_CASE("k_step", "[k_step]")
 {
-    // Coefficients
-    multi_array<double, 2> c2({r, r});
-    multi_array<double, 2> d2({r, r});
-
-    // Integration weight
-    multi_array<double, 1> w_x2({grid.dx2});
-
     // Temporary objects for multiplication
     multi_array<double, 2> tmp_x({grid.dx1, r});
 
@@ -121,8 +114,9 @@ TEST_CASE("k_step", "[k_step]")
         }
     // }
 
-    // SECTION("CalculateCoefficientsX2")
-    // {
+        // SECTION("CalculateCoefficientsX2")
+        // {
+        // Coefficients
         // CASE 0: x_1 = 0.0, CASE 1: x_1 = 1.0
         for (Index i = 0; i < 2; i++)
         {
