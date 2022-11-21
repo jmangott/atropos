@@ -64,6 +64,36 @@ vector<Index> CombIndexToVecIndex(Index comb_index, vector<Index> interval)
 }
 
 
+void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2, mysys reaction_system, grid_info grid)
+{
+    Index stride1, stride2;
+    Index sigma1_sum, sigma2_sum;
+
+    // NOTE: when the partition requires a permutation of the original order of species,
+    // then also the nu vectors and similar quantities have to be permuted
+
+    for (auto &it : reaction_system.reactions)
+    {
+        stride1 = 1;
+        stride2 = 1;
+        sigma1_sum = 0;
+        sigma2_sum = 0;
+        for (Index i = 0; i < grid.m1; i++)
+        {
+            sigma1_sum += it->nu[i] * stride1 * grid.k1(i);
+            stride1 *= grid.n1(i);
+        }
+        for (Index i = 0; i < grid.m2; i++)
+        {
+            sigma2_sum += it->nu[i + grid.m1] * stride2 * grid.k2(i);
+            stride2 *= grid.n2(i);
+        }
+        sigma1.push_back(sigma1_sum);
+        sigma2.push_back(sigma2_sum);
+    }
+}
+
+
 void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, int shift)
 {
     if ((output_array.shape()[0] != input_array.shape()[0]) ||

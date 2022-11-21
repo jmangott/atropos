@@ -97,9 +97,12 @@ set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
                      ${ENSIGN_SRC_DIR}/src/generic/kernels.cu
                      ${ENSIGN_SRC_DIR}/src/generic/netcdf.cpp)
 
-set(SRC_FILES ${SRC}/index_functions.cpp
+set(SRC_FILES ${SRC}/grid_class.cpp
+              ${SRC}/index_functions.cpp
               ${SRC}/io_functions.cpp
-              ${SRC}/reaction_class.cpp)
+              ${SRC}/k_step_functions.cpp
+              ${SRC}/reaction_class.cpp
+              ${SRC}/s_step_functions.cpp)
 
 ########################
 # Include header files #

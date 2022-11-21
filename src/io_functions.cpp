@@ -3,9 +3,7 @@
 using std::ifstream;
 using std::stringstream;
 
-
 // TODO: Use .netcdf instead of .csv
-
 void ReadInMultiArray(multi_array<double, 2> &output_array, string filename)
 {
     Index ii = 0;

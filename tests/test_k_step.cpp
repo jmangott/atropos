@@ -14,6 +14,7 @@
 #include "index_functions.hpp"
 #include "k_step_functions.hpp"
 #include "reaction_class.hpp"
+#include "test_parameters.hpp"
 
 using std::cout;
 using std::endl;
@@ -21,36 +22,17 @@ using std::vector;
 
 TEST_CASE("k_step", "[k_step]")
 {
-    vector<string> test_names = {"S1, S2"};
-    mysys test_system(test_names);
-    myreact test_react0(
-        {-1, 0}, {0}, [](std::vector<double> y)
-        { return y[0]; },
-        test_system);
-    myreact test_react1(
-        {0, -1}, {1}, [](std::vector<double> y)
-        { return y[1]; },
-        test_system);
-    myreact test_react2(
-        {1, 0}, {1}, [](std::vector<double> y)
-        { return 1.0 / (1.0 + y[1]); },
-        test_system);
-    myreact test_react3(
-        {0, 1}, {0}, [](std::vector<double> y)
-        { return 1.0 / (1.0 + y[0]); },
-        test_system);
-    vector<Index> sigma1, sigma2;
+    // Coefficients
+    multi_array<double, 2> c2({r, r});
+    multi_array<double, 2> d2({r, r});
 
-    Index r = 2;
-    Index n = 2;
-    Index k = 1;
-    const Index m1 = 1;
-    const Index m2 = 1;
-    Index nsteps = 1;
-    double tstar = 1.0;
-    double tau = tstar / nsteps;
+    // Integration weight
+    multi_array<double, 1> w_x2({grid.dx2});
 
-    grid_info<m1, m2> grid(r, n, k);
+    // Temporary objects for multiplication
+    multi_array<double, 2> tmp_x({grid.dx1, r});
+
+    InitializeTest<kM1, kM2>(lr_sol, grid, ip_xx1, ip_xx2, blas);
 
     // SECTION("InitializeAuxiliaryObjects")
     // {
@@ -70,56 +52,6 @@ TEST_CASE("k_step", "[k_step]")
         REQUIRE(bool(grid.dx1 == dx1_comparison));
         REQUIRE(bool(grid.dx2 == dx2_comparison));
     // }
-
-    // Coefficients
-    multi_array<double, 2> c2({r, r});
-    multi_array<double, 2> d2({r, r});
-
-    // Integration weight
-    multi_array<double, 1> w_x2({grid.dx2});
-
-    // Temporary objects for multiplication
-    multi_array<double, 2> tmp_x({grid.dx1, r});
-
-    // Objects for setting up X1 and X2 for t = 0
-    multi_array<double, 1> xx1({grid.dx1});
-    multi_array<double, 1> xx2({grid.dx2});
-    vector<const double *> x1, x2;
-
-    // Low rank structure (for storing X1, X2 and S)
-    lr2<double> lr_sol(r, {grid.dx1, grid.dx2});
-
-    // Inner products
-    std::function<double(double *, double *)> ip_xx1;
-    std::function<double(double *, double *)> ip_xx2;
-    blas_ops blas;
-
-    multi_array<double, 1> state_vec1({1}), state_vec2({1});
-    multi_array<Index, 1> vec_index1({1}), vec_index2({1});
-
-    for (Index i = 0; i < grid.n1(0); i++)
-    {
-        vec_index1 = CombIndexToVecIndex(i, grid.n1);
-        state_vec1 = VecIndexToState(vec_index1, grid.n1, grid.lim1);
-        xx1(i) = std::exp(-std::pow(state_vec1(0) - 0.5, 2));
-    }
-    for (Index i = 0; i < grid.n2(0); i++)
-    {
-        vec_index2 = CombIndexToVecIndex(i, grid.n2);
-        state_vec2 = VecIndexToState(vec_index2, grid.n2, grid.lim2);
-        xx2(i) = std::exp(-std::pow(state_vec2(0) - 0.5, 2));
-    }
-
-    // Point to the beginning of every column of X1 and X2
-    double *it1 = xx1.begin();
-    double *it2 = xx2.begin();
-    x1.push_back(it1);
-    x2.push_back(it2);
-
-    // Set up the low-rank structure and the inner products
-    ip_xx1 = inner_product_from_const_weight(grid.h1(0), grid.dx1);
-    ip_xx2 = inner_product_from_const_weight(grid.h2(0), grid.dx2);
-    initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
     multi_array<double, 2> x1x2_comparison({2, 2}), k_comparison({2, 2});
     double norm = 1.0 / std::sqrt(2);
@@ -143,7 +75,7 @@ TEST_CASE("k_step", "[k_step]")
 
     REQUIRE(bool(lr_sol.X == k_comparison));
 
-    CalculateShiftAmount<m1, m2>(sigma1, sigma2, test_system, grid);
+    CalculateShiftAmount(sigma1, sigma2, test_system, grid);
 
     // SECTION("CalculateShiftAmount")
     // {
@@ -159,6 +91,8 @@ TEST_CASE("k_step", "[k_step]")
     // {
         multi_array<double, 1> weight0({2}), weight1({2}), weight2({2}), weight3({2});
         multi_array<double, 1> weight0_comparison({2}), weight1_comparison({2}), weight2_comparison({2}), weight3_comparison({2});
+        multi_array<double, 1> state_vec1({1}), state_vec2({1});
+        multi_array<Index, 1> vec_index1({1}), vec_index2({1});
 
         // CASE 0: x_1 = 0.0, CASE 1: x_1 = 1.0
         for (Index i = 0; i < 2; i++)
@@ -166,10 +100,10 @@ TEST_CASE("k_step", "[k_step]")
             vec_index1(0) = i;
             state_vec1 = VecIndexToState(vec_index1, grid.n1, grid.lim1);
 
-            weight0 = CalculateWeightX2<m1, m2>(vec_index1, test_system, grid, 0);
-            weight1 = CalculateWeightX2<m1, m2>(vec_index1, test_system, grid, 1);
-            weight2 = CalculateWeightX2<m1, m2>(vec_index1, test_system, grid, 2);
-            weight3 = CalculateWeightX2<m1, m2>(vec_index1, test_system, grid, 3);
+            weight0 = CalculateWeightX2(vec_index1, test_system, grid, 0);
+            weight1 = CalculateWeightX2(vec_index1, test_system, grid, 1);
+            weight2 = CalculateWeightX2(vec_index1, test_system, grid, 2);
+            weight3 = CalculateWeightX2(vec_index1, test_system, grid, 3);
 
             weight0_comparison(0) = state_vec1(0);
             weight0_comparison(1) = state_vec1(0);
@@ -211,10 +145,10 @@ TEST_CASE("k_step", "[k_step]")
             ShiftMultiArrayRows(xx2_shift2, lr_sol.V, -sigma2[2]);
             ShiftMultiArrayRows(xx2_shift3, lr_sol.V, -sigma2[3]);
 
-            CalculateCoefficientsX2<m1, m2>(c2_0, d2_0, lr_sol, blas, xx2_shift0, vec_index1, test_system, grid, 0);
-            CalculateCoefficientsX2<m1, m2>(c2_1, d2_1, lr_sol, blas, xx2_shift1, vec_index1, test_system, grid, 1);
-            CalculateCoefficientsX2<m1, m2>(c2_2, d2_2, lr_sol, blas, xx2_shift2, vec_index1, test_system, grid, 2);
-            CalculateCoefficientsX2<m1, m2>(c2_3, d2_3, lr_sol, blas, xx2_shift3, vec_index1, test_system, grid, 3);
+            CalculateCoefficientsX2(c2_0, d2_0, lr_sol, blas, xx2_shift0, vec_index1, test_system, grid, 0);
+            CalculateCoefficientsX2(c2_1, d2_1, lr_sol, blas, xx2_shift1, vec_index1, test_system, grid, 1);
+            CalculateCoefficientsX2(c2_2, d2_2, lr_sol, blas, xx2_shift2, vec_index1, test_system, grid, 2);
+            CalculateCoefficientsX2(c2_3, d2_3, lr_sol, blas, xx2_shift3, vec_index1, test_system, grid, 3);
 
             c2_0_comparison(0, 0) = state_vec1(0);
             c2_0_comparison(0, 1) = 0.0;
@@ -269,7 +203,7 @@ TEST_CASE("k_step", "[k_step]")
         ktau_comparison(0, 0) += tau * norm_2e;
         ktau_comparison(1, 1) += tau * 0.5 * norm_2e;
 
-        PerformKStep<m1, m2>(sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
+        PerformKStep(sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
         REQUIRE(bool(lr_sol.X == ktau_comparison));
     // }
 }

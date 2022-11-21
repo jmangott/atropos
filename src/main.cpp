@@ -30,7 +30,7 @@ int main()
     /////////////////// SETUP ///////////////////
     /////////////////////////////////////////////
 
-    grid_info<kM1, kM2> grid(kR, kN, kK);
+    grid_info grid(kM1, kM2, kR, kN, kK);
 
     // Declare LR-specific objects
     // Temporary objects for multiplication
@@ -72,7 +72,7 @@ int main()
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
     // Calculate the shift amount for all reactions (this has to be done only once)
-    CalculateShiftAmount<kM1, kM2>(sigma1, sigma2, mysystem, grid);
+    CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
 
     /////////////////////////////////////////////
@@ -81,7 +81,7 @@ int main()
 
     tmp_x = lr_sol.X;
     blas.matmul(tmp_x, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
-    PerformKStep<kM1, kM2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+    PerformKStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
     // Perform the QR decomposition K = X * S
     gs(lr_sol.X, lr_sol.S, ip_xx1);
 
@@ -89,11 +89,13 @@ int main()
     ////////////////// S-STEP ///////////////////
     /////////////////////////////////////////////
 
-    PerformSStep<kM1, kM2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+    PerformSStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
 
     /////////////////////////////////////////////
     ////////////////// L-STEP ///////////////////
     /////////////////////////////////////////////
+
+    
 
     return 0;
 }
