@@ -22,7 +22,7 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
     for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
     {
         vec_index1 = CombIndexToVecIndex(alpha1, grid.n1);
-        w_x2 = CalculateWeightX2(vec_index1, reaction_system, grid, mu);
+        w_x2 = CalculateWeightX(2, vec_index1, reaction_system, grid, mu);
 
         coeff(xx2_shift, lr_sol.V, w_x2, b_coeff_shift, blas);
         coeff(lr_sol.V, lr_sol.V, w_x2, b_coeff, blas);

@@ -104,11 +104,11 @@ TEST_CASE("index_functions", "[index_functions]")
         k1(1) = 2;
         n2(0) = 2;
         k2(0) = 1;
-        grid_info<m1, m2> grid(2, n1, n2, k1, k2);
+        grid_info grid(m1, m2, 2, n1, n2, k1, k2);
 
         sigma1_comparison = {-9, -8, 1, 8};
         sigma2_comparison = {0, -1, 0, 0};
-        CalculateShiftAmount<m1, m2>(sigma1, sigma2, test_system, grid);
+        CalculateShiftAmount(sigma1, sigma2, test_system, grid);
         REQUIRE(bool(sigma1 == sigma1_comparison));
         REQUIRE(bool(sigma2 == sigma2_comparison));
     }

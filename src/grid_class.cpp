@@ -1,5 +1,7 @@
 #include "grid_class.hpp"
 
+using std::endl;
+
 // Initialize grid limits, grid spacing and the total number of grid points
 void grid_info::common_init()
 {
@@ -8,7 +10,7 @@ void grid_info::common_init()
     {
         if ((n1(i) - 1) % k1(i) != 0)
         {
-            std::cerr << "ERROR: (n1 - 1) must be a multiple of k1!" << std::endl;
+            std::cerr << "ERROR: (n1 - 1) must be a multiple of k1!" << endl;
             std::abort();
         }
         else
@@ -22,7 +24,7 @@ void grid_info::common_init()
     {
         if ((n2(i) - 1) % k2(i) != 0)
         {
-            std::cerr << "ERROR: (n2 - 1) must be a multiple of k2!" << std::endl;
+            std::cerr << "ERROR: (n2 - 1) must be a multiple of k2!" << endl;
             std::abort();
         }
         else

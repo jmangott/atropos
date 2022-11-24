@@ -99,7 +99,7 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
     if ((output_array.shape()[0] != input_array.shape()[0]) ||
         (output_array.shape()[1] != input_array.shape()[1]))
     {
-        std::cerr << "ERROR: Dimensions of output_array and input_array must be the same!";
+        std::cerr << "ERROR: Dimensions of output_array and input_array must be the same!" << endl;
         std::abort();
     }
 

@@ -34,11 +34,12 @@ int main()
 
     // Declare LR-specific objects
     // Temporary objects for multiplication
-    multi_array<double, 2> tmp_x({grid.dx1, kR});
+    multi_array<double, 2> tmp_x1({grid.dx1, grid.r});
+    multi_array<double, 2> tmp_x2({grid.dx2, grid.r});
 
     // Objects for setting up X1 and X2 for t = 0
-    multi_array<double, 2> xx1({grid.dx1, kR});
-    multi_array<double, 2> xx2({grid.dx2, kR});
+    multi_array<double, 2> xx1({grid.dx1, grid.r});
+    multi_array<double, 2> xx2({grid.dx2, grid.r});
     vector<const double *> x1, x2;
 
     // Low rank structure (for storing X1, X2 and S)
@@ -74,13 +75,12 @@ int main()
     // Calculate the shift amount for all reactions (this has to be done only once)
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
-
     /////////////////////////////////////////////
     ////////////////// K-STEP ///////////////////
     /////////////////////////////////////////////
 
-    tmp_x = lr_sol.X;
-    blas.matmul(tmp_x, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
+    tmp_x1 = lr_sol.X;
+    blas.matmul(tmp_x1, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
     PerformKStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
     // Perform the QR decomposition K = X * S
     gs(lr_sol.X, lr_sol.S, ip_xx1);
@@ -95,7 +95,8 @@ int main()
     ////////////////// L-STEP ///////////////////
     /////////////////////////////////////////////
 
-    
+    tmp_x2 = lr_sol.V;
+    blas.matmul_transb(tmp_x2, lr_sol.S, lr_sol.V); // lr_sol.V contains now L
 
     return 0;
 }
