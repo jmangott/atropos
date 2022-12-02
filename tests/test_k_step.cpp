@@ -12,7 +12,6 @@
 
 #include "grid_class.hpp"
 #include "index_functions.hpp"
-#include "k_step_functions.hpp"
 #include "reaction_class.hpp"
 #include "test_parameters.hpp"
 
@@ -84,8 +83,8 @@ TEST_CASE("k_step", "[k_step]")
     // {
         multi_array<double, 1> weight0({2}), weight1({2}), weight2({2}), weight3({2});
         multi_array<double, 1> weight0_comparison({2}), weight1_comparison({2}), weight2_comparison({2}), weight3_comparison({2});
-        multi_array<double, 1> state_vec1({1}), state_vec2({1});
-        multi_array<Index, 1> vec_index1({1}), vec_index2({1});
+        multi_array<double, 1> state_vec1({1});
+        multi_array<Index, 1> vec_index1({1});
 
         // CASE 0: x_1 = 0.0, CASE 1: x_1 = 1.0
         for (Index i = 0; i < 2; i++)
