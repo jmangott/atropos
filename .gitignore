@@ -1,8 +1,10 @@
+.cache
 .DS_STORE
 .vscode/
 *.out
 /build/*
 /bin/*
-/input/*
+/input/*.csv
+/output/*
 CMakeFiles
 /trial_run_classes/
