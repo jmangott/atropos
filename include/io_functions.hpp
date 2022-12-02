@@ -11,4 +11,8 @@
 // Read in multi_array from a .csv file
 void ReadInMultiArray(multi_array<double, 2> &output_array, string filename);
 
+
+// Write out multi_array to a .csv file
+void WriteOutMultiArray(const multi_array<double, 2> &input_array, string filename);
+
 #endif
