@@ -1,4 +1,4 @@
-#include "k_step_functions.hpp"
+#include "kl_step_functions.hpp"
 
 using std::vector;
 
@@ -63,44 +63,67 @@ multi_array<double, 1> CalculateWeightX(int id, multi_array<Index, 1> vec_index_
 }
 
 
-void CalculateCoefficientsX(int id, multi_array<double, 2> &c2, multi_array<double, 2> &d2, const lr2<double> &lr_sol, blas_ops blas, const multi_array<double, 2> &xx2_shift, multi_array<Index, 1> vec_index1, mysys reaction_system, grid_info grid, Index mu)
+void CalculateCoefficientsX(int id, multi_array<double, 2> &c_coeff, multi_array<double, 2> &d_coeff, const lr2<double> &lr_sol, blas_ops blas, const multi_array<double, 2> &xx_shift, multi_array<Index, 1> vec_index, mysys reaction_system, grid_info grid, Index mu)
 {
-    multi_array<double, 1> w_x2({grid.dx2});
-    w_x2 = CalculateWeightX(id, vec_index1, reaction_system, grid, mu);
+    std::array<Index, 2> tmp_xx_dim;
+    (id == 2) ? (tmp_xx_dim = lr_sol.V.shape()) : (tmp_xx_dim = lr_sol.X.shape());
+    multi_array<double, 2> tmp_xx(tmp_xx_dim);
+    Index dx;
+    if (id == 1)
+    {
+        tmp_xx = lr_sol.X;
+        dx = grid.dx1;
+    }
+    else if (id == 2)
+    {
+        tmp_xx = lr_sol.V;
+        dx = grid.dx2;
+    }
 
-    coeff(xx2_shift, lr_sol.V, w_x2, c2, blas);
-    coeff(lr_sol.V, lr_sol.V, w_x2, d2, blas);
+    multi_array<double, 1> weight({dx});
+    weight = CalculateWeightX(id, vec_index, reaction_system, grid, mu);
+
+    coeff(xx_shift, tmp_xx, weight, c_coeff, blas);
+    coeff(tmp_xx, tmp_xx, weight, d_coeff, blas);
 }
 
 
 void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, double tau)
 {
     grid_info *grid_alt;
-    multi_array<double, 2> xx_shift;
-    multi_array<double, 2> tmp_xx;
+    std::array<Index, 2> tmp_xx_dim, tmp_xx_c_dim;
+    if (id == 2)
+    {
+        tmp_xx_dim = lr_sol.V.shape();
+        tmp_xx_c_dim = lr_sol.X.shape();
+    }
+    else if (id == 1)
+    {
+        tmp_xx_dim = lr_sol.X.shape();
+        tmp_xx_c_dim = lr_sol.V.shape();
+    }
+    multi_array<double, 2> xx_shift(tmp_xx_dim);
+    multi_array<double, 2> tmp_xx(tmp_xx_dim), tmp_xx_c(tmp_xx_c_dim);
     vector<Index> sigma, sigma_c;
     if (id == 1)
     {
         grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2);
-        xx_shift.resize(lr_sol.X.shape());
-        tmp_xx.resize(lr_sol.X.shape());
         tmp_xx = lr_sol.X;
+        tmp_xx_c = lr_sol.V;
         sigma = sigma1;
         sigma_c = sigma2;
     }
     else if (id == 2)
     {
         grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.k2, grid.k1);
-        xx_shift.resize(lr_sol.V.shape());
-        tmp_xx.resize(lr_sol.V.shape());
-        // cout << xx_shift.shape()[0] << xx_shift.shape()[1];
         tmp_xx = lr_sol.V;
+        tmp_xx_c = lr_sol.X;
         sigma = sigma2;
         sigma_c = sigma1;
     }
     else
     {
-        std::cerr << "ERROR: id must be 0 or 1!" << endl;
+        std::cerr << "ERROR: id must be 1 (=L) or 2 (=K)!" << endl;
         std::abort();
     }
 
@@ -118,15 +141,15 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
     Index dxx_c_coeff_mult, dxx_c_reduced_mult;
     Index alpha_c;
 
-    multi_array<double, 2> prod_KC({grid_alt->dx2, grid_alt->r});
-    multi_array<double, 2> prod_KC_shift({grid_alt->dx2, grid_alt->r});
-    multi_array<double, 2> prod_KD({grid_alt->dx2, grid_alt->r});
-    multi_array<double, 2> k_dot({grid_alt->dx2, grid_alt->r});
-    set_zero(k_dot);
+    multi_array<double, 2> prod_KLC({grid_alt->dx2, grid_alt->r});
+    multi_array<double, 2> prod_KLC_shift({grid_alt->dx2, grid_alt->r});
+    multi_array<double, 2> prod_KLD({grid_alt->dx2, grid_alt->r});
+    multi_array<double, 2> kl_dot({grid_alt->dx2, grid_alt->r});
+    set_zero(kl_dot);
 
     for (std::vector<myreact *>::size_type mu = 0; mu < reaction_system.mu(); mu++)
     {
-        // Shift X2 for calculation of the coefficients
+        // Shift X1,2 for calculation of the coefficients
         ShiftMultiArrayRows(xx_shift, tmp_xx, -sigma[mu]);
 
         dep_vec_tot = reaction_system.reactions[mu]->depends_on;
@@ -138,8 +161,8 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
         n_xx_c_reduced = grid_alt->n2;
         lim_xx_c_coeff.clear();
         lim_xx_c_reduced = grid_alt->lim2;
-        set_zero(prod_KC);
-        set_zero(prod_KD);
+        set_zero(prod_KLC);
+        set_zero(prod_KLD);
 
         for (Index i = 0; i < grid.m1; i++)
             vec_index_c_zero(i) = 0;
@@ -175,7 +198,7 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
             for (vector<Index>::size_type j = 0; j < dep_vec_c.size(); j++)
                 vec_index_c_zero(dep_vec_c[j]) = vec_index_c_coeff[j];
 
-            CalculateCoefficientsX(2, c_coeff, d_coeff, lr_sol, blas, xx_shift, vec_index_c_zero, reaction_system, grid, mu);
+            CalculateCoefficientsX(id, c_coeff, d_coeff, lr_sol, blas, xx_shift, vec_index_c_zero, reaction_system, grid, mu);
 
             // Loop through the remaining species in the complement partition
             for (Index k = 0; k < dxx_c_reduced_mult; k++)
@@ -192,19 +215,31 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
                 {
                     for (Index l = 0; l < grid.r; l++)
                     {
-                        prod_KC(alpha_c, j) += tau * c_coeff(j, l) * lr_sol.X(alpha_c, l);
-                        prod_KD(alpha_c, j) += tau * d_coeff(j, l) * lr_sol.X(alpha_c, l);
+                        prod_KLC(alpha_c, j) += tau * c_coeff(j, l) * tmp_xx_c(alpha_c, l);
+                        prod_KLD(alpha_c, j) += tau * d_coeff(j, l) * tmp_xx_c(alpha_c, l);
                     }
                 }
             }
         }
         // Shift prod_KC
-        ShiftMultiArrayRows(prod_KC_shift, prod_KC, sigma_c[mu]);
+        ShiftMultiArrayRows(prod_KLC_shift, prod_KLC, sigma_c[mu]);
 
-        // Calculate k_dot = shift(C2 * K) - D2 * K
-        k_dot += prod_KC_shift;
-        k_dot -= prod_KD;
+        // Calculate k_dot = shift(C1,2 * K) - D1,2 * K
+        cout << "LC_shift, mu = " << mu << endl;
+        cout << prod_KLC_shift(0, 0) << " " << prod_KLC_shift(0, 1) << endl;
+        cout << prod_KLC_shift(1, 0) << " " << prod_KLC_shift(1, 1) << endl;
+
+        cout << endl;
+
+        cout << "LD, mu = " << mu << endl;
+        cout << prod_KLD(0, 0) << " " << prod_KLD(0, 1) << endl;
+        cout << prod_KLD(1, 0) << " " << prod_KLD(1, 1) << endl;
+
+        cout << endl;
+
+        kl_dot += prod_KLC_shift;
+        kl_dot -= prod_KLD;
     }
-    lr_sol.X += k_dot;
+    (id == 2) ? (lr_sol.X += kl_dot) : (lr_sol.V += kl_dot);
     delete grid_alt;
 }

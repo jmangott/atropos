@@ -13,7 +13,7 @@
 #include "grid_class.hpp"
 #include "index_functions.hpp"
 #include "io_functions.hpp"
-#include "k_step_functions.hpp"
+#include "kl_step_functions.hpp"
 #include "parameters.hpp"
 #include "reactions.hpp"
 #include "s_step_functions.hpp"
@@ -53,8 +53,8 @@ int main()
 
     vector<Index> sigma1, sigma2;
 
-    ReadInMultiArray(xx1, "../input/u.csv");
-    ReadInMultiArray(xx2, "../input/vh.csv");
+    ReadInMultiArray(xx1, "../input/x1_input.csv");
+    ReadInMultiArray(xx2, "../input/x2_input.csv");
 
     // Point to the beginning of every column of X1 and X2
     double *it1 = xx1.begin();
@@ -75,28 +75,46 @@ int main()
     // Calculate the shift amount for all reactions (this has to be done only once)
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
-    /////////////////////////////////////////////
-    ////////////////// K-STEP ///////////////////
-    /////////////////////////////////////////////
+    double t = 0.0;
+    for(Index ts = 0; ts < kNsteps; ts++) 
+    {
+        if(kTstar - t < kTau)
+            kTau = kTstar - t;
 
-    tmp_x1 = lr_sol.X;
-    blas.matmul(tmp_x1, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
-    PerformKStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
-    // Perform the QR decomposition K = X * S
-    gs(lr_sol.X, lr_sol.S, ip_xx1);
+        /////////////////////////////////////////////
+        ////////////////// K-STEP ///////////////////
+        /////////////////////////////////////////////
 
-    /////////////////////////////////////////////
-    ////////////////// S-STEP ///////////////////
-    /////////////////////////////////////////////
+        tmp_x1 = lr_sol.X;
+        blas.matmul(tmp_x1, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
+        PerformKLStep(2, sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+        // Perform the QR decomposition K = X * S
+        gs(lr_sol.X, lr_sol.S, ip_xx1);
 
-    PerformSStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+        /////////////////////////////////////////////
+        ////////////////// S-STEP ///////////////////
+        /////////////////////////////////////////////
 
-    /////////////////////////////////////////////
-    ////////////////// L-STEP ///////////////////
-    /////////////////////////////////////////////
+        PerformSStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
 
-    tmp_x2 = lr_sol.V;
-    blas.matmul_transb(tmp_x2, lr_sol.S, lr_sol.V); // lr_sol.V contains now L
+        /////////////////////////////////////////////
+        ////////////////// L-STEP ///////////////////
+        /////////////////////////////////////////////
+
+        tmp_x2 = lr_sol.V;
+        blas.matmul_transb(tmp_x2, lr_sol.S, lr_sol.V); // lr_sol.V contains now L
+        PerformKLStep(1, sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+        // Perform the QR decomposition L = V * S^T
+        gs(lr_sol.V, lr_sol.S, ip_xx2);
+        transpose_inplace(lr_sol.S);
+
+        t += kTau;
+    }
+
+    // Write output files
+    WriteOutMultiArray(lr_sol.X, "../output/x1_output_10");
+    WriteOutMultiArray(lr_sol.S, "../output/s_output_10");
+    WriteOutMultiArray(lr_sol.V, "../output/x2_output_10");
 
     return 0;
 }

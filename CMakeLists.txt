@@ -100,7 +100,7 @@ set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
 set(SRC_FILES ${SRC}/grid_class.cpp
               ${SRC}/index_functions.cpp
               ${SRC}/io_functions.cpp
-              ${SRC}/k_step_functions.cpp
+              ${SRC}/kl_step_functions.cpp
               ${SRC}/reaction_class.cpp
               ${SRC}/s_step_functions.cpp)
 
@@ -119,3 +119,10 @@ set(HEADER_FILES ${INC}
 
 add_subdirectory(${SRC} ${BIN})
 add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
+
+##########################################
+# Create input and output subdirectories #
+##########################################
+
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/input)
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
