@@ -52,6 +52,6 @@ u, s, vh = np.linalg.svd(p0, full_matrices = False)
 
 # Use only the first `r` singular values
 fmt = '%1.8f'
-np.savetxt("input/x1_input.csv", u[:, :r], delimiter=",", fmt = fmt)
-np.savetxt("input/s_input.csv", np.diag(s[:r]), delimiter=",", fmt = fmt)
-np.savetxt("input/x2_input.csv", vh[:, :r], delimiter = ",", fmt = fmt)
+np.savetxt("x1_input.csv", u[:, :r], delimiter = ",", fmt = fmt)
+np.savetxt("s_input.csv", np.diag(s[:r]), delimiter = ",", fmt = fmt)
+np.savetxt("x2_input.csv", vh[:, :r], delimiter = ",", fmt = fmt)

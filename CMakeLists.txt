@@ -113,16 +113,10 @@ set(HEADER_FILES ${INC}
                  ${ENSIGN_BUILD_DIR}/extern/OpenBLAS/opt/OpenBLAS/include
                  ${ENSIGN_BUILD_DIR}/extern/fftw/include)
 
-###################################
-# Add src and test subdirectories #
-###################################
+###########################################
+# Add src, test and output subdirectories #
+###########################################
 
 add_subdirectory(${SRC} ${BIN})
 add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
-
-##########################################
-# Create input and output subdirectories #
-##########################################
-
-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/input)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
