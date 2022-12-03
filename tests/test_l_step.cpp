@@ -165,10 +165,6 @@ TEST_CASE("l_step", "[l_step]")
         ltau_comparison(1, 1) += tau * 0.5 * norm_2e;
 
         PerformKLStep(1, sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
-
-        cout << lr_sol.V(0, 0) << " " << lr_sol.V(0, 1) << endl;
-        cout << lr_sol.V(1, 0) << " " << lr_sol.V(1, 1) << endl;
-
         REQUIRE(bool(lr_sol.V == ltau_comparison));
     // }
 }

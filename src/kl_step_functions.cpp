@@ -21,7 +21,7 @@ multi_array<double, 1> CalculateWeightX(int id, multi_array<Index, 1> vec_index_
     }
     else
     {
-        std::cerr << "ERROR: id must be 0 or 1!" << endl;
+        std::cerr << "ERROR: id must be 1 (=L) or 2 (=K)!" << endl;
         std::abort();
     }
     
@@ -105,6 +105,7 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
     multi_array<double, 2> xx_shift(tmp_xx_dim);
     multi_array<double, 2> tmp_xx(tmp_xx_dim), tmp_xx_c(tmp_xx_c_dim);
     vector<Index> sigma, sigma_c;
+    Index inc;
     if (id == 1)
     {
         grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2);
@@ -112,6 +113,7 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
         tmp_xx_c = lr_sol.V;
         sigma = sigma1;
         sigma_c = sigma2;
+        inc = grid.m1;
     }
     else if (id == 2)
     {
@@ -120,6 +122,7 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
         tmp_xx_c = lr_sol.X;
         sigma = sigma2;
         sigma_c = sigma1;
+        inc = 0;
     }
     else
     {
@@ -130,15 +133,15 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
     multi_array<double, 2> c_coeff({grid.r, grid.r});
     multi_array<double, 2> d_coeff({grid.r, grid.r});
 
-    vector<Index> dep_vec_tot, dep_vec_c, dep_vec;
-    vector<Index> n_xx_c_coeff;
-    multi_array<Index, 1> n_xx_c_reduced({grid_alt->m2});
-    vector<Index> vec_index_c_coeff;
-    multi_array<Index, 1> vec_index_c_reduced({grid_alt->m2});
+    vector<Index> dep_vec_tot, dep_vec_c; // dep_vec;
+    vector<Index> n_xx_c_dep;
+    multi_array<Index, 1> n_xx_c_rem({grid_alt->m2});
+    vector<Index> vec_index_c_dep;
+    multi_array<Index, 1> vec_index_c_rem({grid_alt->m2});
     multi_array<Index, 1> vec_index_c_zero({grid_alt->m2});
-    vector<double> lim_xx_c_coeff;
-    multi_array<double, 1> lim_xx_c_reduced({grid_alt->m2});
-    Index dxx_c_coeff_mult, dxx_c_reduced_mult;
+    vector<double> lim_xx_c_dep;
+    multi_array<double, 1> lim_xx_c_rem({grid_alt->m2});
+    Index dxx_c_dep_mult, dxx_c_rem_mult;
     Index alpha_c;
 
     multi_array<double, 2> prod_KLC({grid_alt->dx2, grid_alt->r});
@@ -151,72 +154,73 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
     {
         // Shift X1,2 for calculation of the coefficients
         ShiftMultiArrayRows(xx_shift, tmp_xx, -sigma[mu]);
-
         dep_vec_tot = reaction_system.reactions[mu]->depends_on;
         dep_vec_c.clear();
-        dep_vec.clear();
-        dxx_c_coeff_mult = 1;
-        dxx_c_reduced_mult = 1;
-        n_xx_c_coeff.clear();
-        n_xx_c_reduced = grid_alt->n2;
-        lim_xx_c_coeff.clear();
-        lim_xx_c_reduced = grid_alt->lim2;
+        // dep_vec.clear();
+        dxx_c_dep_mult = 1;
+        dxx_c_rem_mult = 1;
+        n_xx_c_dep.clear();
+        n_xx_c_rem = grid_alt->n2;
+        lim_xx_c_dep.clear();
+        lim_xx_c_rem = grid_alt->lim2;
         set_zero(prod_KLC);
         set_zero(prod_KLD);
 
-        for (Index i = 0; i < grid.m1; i++)
+        for (Index i = 0; i < grid_alt->m2; i++)
             vec_index_c_zero(i) = 0;
 
         for (auto const &ele : dep_vec_tot)
         {
-            if (ele < grid.m1)
+            // convert indices (m1, m1 + 1, ..., m1 + m2) to (0, 1, ..., m2 - 1)
+            auto ele_inc = ele - inc;
+            if ((0 <= ele_inc) && (ele_inc < grid_alt->m2))
             {
-                dep_vec_c.push_back(ele);
-                dxx_c_coeff_mult *= grid.n1(ele);
-                n_xx_c_coeff.push_back(grid.n1(ele));
-                n_xx_c_reduced(ele) = 1;
-                lim_xx_c_coeff.push_back(grid.lim1(ele));
-                lim_xx_c_reduced(ele) = 0.0;
+                dep_vec_c.push_back(ele_inc);
+                dxx_c_dep_mult *= grid_alt->n2(ele_inc);
+                n_xx_c_dep.push_back(grid_alt->n2(ele_inc));
+                n_xx_c_rem(ele_inc) = 1;
+                lim_xx_c_dep.push_back(grid_alt->lim2(ele_inc));
+                lim_xx_c_rem(ele_inc) = 0.0;
             }
-            else
-            {
-                dep_vec.push_back(ele);
-            }
+            // else
+            // {
+            //     dep_vec.push_back(ele);
+            // }
         }
 
-        for (auto const &ele : n_xx_c_reduced)
+        for (auto const &ele : n_xx_c_rem)
         {
-            dxx_c_reduced_mult *= ele;
+            dxx_c_rem_mult *= ele;
         }
 
         // Loop through all species in the complement partition on which the propensity for reaction mu depends
-        for (Index i = 0; i < dxx_c_coeff_mult; i++)
+        for (Index i = 0; i < dxx_c_dep_mult; i++)
         {
-            vec_index_c_coeff = CombIndexToVecIndex(i, n_xx_c_coeff);
+            vec_index_c_dep = CombIndexToVecIndex(i, n_xx_c_dep);
 
-            // Convert vec_index_c_coeff to a vector with size m1
+            // Convert vec_index_c_dep to a vector with size m1
             for (vector<Index>::size_type j = 0; j < dep_vec_c.size(); j++)
-                vec_index_c_zero(dep_vec_c[j]) = vec_index_c_coeff[j];
+                vec_index_c_zero(dep_vec_c[j]) = vec_index_c_dep[j];
 
             CalculateCoefficientsX(id, c_coeff, d_coeff, lr_sol, blas, xx_shift, vec_index_c_zero, reaction_system, grid, mu);
 
             // Loop through the remaining species in the complement partition
-            for (Index k = 0; k < dxx_c_reduced_mult; k++)
+            for (Index k = 0; k < dxx_c_rem_mult; k++)
             {
-                vec_index_c_reduced = CombIndexToVecIndex(k, n_xx_c_reduced);
+                vec_index_c_rem = CombIndexToVecIndex(k, n_xx_c_rem);
 
-                // vec_index_c_reduced contains now the real population number
+                // vec_index_c_rem contains now the real population number
                 for (vector<Index>::size_type l = 0; l < dep_vec_c.size(); l++)
-                    vec_index_c_reduced(dep_vec_c[l]) = vec_index_c_coeff[l];
-                alpha_c = VecIndexToCombIndex(vec_index_c_reduced, grid_alt->n2);
+                    vec_index_c_rem(dep_vec_c[l]) = vec_index_c_dep[l];
+                alpha_c = VecIndexToCombIndex(vec_index_c_rem, grid_alt->n2);
 
                 // Calculate matrix-vector multiplication of C2*K and D2*K
                 for (Index j = 0; j < grid.r; j++)
                 {
                     for (Index l = 0; l < grid.r; l++)
                     {
-                        prod_KLC(alpha_c, j) += tau * c_coeff(j, l) * tmp_xx_c(alpha_c, l);
-                        prod_KLD(alpha_c, j) += tau * d_coeff(j, l) * tmp_xx_c(alpha_c, l);
+                        prod_KLC(alpha_c, j) += tau * tmp_xx_c(alpha_c, l) * c_coeff(j, l);
+                        prod_KLD(alpha_c, j) += tau * tmp_xx_c(alpha_c, l) * d_coeff(j, l);
                     }
                 }
             }
@@ -225,18 +229,6 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
         ShiftMultiArrayRows(prod_KLC_shift, prod_KLC, sigma_c[mu]);
 
         // Calculate k_dot = shift(C1,2 * K) - D1,2 * K
-        cout << "LC_shift, mu = " << mu << endl;
-        cout << prod_KLC_shift(0, 0) << " " << prod_KLC_shift(0, 1) << endl;
-        cout << prod_KLC_shift(1, 0) << " " << prod_KLC_shift(1, 1) << endl;
-
-        cout << endl;
-
-        cout << "LD, mu = " << mu << endl;
-        cout << prod_KLD(0, 0) << " " << prod_KLD(0, 1) << endl;
-        cout << prod_KLD(1, 0) << " " << prod_KLD(1, 1) << endl;
-
-        cout << endl;
-
         kl_dot += prod_KLC_shift;
         kl_dot -= prod_KLD;
     }
