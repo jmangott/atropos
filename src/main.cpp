@@ -1,4 +1,5 @@
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -43,7 +44,7 @@ int main()
     vector<const double *> x1, x2;
 
     // Low rank structure (for storing X1, X2 and S)
-    lr2<double> lr_sol(kR, {grid.dx1, grid.dx2});
+    lr2<double> lr_sol(grid.r, {grid.dx1, grid.dx2});
 
     // Inner products
     std::function<double(double *, double *)> ip_xx1;
@@ -68,8 +69,14 @@ int main()
     }
 
     // Set up the low-rank structure and the inner products
-    ip_xx1 = inner_product_from_const_weight(grid.h1(0), grid.dx1);
-    ip_xx2 = inner_product_from_const_weight(grid.h2(0), grid.dx2);
+    double h_xx_mult1 = 1, h_xx_mult2 = 1;
+    for (Index i = 0; i < grid.m1; i++)
+        h_xx_mult1 *= grid.h1(i);
+    for (Index i = 0; i < grid.m2; i++)
+        h_xx_mult2 *= grid.h2(i);
+
+    ip_xx1 = inner_product_from_const_weight(h_xx_mult1, grid.dx1);
+    ip_xx2 = inner_product_from_const_weight(h_xx_mult2, grid.dx2);
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
     // Calculate the shift amount for all reactions (this has to be done only once)
@@ -112,9 +119,9 @@ int main()
     }
 
     // Write output files
-    WriteOutMultiArray(lr_sol.X, "../output/x1_output_10");
-    WriteOutMultiArray(lr_sol.S, "../output/s_output_10");
-    WriteOutMultiArray(lr_sol.V, "../output/x2_output_10");
+    WriteOutMultiArray(lr_sol.X, "../output/x1_output_0");
+    WriteOutMultiArray(lr_sol.S, "../output/s_output_0");
+    WriteOutMultiArray(lr_sol.V, "../output/x2_output_0");
 
     return 0;
 }
