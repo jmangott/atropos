@@ -51,7 +51,11 @@ p0 = p0 / np.sum(p0)
 u, s, vh = np.linalg.svd(p0, full_matrices = False)
 
 # Use only the first `r` singular values
+X1 = u[:, :r]
+S = np.diag(s[:r])
+X2 = vh[:r, :].T
+
 fmt = '%1.8f'
-np.savetxt("x1_input.csv", u[:, :r], delimiter = ",", fmt = fmt)
-np.savetxt("s_input.csv", np.diag(s[:r]), delimiter = ",", fmt = fmt)
-np.savetxt("x2_input.csv", vh[:, :r], delimiter = ",", fmt = fmt)
+np.savetxt("input/x1_input.csv", X1, delimiter = ",", fmt = fmt)
+np.savetxt("input/s_input.csv", S, delimiter = ",", fmt = fmt)
+np.savetxt("input/x2_input.csv", X2, delimiter = ",", fmt = fmt)
