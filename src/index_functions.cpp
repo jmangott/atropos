@@ -132,7 +132,6 @@ void ShiftMultiArrayRows(int id, multi_array<double, 2> &output_array, const mul
         {
             if ((shift < 0 && i - shift < n_rows) || (shift >= 0 && i - shift >= 0))
             {
-                // if (shift == -11) cout << i << " " << j << " " << endl;
                 output_array(i, j) = input_array(i - shift, j);
             }
             else
@@ -158,29 +157,6 @@ void ShiftMultiArrayRows(int id, multi_array<double, 2> &output_array, const mul
                     break;
                 }
             }
-
-            // if ((shift < 0) && (i - shift >= n_rows))
-            // {
-            //     // Approximation by 0
-            //     output_array(i, j) = 0.0;
-
-            //     // // Scan edge approximation
-            //     // output_array(i, j) = input_array(n_rows - 1, j);
-            // }
-            // else if ((shift > 0) && (i - shift < 0))
-            // {
-            //     // Approximation by 0
-            //     // This reflects the fact that the probability function vanishes for
-            //     // negative population numbers
-            //     output_array(i, j) = 0.0;
-
-            //     // // Scan edge approximation
-            //     // output_array(i, j) = input_array(0, j);
-            // }
-            // else
-            // {
-            //     output_array(i, j) = input_array(i - shift, j);
-            // }
         }
     }
     delete grid_alt;

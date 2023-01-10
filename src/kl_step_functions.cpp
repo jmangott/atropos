@@ -160,10 +160,10 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
         // Calculate -nu for shift
         for (Index i = 0; i < d; i++)
             nu[i] = -reaction_system.reactions[mu]->nu[i];
-        // cout << mu << " " << -sigma[mu] << endl;
+
         // Shift X1,2 for calculation of the coefficients
         ShiftMultiArrayRows(id, xx_shift, tmp_xx, -sigma[mu], nu, grid, reaction_system);
-        // cout << -sigma[mu] << endl;
+
         dep_vec_tot = reaction_system.reactions[mu]->depends_on;
         dep_vec_c.clear();
         // dep_vec.clear();
