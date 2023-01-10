@@ -90,6 +90,7 @@ void CalculateCoefficientsX(int id, multi_array<double, 2> &c_coeff, multi_array
 
 void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, double tau)
 {
+    Index d = grid.m1 + grid.m2;
     grid_info *grid_alt;
     std::array<Index, 2> tmp_xx_dim, tmp_xx_c_dim;
     if (id == 2)
@@ -106,6 +107,7 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
     multi_array<double, 2> tmp_xx(tmp_xx_dim), tmp_xx_c(tmp_xx_c_dim);
     vector<Index> sigma, sigma_c;
     Index inc;
+    int id_c;
     if (id == 1)
     {
         grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2);
@@ -114,6 +116,7 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
         sigma = sigma1;
         sigma_c = sigma2;
         inc = grid.m1;
+        id_c = 2;
     }
     else if (id == 2)
     {
@@ -123,6 +126,7 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
         sigma = sigma2;
         sigma_c = sigma1;
         inc = 0;
+        id_c = 1;
     }
     else
     {
@@ -149,11 +153,17 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
     multi_array<double, 2> prod_KLD({grid_alt->dx2, grid_alt->r});
     multi_array<double, 2> kl_dot({grid_alt->dx2, grid_alt->r});
     set_zero(kl_dot);
+    vector<int> nu(d, 0);
 
     for (std::vector<myreact *>::size_type mu = 0; mu < reaction_system.mu(); mu++)
     {
+        // Calculate -nu for shift
+        for (Index i = 0; i < d; i++)
+            nu[i] = -reaction_system.reactions[mu]->nu[i];
+        // cout << mu << " " << -sigma[mu] << endl;
         // Shift X1,2 for calculation of the coefficients
-        ShiftMultiArrayRows(xx_shift, tmp_xx, -sigma[mu]);
+        ShiftMultiArrayRows(id, xx_shift, tmp_xx, -sigma[mu], nu, grid, reaction_system);
+        // cout << -sigma[mu] << endl;
         dep_vec_tot = reaction_system.reactions[mu]->depends_on;
         dep_vec_c.clear();
         // dep_vec.clear();
@@ -226,7 +236,7 @@ void PerformKLStep(int id, vector<Index> sigma1, vector<Index> sigma2, lr2<doubl
             }
         }
         // Shift prod_KC
-        ShiftMultiArrayRows(prod_KLC_shift, prod_KLC, sigma_c[mu]);
+        ShiftMultiArrayRows(id_c, prod_KLC_shift, prod_KLC, sigma_c[mu], reaction_system.reactions[mu]->nu, grid, reaction_system);
 
         // Calculate k_dot = shift(C1,2 * K) - D1,2 * K
         kl_dot += prod_KLC_shift;

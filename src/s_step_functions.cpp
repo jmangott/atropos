@@ -15,9 +15,14 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
     multi_array<Index, 1> vec_index2({grid.m2});
     multi_array<double, 1> w_x2({grid.dx2});
     multi_array<double, 2> xx2_shift(lr_sol.V.shape());
+    vector<int> nu(d, 0);
+
+    // Calculate -nu for shift
+    for (Index i = 0; i < d; i++)
+        nu[i] = -reaction_system.reactions[mu]->nu[i];
 
     // Calculate the shifted X2
-    ShiftMultiArrayRows(xx2_shift, lr_sol.V, -sigma2[mu]);
+    ShiftMultiArrayRows(2, xx2_shift, lr_sol.V, -sigma2[mu], nu, grid, reaction_system);
 
     for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
     {
@@ -41,14 +46,20 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
 
 void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, Index mu, vector<Index> sigma1)
 {
+    Index d = grid.m1 + grid.m2;
     multi_array<double, 2> e_coeff({grid.r, grid.r});
     multi_array<double, 2> f_coeff({grid.r, grid.r});
     multi_array<double, 1> w_x1({grid.dx1});
     multi_array<double, 1> w_x1_shift({grid.dx1});
     multi_array<double, 2> xx1_shift(lr_sol.X.shape());
+    vector<int> nu(d, 0);
+
+    // Calculate -nu for shift
+    for (Index i = 0; i < d; i++)
+        nu[i] = -reaction_system.reactions[mu]->nu[i];
 
     // Calculate the shifted X1
-    ShiftMultiArrayRows(xx1_shift, lr_sol.X, -sigma1[mu]);
+    ShiftMultiArrayRows(1, xx1_shift, lr_sol.X, -sigma1[mu], nu, grid, reaction_system);
 
     // For integration weight
     double h_xx1_mult = 1;

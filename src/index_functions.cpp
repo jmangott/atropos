@@ -69,9 +69,6 @@ void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2
     Index stride1, stride2;
     Index sigma1_sum, sigma2_sum;
 
-    // NOTE: when the partition requires a permutation of the original order of species,
-    // then also the nu vectors and similar quantities have to be permuted
-
     for (auto &it : reaction_system.reactions)
     {
         stride1 = 1;
@@ -80,12 +77,12 @@ void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2
         sigma2_sum = 0;
         for (Index i = 0; i < grid.m1; i++)
         {
-            sigma1_sum += it->nu[i] * stride1 * grid.k1(i);
+            sigma1_sum += it->nu[i] * stride1 / grid.k1(i);
             stride1 *= grid.n1(i);
         }
         for (Index i = 0; i < grid.m2; i++)
         {
-            sigma2_sum += it->nu[i + grid.m1] * stride2 * grid.k2(i);
+            sigma2_sum += it->nu[i + grid.m1] * stride2 / grid.k2(i);
             stride2 *= grid.n2(i);
         }
         sigma1.push_back(sigma1_sum);
@@ -94,7 +91,7 @@ void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2
 }
 
 
-void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, int shift)
+void ShiftMultiArrayRows(int id, multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, int shift, vector<int> nu, grid_info grid, mysys reaction_system)
 {
     if ((output_array.shape()[0] != input_array.shape()[0]) ||
         (output_array.shape()[1] != input_array.shape()[1]))
@@ -106,23 +103,85 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
     Index n_rows = output_array.shape()[0];
     Index n_cols = output_array.shape()[1];
 
+    grid_info *grid_alt;
+    Index inc;
+
+    if (id == 1)
+    {
+        grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2);
+        inc = 0;
+    }
+    else if (id == 2)
+    {
+        grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.k2, grid.k1);
+        inc = grid.m1;
+    }
+    else
+    {
+        std::cerr << "ERROR: id must be 1 (shift in partition 1) or 2 (shift in partition 2)!" << endl;
+        std::abort();
+    }
+
+    multi_array<Index, 1> vec_index({grid_alt->m1});
+    Index k_inc;
+
     // NOTE: Ensign stores matrices in column-major order
     for (Index j = 0; j < n_cols; j++)
     {
         for (Index i = 0; i < n_rows; i++)
         {
-            if ((shift < 0) && (i - shift >= n_rows))
+            if ((shift < 0 && i - shift < n_rows) || (shift >= 0 && i - shift >= 0))
             {
-                output_array(i, j) = input_array(n_rows - 1, j);
-            }
-            else if ((shift > 0) && (i - shift < 0))
-            {
-                output_array(i, j) = input_array(0, j);
+                // if (shift == -11) cout << i << " " << j << " " << endl;
+                output_array(i, j) = input_array(i - shift, j);
             }
             else
             {
-                output_array(i, j) = input_array(i - shift, j);
+                output_array(i, j) = 0;
+                continue;
             }
+
+            vec_index = CombIndexToVecIndex(i, grid_alt->n1);
+            for (int k = 0; k < grid_alt->m1; k++)
+            {
+                k_inc = k + inc;
+                if ((nu[k_inc] / grid_alt->k1(k) > 0) &&
+                    (vec_index(k) - nu[k_inc] / grid_alt->k1(k) < 0))
+                {
+                    output_array(i, j) = 0;
+                    break;
+                }
+                else if ((nu[k_inc] / grid_alt->k1(k) < 0) &&
+                         (vec_index(k) - nu[k_inc] / grid_alt->k1(k) >= grid_alt->n1(k)))
+                {
+                    output_array(i, j) = 0;
+                    break;
+                }
+            }
+
+            // if ((shift < 0) && (i - shift >= n_rows))
+            // {
+            //     // Approximation by 0
+            //     output_array(i, j) = 0.0;
+
+            //     // // Scan edge approximation
+            //     // output_array(i, j) = input_array(n_rows - 1, j);
+            // }
+            // else if ((shift > 0) && (i - shift < 0))
+            // {
+            //     // Approximation by 0
+            //     // This reflects the fact that the probability function vanishes for
+            //     // negative population numbers
+            //     output_array(i, j) = 0.0;
+
+            //     // // Scan edge approximation
+            //     // output_array(i, j) = input_array(0, j);
+            // }
+            // else
+            // {
+            //     output_array(i, j) = input_array(i - shift, j);
+            // }
         }
     }
+    delete grid_alt;
 }
