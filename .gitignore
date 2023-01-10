@@ -1,6 +1,7 @@
 .cache
 .DS_STORE
 .vscode/
+*.npy
 *.out
 /build/*
 /bin/*
