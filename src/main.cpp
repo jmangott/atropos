@@ -1,3 +1,4 @@
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -16,7 +17,9 @@
 #include "io_functions.hpp"
 #include "kl_step_functions.hpp"
 #include "parameters.hpp"
-#include "reactions.hpp"
+#include "print_functions.hpp"
+// #include "reactions_ts.hpp"
+#include "reactions_lp.hpp"
 #include "s_step_functions.hpp"
 
 using std::cout;
@@ -31,7 +34,26 @@ int main()
     /////////////////// SETUP ///////////////////
     /////////////////////////////////////////////
 
-    grid_info grid(kM1, kM2, kR, kN, kK);
+    // // Toggle switch
+    // kN1(0) = 51;
+    // kN2(0) = 51;
+    // kK1(0) = 1;
+    // kK2(0) = 1;
+
+    // Lambda phage
+    kN1(0) = 16;
+    kN1(1) = 41;
+    kN2(0) = 11;
+    kN2(1) = 11;
+    kN2(2) = 11;
+
+    kK1(0) = 1;
+    kK1(1) = 1;
+    kK2(0) = 1;
+    kK2(1) = 1;
+    kK2(2) = 1;
+
+    grid_info grid(kM1, kM2, kR, kN1, kN2, kK1, kK2);
 
     // Declare LR-specific objects
     // Temporary objects for multiplication
@@ -64,8 +86,8 @@ int main()
     {
         x1.push_back(it1);
         x2.push_back(it2);
-        it1 += kM1 * grid.n1(0);
-        it2 += kM2 * grid.n2(0);
+        it1 += grid.dx1;
+        it2 += grid.dx2;
     }
 
     // Set up the low-rank structure and the inner products
@@ -79,13 +101,28 @@ int main()
     ip_xx2 = inner_product_from_const_weight(h_xx_mult2, grid.dx2);
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
+    // For testing
+    // WriteOutMultiArray(lr_sol.S, "../output/s_output_init");
+    // TODO: these lines are actually superfluous, provided Ensign works correctly
+    multi_array<double, 2> ss({grid.r, grid.r});
+    ReadInMultiArray(ss, "../input/s_input.csv");
+    lr_sol.S = ss;
+
     // Calculate the shift amount for all reactions (this has to be done only once)
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
+    // Write output files for initial values
+    WriteOutMultiArray(lr_sol.X, "../output/lambda_phage_test/x1_output_t0");
+    WriteOutMultiArray(lr_sol.S, "../output/lambda_phage_test/s_output_t0");
+    WriteOutMultiArray(lr_sol.V, "../output/lambda_phage_test/x2_output_t0");
+
+    auto start_time(std::chrono::high_resolution_clock::now());
+
     double t = 0.0;
-    for(Index ts = 0; ts < kNsteps; ts++) 
+    int t_int;
+    for (Index ts = 0; ts < kNsteps; ts++) 
     {
-        if(kTstar - t < kTau)
+        if (kTstar - t < kTau)
             kTau = kTstar - t;
 
         /////////////////////////////////////////////
@@ -97,6 +134,18 @@ int main()
         PerformKLStep(2, sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
         // Perform the QR decomposition K = X * S
         gs(lr_sol.X, lr_sol.S, ip_xx1);
+
+        // Calculate sum of X2 along axis 1
+        multi_array<double, 1> x2_bar({grid.r});
+        for (Index i = 0; i < grid.r; i++)
+            x2_bar(i) = 0.0;
+        for (Index i = 0; i < grid.dx2; i++)
+        {
+            for (Index j = 0; j < grid.r; j++)
+            {
+                x2_bar(j) += lr_sol.V(i, j);
+            }
+        }
 
         /////////////////////////////////////////////
         ////////////////// S-STEP ///////////////////
@@ -115,13 +164,52 @@ int main()
         gs(lr_sol.V, lr_sol.S, ip_xx2);
         transpose_inplace(lr_sol.S);
 
-        t += kTau;
-    }
+        // Calculate sum of X1 along axis 1
+        multi_array<double, 1> x1_bar({grid.r});
+        for (Index i = 0; i < grid.r; i++)
+            x1_bar(i) = 0.0;
+        for (Index i = 0; i < grid.dx1; i++)
+        {
+            for (Index j = 0; j < grid.r; j++)
+            {
+                x1_bar(j) += lr_sol.X(i, j);
+            }
+        }
 
-    // Write output files
-    WriteOutMultiArray(lr_sol.X, "../output/x1_output_0");
-    WriteOutMultiArray(lr_sol.S, "../output/s_output_0");
-    WriteOutMultiArray(lr_sol.V, "../output/x2_output_0");
+        // Calculate normalization constant
+        double norm = 0.0;
+        for (Index i = 0; i < grid.r; i++)
+        {
+            for (Index j = 0; j < grid.r; j++)
+            {
+                norm += x1_bar(i) * lr_sol.S(i, j) * x2_bar(j);
+            }
+        }
+        
+        // Renormalize S
+        lr_sol.S /= norm;
+
+        t += kTau;
+
+        // Print progress bar
+        PrintProgressBar(ts, kNsteps, start_time);
+
+        std::stringstream fname_x1_output;
+        std::stringstream fname_s_output;
+        std::stringstream fname_x2_output;
+
+        if ((ts + 1) % kSnapshot == 0)
+        {
+            // Write snapshot
+            t_int = (int) (ts + 1) * kTau;
+            fname_x1_output << "../output/lambda_phage_test/x1_output_t" << t_int;
+            fname_s_output << "../output/lambda_phage_test/s_output_t" << t_int;
+            fname_x2_output << "../output/lambda_phage_test/x2_output_t" << t_int;
+            WriteOutMultiArray(lr_sol.X, fname_x1_output.str());
+            WriteOutMultiArray(lr_sol.S, fname_s_output.str());
+            WriteOutMultiArray(lr_sol.V, fname_x2_output.str());
+        }
+    }
 
     return 0;
 }
