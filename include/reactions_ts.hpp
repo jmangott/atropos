@@ -23,7 +23,7 @@ myreact myreact2(
     mysystem);
 myreact myreact3(
     {0, 1}, {0}, [](std::vector<double> y)
-    { return kB / (kB+ y[0]); },
+    { return kB / (kB + y[0]); },
     mysystem);
 
 #endif
