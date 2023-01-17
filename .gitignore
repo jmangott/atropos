@@ -1,11 +1,13 @@
 .cache
 .DS_STORE
 .vscode/
+__pycache__
 *.npy
 *.out
 /build/*
 /bin/*
 /input/*.csv
 /output/*
+/reference_solution/*
 CMakeFiles
 /trial_run_classes/
