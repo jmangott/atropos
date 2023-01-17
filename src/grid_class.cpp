@@ -45,22 +45,26 @@ void grid_info::common_init()
 
 grid_info::grid_info(Index _m1, Index _m2, Index _r, Index _n, Index _k) : m1(_m1), m2(_m2), r(_r), n1({_m1}), n2({_m2}), k1({_m1}), k2({_m2}), lim1({_m1}), lim2({_m2}), h1({_m1}), h2({_m2})
 {
-    // Use n to initialize the number of grid points n_xx1 and n_xx2 uniformly for all species
-    for (Index i = 0; i < m1; i++)
-        n1(i) = _n;
-    for (Index i = 0; i < m2; i++)
-        n2(i) = _n;
-
-    // Use k to initialize the grid density k_xx1 and k_xx2 uniformly for all species
-    for (Index i = 0; i < m1; i++)
-        k1(i) = _k;
-    for (Index i = 0; i < m2; i++)
-        k2(i) = _k;
+    // Use n and k to initialize the number of grid points and grid density uniformly for all species
+    std::fill(n1.begin(), n1.end(), _n);
+    std::fill(n2.begin(), n2.end(), _n);
+    std::fill(k1.begin(), k1.end(), _k);
+    std::fill(k2.begin(), k2.end(), _k);
 
     common_init();
 }
 
 grid_info::grid_info(Index _m1, Index _m2, Index _r, multi_array<Index, 1> _n1, multi_array<Index, 1> _n2, multi_array<Index, 1> _k1, multi_array<Index, 1> _k2) : m1(_m1), m2(_m2), r(_r), n1(_n1), n2(_n2), k1(_k1), k2(_k2), lim1({_m1}), lim2({_m2}), h1({_m1}), h2({_m2})
 {
+    common_init();
+}
+
+grid_info::grid_info(Index _m1, Index _m2, Index _r, vector<Index> _n1, vector<Index> _n2, vector<Index> _k1, vector<Index> _k2) : m1(_m1), m2(_m2), r(_r), n1({_m1}), n2({_m2}), k1({_m1}), k2({_m2}), lim1({_m1}), lim2({_m2}), h1({_m1}), h2({_m2})
+{
+    std::copy(_n1.begin(), _n1.end(), n1.begin());
+    std::copy(_n2.begin(), _n2.end(), n2.begin());
+    std::copy(_k1.begin(), _k1.end(), k1.begin());
+    std::copy(_k2.begin(), _k2.end(), k2.begin());
+
     common_init();
 }

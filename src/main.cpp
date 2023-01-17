@@ -34,25 +34,6 @@ int main()
     /////////////////// SETUP ///////////////////
     /////////////////////////////////////////////
 
-    // // Toggle switch
-    // kN1(0) = 51;
-    // kN2(0) = 51;
-    // kK1(0) = 1;
-    // kK2(0) = 1;
-
-    // Lambda phage
-    kN1(0) = 16;
-    kN1(1) = 41;
-    kN2(0) = 11;
-    kN2(1) = 11;
-    kN2(2) = 11;
-
-    kK1(0) = 1;
-    kK1(1) = 1;
-    kK2(0) = 1;
-    kK2(1) = 1;
-    kK2(2) = 1;
-
     grid_info grid(kM1, kM2, kR, kN1, kN2, kK1, kK2);
 
     // Declare LR-specific objects
@@ -112,9 +93,9 @@ int main()
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
     // Write output files for initial values
-    WriteOutMultiArray(lr_sol.X, "../output/lambda_phage_test/x1_output_t0");
-    WriteOutMultiArray(lr_sol.S, "../output/lambda_phage_test/s_output_t0");
-    WriteOutMultiArray(lr_sol.V, "../output/lambda_phage_test/x2_output_t0");
+    WriteOutMultiArray(lr_sol.X, "../output/lambda_phage_test1/x1_output_t0");
+    WriteOutMultiArray(lr_sol.S, "../output/lambda_phage_test1/s_output_t0");
+    WriteOutMultiArray(lr_sol.V, "../output/lambda_phage_test1/x2_output_t0");
 
     auto start_time(std::chrono::high_resolution_clock::now());
 
@@ -202,9 +183,9 @@ int main()
         {
             // Write snapshot
             t_int = (int) (ts + 1) * kTau;
-            fname_x1_output << "../output/lambda_phage_test/x1_output_t" << t_int;
-            fname_s_output << "../output/lambda_phage_test/s_output_t" << t_int;
-            fname_x2_output << "../output/lambda_phage_test/x2_output_t" << t_int;
+            fname_x1_output << "../output/lambda_phage_test1/x1_output_t" << t_int;
+            fname_s_output << "../output/lambda_phage_test1/s_output_t" << t_int;
+            fname_x2_output << "../output/lambda_phage_test1/x2_output_t" << t_int;
             WriteOutMultiArray(lr_sol.X, fname_x1_output.str());
             WriteOutMultiArray(lr_sol.S, fname_s_output.str());
             WriteOutMultiArray(lr_sol.V, fname_x2_output.str());

@@ -23,12 +23,18 @@ constexpr Index kD = 5;                           // number of species
 constexpr Index kM1 = 2;                          // number of species in partition 1
 constexpr Index kM2 = 3;                          // number of species in partition 2
 
-// constexpr Index kN = 51;                       // number of grid points for one species
-multi_array<Index, 1> kN1({kM1});
-multi_array<Index, 1> kN2({kM2});
-// constexpr Index kK = 1;                        // grid point density
-multi_array<Index, 1> kK1({kM1});
-multi_array<Index, 1> kK2({kM2});
+// // Toggle switch
+// vector<Index> kN1{51};
+// vector<Index> kN2{51};
+// vector<Index> kK1{1};
+// vector<Index> kK2{1};
+
+// Lambda phage
+vector<Index> kN1 {16, 41};
+vector<Index> kN2 {11, 11, 11};
+vector<Index> kK1 {1, 1};
+vector<Index> kK2 {1, 1, 1};
+
 constexpr double kTstar = 10;                     // final time
 double kTau = 0.01;                               // time step size
 Index kNsteps = ceil(kTstar / kTau);              // number of time steps

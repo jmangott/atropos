@@ -29,6 +29,8 @@ struct grid_info
     grid_info(Index _m1, Index _m2, Index _r, Index _n, Index _k);
 
     grid_info(Index _m1, Index _m2, Index _r, multi_array<Index, 1> _n1, multi_array<Index, 1> _n2, multi_array<Index, 1> _k1, multi_array<Index, 1> _k2);
+
+    grid_info(Index _m1, Index _m2, Index _r, std::vector<Index> _n1, std::vector<Index> _n2, std::vector<Index> _k1, std::vector<Index> _k2);
 };
 
 
