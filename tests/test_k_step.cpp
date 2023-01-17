@@ -133,10 +133,25 @@ TEST_CASE("k_step", "[k_step]")
             multi_array<double, 2> xx2_shift2(lr_sol.V.shape());
             multi_array<double, 2> xx2_shift3(lr_sol.V.shape());
 
-            ShiftMultiArrayRows(xx2_shift0, lr_sol.V, -sigma2[0]);
-            ShiftMultiArrayRows(xx2_shift1, lr_sol.V, -sigma2[1]);
-            ShiftMultiArrayRows(xx2_shift2, lr_sol.V, -sigma2[2]);
-            ShiftMultiArrayRows(xx2_shift3, lr_sol.V, -sigma2[3]);
+            Index d = grid.dx1 + grid.dx2;
+            vector<int> nu0(d, 0);
+            vector<int> nu1(d, 0);
+            vector<int> nu2(d, 0);
+            vector<int> nu3(d, 0);
+
+            // Calculate -nu for shift
+            for (Index i = 0; i < d; i++)
+            {
+                nu0[i] = -test_system.reactions[0]->nu[i];
+                nu1[i] = -test_system.reactions[1]->nu[i];
+                nu2[i] = -test_system.reactions[2]->nu[i];
+                nu3[i] = -test_system.reactions[3]->nu[i];
+            }
+
+            ShiftMultiArrayRows(2, xx2_shift0, lr_sol.V, -sigma2[0], nu0, grid, test_system);
+            ShiftMultiArrayRows(2, xx2_shift1, lr_sol.V, -sigma2[1], nu1, grid, test_system);
+            ShiftMultiArrayRows(2, xx2_shift2, lr_sol.V, -sigma2[2], nu2, grid, test_system);
+            ShiftMultiArrayRows(2, xx2_shift3, lr_sol.V, -sigma2[3], nu3, grid, test_system);
 
             CalculateCoefficientsX(2, c2_0, d2_0, lr_sol, blas, xx2_shift0, vec_index1, test_system, grid, 0);
             CalculateCoefficientsX(2, c2_1, d2_1, lr_sol, blas, xx2_shift1, vec_index1, test_system, grid, 1);
@@ -158,10 +173,10 @@ TEST_CASE("k_step", "[k_step]")
             c2_2_comparison(1, 0) = 0.25;
             c2_2_comparison(1, 1) = 0.75;
 
-            c2_3_comparison(0, 0) = 1.0 / (1.0 + state_vec1(0));
-            c2_3_comparison(0, 1) = 0.0;
-            c2_3_comparison(1, 0) =-1.0 / (1.0 + state_vec1(0));
-            c2_3_comparison(1, 1) = 0.0;
+            c2_3_comparison(0, 0) = 0.5 / (1.0 + state_vec1(0));
+            c2_3_comparison(0, 1) = 0.5 / (1.0 + state_vec1(0));
+            c2_3_comparison(1, 0) =-0.5 / (1.0 + state_vec1(0));
+            c2_3_comparison(1, 1) =-0.5 / (1.0 + state_vec1(0));
 
             d2_0_comparison = c2_0_comparison;
 
@@ -193,8 +208,10 @@ TEST_CASE("k_step", "[k_step]")
     // {
         multi_array<double, 2> ktau_comparison({2, 2});
         ktau_comparison = lr_sol.X;
-        ktau_comparison(0, 0) += tau * norm_2e;
-        ktau_comparison(1, 1) += tau * 0.5 * norm_2e;
+        ktau_comparison(0, 0) -= tau * 0.25  * norm_2e;
+        ktau_comparison(0, 1) += tau * 0.25  * norm_2e;
+        ktau_comparison(1, 0) -= tau * 1.25 * norm_2e;
+        ktau_comparison(1, 1) += tau * 0.75 * norm_2e;
 
         PerformKLStep(2, sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
         REQUIRE(bool(lr_sol.X == ktau_comparison));
