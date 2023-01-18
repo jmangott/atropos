@@ -78,14 +78,14 @@ TEST_CASE("s_step", "[s_step]")
         b_coeff_vec_shift2_comparison(1, 1, 0) = 0.25;
         b_coeff_vec_shift2_comparison(1, 1, 1) = 0.75;
 
-        b_coeff_vec_shift3_comparison(0, 0, 0) = 1.0;
-        b_coeff_vec_shift3_comparison(0, 0, 1) = 0.0;
-        b_coeff_vec_shift3_comparison(0, 1, 0) =-1.0;
-        b_coeff_vec_shift3_comparison(0, 1, 1) = 0.0;
-        b_coeff_vec_shift3_comparison(1, 0, 0) = 0.5;
-        b_coeff_vec_shift3_comparison(1, 0, 1) = 0.0;
-        b_coeff_vec_shift3_comparison(1, 1, 0) =-0.5;
-        b_coeff_vec_shift3_comparison(1, 1, 1) = 0.0;
+        b_coeff_vec_shift3_comparison(0, 0, 0) = 0.5;
+        b_coeff_vec_shift3_comparison(0, 0, 1) = 0.5;
+        b_coeff_vec_shift3_comparison(0, 1, 0) =-0.5;
+        b_coeff_vec_shift3_comparison(0, 1, 1) =-0.5;
+        b_coeff_vec_shift3_comparison(1, 0, 0) = 0.25;
+        b_coeff_vec_shift3_comparison(1, 0, 1) = 0.25;
+        b_coeff_vec_shift3_comparison(1, 1, 0) =-0.25;
+        b_coeff_vec_shift3_comparison(1, 1, 1) =-0.25;
 
         REQUIRE(bool(b_coeff_vec_shift0 == b_coeff_vec_shift0_comparison));
         REQUIRE(bool(b_coeff_vec_shift1 == b_coeff_vec_shift1_comparison));
@@ -185,15 +185,15 @@ TEST_CASE("s_step", "[s_step]")
         f_coeff1_comparison(1, 1, 1, 1) = f_coeff1_comparison(1, 0, 1, 0);
 
         // e_coeff2_comparison
-        e_coeff2_comparison(0, 0, 0, 0) = 0.75;
-        e_coeff2_comparison(0, 0, 1, 0) = 0.0;
-        e_coeff2_comparison(1, 0, 0, 0) =-0.75;
-        e_coeff2_comparison(1, 0, 1, 0) = 0.0;
+        e_coeff2_comparison(0, 0, 0, 0) = 0.375;
+        e_coeff2_comparison(0, 0, 1, 0) = 0.375;
+        e_coeff2_comparison(1, 0, 0, 0) =-0.375;
+        e_coeff2_comparison(1, 0, 1, 0) =-0.375;
 
-        e_coeff2_comparison(0, 0, 0, 1) = 0.25;
-        e_coeff2_comparison(0, 0, 1, 1) = 0.0;
-        e_coeff2_comparison(1, 0, 0, 1) =-0.25;
-        e_coeff2_comparison(1, 0, 1, 1) = 0.0;
+        e_coeff2_comparison(0, 0, 0, 1) = 0.125;
+        e_coeff2_comparison(0, 0, 1, 1) = 0.125;
+        e_coeff2_comparison(1, 0, 0, 1) =-0.125;
+        e_coeff2_comparison(1, 0, 1, 1) =-0.125;
 
         e_coeff2_comparison(0, 1, 0, 0) = e_coeff2_comparison(0, 0, 0, 1);
         e_coeff2_comparison(0, 1, 1, 0) = e_coeff2_comparison(0, 0, 1, 1);
@@ -227,20 +227,20 @@ TEST_CASE("s_step", "[s_step]")
         f_coeff2_comparison(1, 1, 1, 1) = f_coeff2_comparison(1, 0, 1, 0);
 
         // e_coeff3_comparison
-        e_coeff3_comparison(0, 0, 0, 0) = 0.75;
-        e_coeff3_comparison(0, 0, 1, 0) = 0.25;
-        e_coeff3_comparison(1, 0, 0, 0) = 0.25;
-        e_coeff3_comparison(1, 0, 1, 0) = 0.75;
+        e_coeff3_comparison(0, 0, 0, 0) = 0.375;
+        e_coeff3_comparison(0, 0, 1, 0) = 0.125;
+        e_coeff3_comparison(1, 0, 0, 0) = 0.125;
+        e_coeff3_comparison(1, 0, 1, 0) = 0.375;
 
-        e_coeff3_comparison(0, 0, 0, 1) = 0.0;
-        e_coeff3_comparison(0, 0, 1, 1) = 0.0;
-        e_coeff3_comparison(1, 0, 0, 1) = 0.0;
-        e_coeff3_comparison(1, 0, 1, 1) = 0.0;
+        e_coeff3_comparison(0, 0, 0, 1) = e_coeff3_comparison(0, 0, 0, 0);
+        e_coeff3_comparison(0, 0, 1, 1) = e_coeff3_comparison(0, 0, 1, 0);
+        e_coeff3_comparison(1, 0, 0, 1) = e_coeff3_comparison(1, 0, 0, 0);
+        e_coeff3_comparison(1, 0, 1, 1) = e_coeff3_comparison(1, 0, 1, 0);
 
-        e_coeff3_comparison(0, 1, 0, 1) = e_coeff3_comparison(0, 0, 0, 1);
-        e_coeff3_comparison(0, 1, 1, 1) = e_coeff3_comparison(0, 0, 1, 1);
-        e_coeff3_comparison(1, 1, 0, 1) = e_coeff3_comparison(1, 0, 0, 1);
-        e_coeff3_comparison(1, 1, 1, 1) = e_coeff3_comparison(1, 0, 1, 1);
+        e_coeff3_comparison(0, 1, 0, 1) = -e_coeff3_comparison(0, 0, 0, 0);
+        e_coeff3_comparison(0, 1, 1, 1) = -e_coeff3_comparison(0, 0, 1, 0);
+        e_coeff3_comparison(1, 1, 0, 1) = -e_coeff3_comparison(1, 0, 0, 0);
+        e_coeff3_comparison(1, 1, 1, 1) = -e_coeff3_comparison(1, 0, 1, 0);
 
         e_coeff3_comparison(0, 1, 0, 0) = -e_coeff3_comparison(0, 0, 0, 0);
         e_coeff3_comparison(0, 1, 1, 0) = -e_coeff3_comparison(0, 0, 1, 0);
@@ -248,7 +248,16 @@ TEST_CASE("s_step", "[s_step]")
         e_coeff3_comparison(1, 1, 1, 0) = -e_coeff3_comparison(1, 0, 1, 0);
 
         // f_coeff2_comparison
-        f_coeff3_comparison = e_coeff3_comparison;
+        f_coeff3_comparison(0, 0, 0, 0) = 0.75;
+        f_coeff3_comparison(0, 0, 1, 0) = 0.25;
+        f_coeff3_comparison(1, 0, 0, 0) = 0.25;
+        f_coeff3_comparison(1, 0, 1, 0) = 0.75;
+
+        f_coeff3_comparison(0, 0, 0, 1) = 0.0;
+        f_coeff3_comparison(0, 0, 1, 1) = 0.0;
+        f_coeff3_comparison(1, 0, 0, 1) = 0.0;
+        f_coeff3_comparison(1, 0, 1, 1) = 0.0;
+
         f_coeff3_comparison(0, 1, 0, 0) = f_coeff3_comparison(0, 0, 0, 1);
         f_coeff3_comparison(0, 1, 1, 0) = f_coeff3_comparison(0, 0, 1, 1);
         f_coeff3_comparison(1, 1, 0, 0) = f_coeff3_comparison(1, 0, 0, 1);
@@ -273,9 +282,10 @@ TEST_CASE("s_step", "[s_step]")
     // {
         multi_array<double, 2> stau_comparison({2, 2});
         stau_comparison = lr_sol.S;
-        stau_comparison(0, 1) -= tau * 0.5 * inv_sqrt_e;
-        stau_comparison(1, 0) -= tau * 0.5 * inv_sqrt_e;
-        stau_comparison(1, 1) += tau * inv_sqrt_e;
+        stau_comparison(0, 0) += tau * 1.5 * inv_sqrt_e;
+        stau_comparison(0, 1) -= tau * inv_sqrt_e;
+        stau_comparison(1, 0) -= tau * inv_sqrt_e;
+        stau_comparison(1, 1) += tau * 0.5 * inv_sqrt_e;
 
         PerformSStep(sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
         REQUIRE(bool(lr_sol.S == stau_comparison));
