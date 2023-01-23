@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from index_functions import *
 from scipy.special import factorial
 
 # # Toggle switch
@@ -31,9 +31,15 @@ def eval_p0(x):
     # p0 = np.exp(-0.5 * np.dot(np.transpose(x - mu), np.dot(Cinv, (x - mu))))
 
     # Lambda phage
-    abs_x = np.linalg.norm(x)
-    if (abs_x <= 3):
-        p0 = factorial(3) * (0.05 ** abs_x) * ((1.0 - 5 * 0.05) ** (3 - abs_x)) / (np.prod(factorial(x)) * factorial(3 - abs_x))
+    # abs_x = np.linalg.norm(x)
+    # if (abs_x <= 3):
+    #     p0 = factorial(3) * (0.05 ** abs_x) * ((1.0 - 5 * 0.05) ** (3 - abs_x)) / (np.prod(factorial(x)) * factorial(3 - abs_x))
+    # else:
+    #     p0 = 0.0
+
+    # Lambda phage x1 = 1
+    if ((x == [1, 0, 0, 0, 0]).all()):
+        p0 = 1.0
     else:
         p0 = 0.0
 
@@ -44,22 +50,11 @@ p0 = np.zeros((dim1, dim2))
 n1_vec = np.zeros(nx1.size, dtype = int)
 n2_vec = np.zeros(nx2.size, dtype = int)
 for i in range(dim1):
-    num_i = i
-    for k, el_dim1 in enumerate(nx1):
-        if k == nx1.size - 1:
-            n1_vec[k] = num_i
-        else:
-            n1_vec[k] = num_i % el_dim1
-            num_i = num_i // el_dim1
+    n1_vec = CombIndexToVecIndex(i, nx1)
     x1 = n1_vec * x_max1 / (nx1 - 1.0)
     for j in range(dim2):
         num_j = j
-        for l, el_dim2 in enumerate(nx2):
-            if l == nx2.size - 1:
-                n2_vec[l] = num_j
-            else:
-                n2_vec[l] = num_j % el_dim2
-                num_j = num_j // el_dim2
+        n2_vec = CombIndexToVecIndex(j, nx2)
         x2 = n2_vec * x_max2 / (nx2 - 1.0)
         x = np.concatenate([x1, x2])
         p0[i, j] = eval_p0(x)
@@ -79,19 +74,3 @@ fmt = '%1.16f'
 np.savetxt("input/x1_input.csv", X1, delimiter = ",", fmt = fmt)
 np.savetxt("input/s_input.csv", S, delimiter = ",", fmt = fmt)
 np.savetxt("input/x2_input.csv", X2, delimiter = ",", fmt = fmt)
-
-# P = X1 @ S @ X2.T
-# Pmat = np.zeros((nx1[0], nx1[1]))
-# for i in range(nx1[0]):
-#     for j in range(nx1[1]):
-#         Pmat[i, j] = np.sum(P[i + nx1[0] * j, :])
-# print(np.sum(P))
-
-# xx1, xx2 = np.meshgrid(range(nx1[0]), range(nx1[1]), indexing = 'ij')
-# print(np.shape(xx1))
-# print(np.shape(xx2))
-
-# plt.contourf(xx1, xx2, Pmat)
-# plt.axis("scaled")
-# plt.colorbar()
-# plt.show()
