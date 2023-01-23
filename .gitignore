@@ -2,6 +2,7 @@
 .DS_STORE
 .vscode/
 __pycache__
+__init__.py
 *.npy
 *.out
 /build/*
