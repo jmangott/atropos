@@ -170,14 +170,7 @@ TEST_CASE("index_functions", "[index_functions]")
         comparison_array(10, 1) = 7.0;
         comparison_array(11, 1) = 8.0;
 
-        Index d = grid.dx1 + grid.dx2;
-        vector<int> nu(d, 0);
-
-        // Calculate -nu for shift
-        for (Index i = 0; i < d; i++)
-            nu[i] = -test_system.reactions[0]->nu[i];
-
-        ShiftMultiArrayRows(1, output_array, input_array, -sigma1[0], nu, grid, test_system);
+        ShiftMultiArrayRows(1, output_array, input_array, -sigma1[0], test_system.reactions[0]->minus_nu, grid, test_system);
 
         REQUIRE(bool(output_array == comparison_array));
     }

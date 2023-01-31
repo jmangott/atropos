@@ -5,13 +5,15 @@ using std::vector;
 
 mysys::mysys(vector<string> _names) : species_names(_names) {}
 
-vector<myreact *>::size_type mysys::mu()
+Index mysys::mu()
 {
     return reactions.size();
 }
 
-myreact::myreact(vector<int> _nu, vector<Index> _depends_on, double (*_prop_function)(vector<double>), mysys &_ref_system) : nu(_nu), depends_on(_depends_on), prop_function(_prop_function), ref_system(_ref_system)
+myreact::myreact(vector<int> _nu, vector<Index> _depends_on, double (*_prop_function)(vector<double>), mysys &_ref_system) : nu(_nu), minus_nu(_nu), depends_on(_depends_on), prop_function(_prop_function), ref_system(_ref_system)
 {
+    for (std::vector<int>::size_type i = 0; i < minus_nu.size(); i++)
+        minus_nu[i] *= -1;
     ref_system.reactions.push_back(this);
 }
 

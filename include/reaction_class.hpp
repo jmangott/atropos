@@ -16,13 +16,14 @@ public:
     std::vector<std::string> species_names;
     mysys(std::vector<std::string> _names);
     std::vector<myreact *> reactions;
-    std::vector<myreact *>::size_type mu();
+    Index mu();
 };
 
 class myreact
 {
 public:
     std::vector<int> nu;
+    std::vector<int> minus_nu;
     std::vector<Index> depends_on; 
     double propensity(std::vector<double> x);
     myreact(std::vector<int> _nu, std::vector<Index> _depends_on, double (*_prop_function)(std::vector<double>), mysys &_ref_system);
