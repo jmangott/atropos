@@ -27,6 +27,31 @@ Index VecIndexToCombIndex(multi_array<Index, 1> vec_index, multi_array<Index, 1>
     return comb_index;
 }
 
+Index VecIndexToCombIndex(vector<Index> vec_index, multi_array<Index, 1> interval)
+{
+    Index comb_index = 0;
+    Index stride = 1;
+    for (Index i = 0; i < interval.shape()[0]; i++)
+    {
+        comb_index += vec_index[i] * stride;
+        stride *= interval(i);
+    }
+    return comb_index;
+}
+
+
+Index VecIndexToCombIndex(vector<Index> vec_index, vector<Index> interval)
+{
+    Index comb_index = 0;
+    Index stride = 1;
+    for (vector<Index>::size_type i = 0; i < interval.size(); i++)
+    {
+        comb_index += vec_index[i] * stride;
+        stride *= interval[i];
+    }
+    return comb_index;
+}
+
 
 multi_array<Index, 1> CombIndexToVecIndex(Index comb_index, multi_array<Index, 1> interval)
 {
@@ -61,6 +86,53 @@ vector<Index> CombIndexToVecIndex(Index comb_index, vector<Index> interval)
         }
     }
     return vec_index;
+}
+
+
+Index DepCombIndexToCombIndex(Index comb_index_dep, vector<Index> n_dep, multi_array<Index, 1> n, vector<Index> dep_vec)
+{
+    // cout << "deptest0";
+    vector<Index> vec_index(n.shape()[0], 0);
+    vector<Index> vec_index_dep;
+    Index comb_index;
+    // cout << "1";
+    vec_index_dep = CombIndexToVecIndex(comb_index_dep, n_dep);
+    // Convert vec_index_dep to a vector with n.shape()[0]
+    // cout << "2";
+    for (vector<Index>::size_type i = 0; i < dep_vec.size(); i++)
+        vec_index[dep_vec[i]] = vec_index_dep[i];
+    // cout << "3" << endl;
+    comb_index = VecIndexToCombIndex(vec_index, n);
+    return comb_index;
+}
+
+
+Index CombIndexToDepCombIndex(Index comb_index, vector<Index> n_dep, multi_array<Index, 1> n, vector<Index> dep_vec)
+{
+    Index comb_index_dep;
+    multi_array<Index, 1> vec_index({n.shape()[0]});
+    vector<Index> vec_index_dep(n_dep.size());
+    vec_index = CombIndexToVecIndex(comb_index, n);
+    for (vector<Index>::size_type i = 0; i < dep_vec.size(); i++)
+    {
+        vec_index_dep[i] = vec_index(dep_vec[i]);
+    }
+    comb_index_dep = VecIndexToCombIndex(vec_index_dep, n_dep);
+    return comb_index_dep;
+}
+
+
+Index DepVecIndexRemCombIndexToCombIndex(vector<Index> vec_index_dep, Index comb_index_rem, vector<Index> n_rem, multi_array<Index, 1> n, vector<Index> dep_vec)
+{
+    vector<Index> vec_index_rem;
+    Index comb_index;
+    vec_index_rem = CombIndexToVecIndex(comb_index_rem, n_rem);
+
+    // vec_index_c_rem contains now the real population number
+    for (vector<Index>::size_type i = 0; i < dep_vec.size(); i++)
+        vec_index_rem[dep_vec[i]] = vec_index_dep[i];
+    comb_index = VecIndexToCombIndex(vec_index_rem, n);
+    return comb_index;
 }
 
 
@@ -118,7 +190,7 @@ void ShiftMultiArrayRows(int id, multi_array<double, 2> &output_array, const mul
     }
     else
     {
-        std::cerr << "ERROR: id must be 1 (shift in partition 1) or 2 (shift in partition 2)!" << endl;
+        std::cerr << "ERROR: `id` must be 1 (shift in partition 1) or 2 (shift in partition 2)!" << endl;
         std::abort();
     }
 
