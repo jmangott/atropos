@@ -101,13 +101,14 @@ void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<dou
         // Shift X1,2 for calculation of the coefficients
         ShiftMultiArrayRows(id_c, xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid, reaction_system);
 
+        vec_index_c_dep.resize(partition.n_dep[mu].size());
         set_zero(prod_KLC);
         set_zero(prod_KLD);
 
         // Loop through all species in the partition on which the propensity for reaction mu depends
         for (Index i = 0; i < partition.dx_dep(mu); i++)
         {
-            vec_index_c_dep = CombIndexToVecIndex(i, partition.n_dep[mu]);
+            CombIndexToVecIndex(vec_index_c_dep, i, partition.n_dep[mu]);
 
             // TODO: store w_x in such a way, that values can be accessed by `i` (the combined index with respect to the species on which the propensities depend)
             comb_index_c = DepCombIndexToCombIndex(i, partition.n_dep[mu], grid_alt->n1, partition.dep_vec[mu]);

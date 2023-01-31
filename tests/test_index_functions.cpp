@@ -88,7 +88,7 @@ TEST_CASE("index_functions", "[index_functions]")
             interval(i) = 11;
             comparison_vec(i) = i;
         }
-        vec_index = CombIndexToVecIndex(comb_index, interval);
+        CombIndexToVecIndex(vec_index, comb_index, interval);
         REQUIRE(bool(vec_index == comparison_vec));
     }
 
@@ -96,11 +96,11 @@ TEST_CASE("index_functions", "[index_functions]")
     {
         Index comb_index = 79;
         vector<Index> interval;
-        vector<Index> vec_index;
+        vector<Index> vec_index(4);
         vector<Index> comparison_vec;
         interval = {4, 2, 3, 5};
         comparison_vec = {3, 1, 0, 3};
-        vec_index = CombIndexToVecIndex(comb_index, interval);
+        CombIndexToVecIndex(vec_index, comb_index, interval);
         REQUIRE(bool(vec_index == comparison_vec));
     }
 
