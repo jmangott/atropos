@@ -1,34 +1,28 @@
 #include "s_step_functions.hpp"
+#include <chrono>
 
 using std::vector;
 
-void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, Index mu, vector<Index> sigma2)
+void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info partition, Index mu, vector<Index> sigma2, const vector<multi_array<double, 2>> &w_x)
 {
-    Index d = grid.m1 + grid.m2;
     multi_array<double, 2> b_coeff({grid.r, grid.r});
     multi_array<double, 2> b_coeff_shift({grid.r, grid.r});
-    multi_array<double, 1> a_vec({grid.dx2});
-    multi_array<double, 1> state1({grid.m1});
-    multi_array<double, 1> state2({grid.m2});
-    vector<double> state_tot(d, 0.0);
-    multi_array<Index, 1> vec_index1({grid.m1});
-    multi_array<Index, 1> vec_index2({grid.m2});
     multi_array<double, 1> w_x2({grid.dx2});
     multi_array<double, 2> xx2_shift(lr_sol.V.shape());
-    vector<int> nu(d, 0);
-
-    // Calculate -nu for shift
-    for (Index i = 0; i < d; i++)
-        nu[i] = -reaction_system.reactions[mu]->nu[i];
 
     // Calculate the shifted X2
-    ShiftMultiArrayRows(2, xx2_shift, lr_sol.V, -sigma2[mu], nu, grid, reaction_system);
+    ShiftMultiArrayRows(2, xx2_shift, lr_sol.V, -sigma2[mu], reaction_system.reactions[mu]->minus_nu, grid, reaction_system);
+
+    Index alpha1_dep, alpha2_dep;
 
     for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
     {
-        vec_index1 = CombIndexToVecIndex(alpha1, grid.n1);
-        w_x2 = CalculateWeightX(2, vec_index1, reaction_system, grid, mu);
-
+        alpha1_dep = CombIndexToDepCombIndex(alpha1, partition.n_dep1[mu], grid.n1, partition.dep_vec1[mu]);
+        for (Index alpha2 = 0; alpha2 < grid.dx2; alpha2++)
+        {
+            alpha2_dep = CombIndexToDepCombIndex(alpha2, partition.n_dep2[mu], grid.n2, partition.dep_vec2[mu]);
+            w_x2(alpha2) = w_x[mu](alpha1_dep, alpha2_dep) * grid.h2_mult;
+        }
         coeff(xx2_shift, lr_sol.V, w_x2, b_coeff_shift, blas);
         coeff(lr_sol.V, lr_sol.V, w_x2, b_coeff, blas);
 
@@ -36,6 +30,7 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
         {
             for (Index j = 0; j < grid.r; j++)
             {
+                // TODO: `b_coeff_vec` is a large object, replace alpha1 by alpha1_dep[mu]
                 b_coeff_vec_shift(alpha1, i, j) = b_coeff_shift(i, j);
                 b_coeff_vec(alpha1, i, j) = b_coeff(i, j);
             }
@@ -44,27 +39,16 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
 }
 
 
-void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, Index mu, vector<Index> sigma1)
+void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info partition, Index mu, vector<Index> sigma1)
 {
-    Index d = grid.m1 + grid.m2;
     multi_array<double, 2> e_coeff({grid.r, grid.r});
     multi_array<double, 2> f_coeff({grid.r, grid.r});
     multi_array<double, 1> w_x1({grid.dx1});
     multi_array<double, 1> w_x1_shift({grid.dx1});
     multi_array<double, 2> xx1_shift(lr_sol.X.shape());
-    vector<int> nu(d, 0);
-
-    // Calculate -nu for shift
-    for (Index i = 0; i < d; i++)
-        nu[i] = -reaction_system.reactions[mu]->nu[i];
 
     // Calculate the shifted X1
-    ShiftMultiArrayRows(1, xx1_shift, lr_sol.X, -sigma1[mu], nu, grid, reaction_system);
-
-    // For integration weight
-    double h_xx1_mult = 1;
-    for (Index i = 0; i < grid.m1; i++)
-        h_xx1_mult *= grid.h1(i);
+    ShiftMultiArrayRows(1, xx1_shift, lr_sol.X, -sigma1[mu], reaction_system.reactions[mu]->minus_nu, grid, reaction_system);
 
     for (Index j = 0; j < grid.r; j++)
     {
@@ -73,8 +57,8 @@ void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<dou
             // Calculate integration weights
             for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
             {
-                w_x1_shift(alpha1) = b_coeff_vec_shift(alpha1, j, l) * h_xx1_mult;
-                w_x1(alpha1) = b_coeff_vec(alpha1, j, l) * h_xx1_mult;
+                w_x1_shift(alpha1) = b_coeff_vec_shift(alpha1, j, l) * grid.h1_mult;
+                w_x1(alpha1) = b_coeff_vec(alpha1, j, l) * grid.h1_mult;
             }
 
             coeff(xx1_shift, lr_sol.X, w_x1_shift, e_coeff, blas);
@@ -92,8 +76,9 @@ void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<dou
     }
 }
 
+
 // Perform S-Step with time step size `tau`
-void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, double tau)
+void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info partition, const vector<multi_array<double, 2>> &w_x, double tau)
 {
     multi_array<double, 3> b_coeff_vec_shift({grid.dx1, grid.r, grid.r});
     multi_array<double, 3> b_coeff_vec({grid.dx1, grid.r, grid.r});
@@ -102,10 +87,10 @@ void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &
     multi_array<double, 2> s_dot(lr_sol.S.shape());
     set_zero(s_dot);
 
-    for (std::vector<myreact *>::size_type mu = 0; mu < reaction_system.mu(); mu++)
+    for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
-        CalculateCoefficientsB(b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, mu, sigma2);
-        CalculateCoefficientsS(e_coeff, f_coeff, b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, mu, sigma1);
+        CalculateCoefficientsB(b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, partition, mu, sigma2, w_x);
+        CalculateCoefficientsS(e_coeff, f_coeff, b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, partition, mu, sigma1);
 
         for (Index i = 0; i < grid.r; i++)
         {

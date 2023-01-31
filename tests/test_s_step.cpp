@@ -23,7 +23,8 @@ using std::vector;
 TEST_CASE("s_step", "[s_step]")
 {
     double inv_sqrt_e = 1 / std::sqrt(std::exp(1.0));
-    InitializeTest(lr_sol, grid, ip_xx1, ip_xx2, blas);
+    
+    InitializeTest(lr_sol, grid, ip_xx1, ip_xx2, blas, w_x);
     CalculateShiftAmount(sigma1, sigma2, test_system, grid);
 
     // SECTION("CalculateCoefficientsB")
@@ -46,10 +47,10 @@ TEST_CASE("s_step", "[s_step]")
         multi_array<double, 3> b_coeff_vec2_comparison({grid.dx1, grid.r, grid.r});
         multi_array<double, 3> b_coeff_vec3_comparison({grid.dx1, grid.r, grid.r});
 
-        CalculateCoefficientsB(b_coeff_vec_shift0, b_coeff_vec0, lr_sol, blas, test_system, grid, 0, sigma2);
-        CalculateCoefficientsB(b_coeff_vec_shift1, b_coeff_vec1, lr_sol, blas, test_system, grid, 1, sigma2);
-        CalculateCoefficientsB(b_coeff_vec_shift2, b_coeff_vec2, lr_sol, blas, test_system, grid, 2, sigma2);
-        CalculateCoefficientsB(b_coeff_vec_shift3, b_coeff_vec3, lr_sol, blas, test_system, grid, 3, sigma2);
+        CalculateCoefficientsB(b_coeff_vec_shift0, b_coeff_vec0, lr_sol, blas, test_system, grid, partition, 0, sigma2, w_x_dep);
+        CalculateCoefficientsB(b_coeff_vec_shift1, b_coeff_vec1, lr_sol, blas, test_system, grid, partition, 1, sigma2, w_x_dep);
+        CalculateCoefficientsB(b_coeff_vec_shift2, b_coeff_vec2, lr_sol, blas, test_system, grid, partition, 2, sigma2, w_x_dep);
+        CalculateCoefficientsB(b_coeff_vec_shift3, b_coeff_vec3, lr_sol, blas, test_system, grid, partition, 3, sigma2, w_x_dep);
 
         b_coeff_vec_shift0_comparison(0, 0, 0) = 0.0;
         b_coeff_vec_shift0_comparison(0, 0, 1) = 0.0;
@@ -104,10 +105,10 @@ TEST_CASE("s_step", "[s_step]")
         multi_array<double, 4> f_coeff2({grid.r, grid.r, grid.r, grid.r});
         multi_array<double, 4> f_coeff3({grid.r, grid.r, grid.r, grid.r});
 
-        CalculateCoefficientsS(e_coeff0, f_coeff0, b_coeff_vec_shift0, b_coeff_vec0, lr_sol, blas, test_system, grid, 0, sigma1);
-        CalculateCoefficientsS(e_coeff1, f_coeff1, b_coeff_vec_shift1, b_coeff_vec1, lr_sol, blas, test_system, grid, 1, sigma1);
-        CalculateCoefficientsS(e_coeff2, f_coeff2, b_coeff_vec_shift2, b_coeff_vec2, lr_sol, blas, test_system, grid, 2, sigma1);
-        CalculateCoefficientsS(e_coeff3, f_coeff3, b_coeff_vec_shift3, b_coeff_vec3, lr_sol, blas, test_system, grid, 3, sigma1);
+        CalculateCoefficientsS(e_coeff0, f_coeff0, b_coeff_vec_shift0, b_coeff_vec0, lr_sol, blas, test_system, grid, partition, 0, sigma1);
+        CalculateCoefficientsS(e_coeff1, f_coeff1, b_coeff_vec_shift1, b_coeff_vec1, lr_sol, blas, test_system, grid, partition, 1, sigma1);
+        CalculateCoefficientsS(e_coeff2, f_coeff2, b_coeff_vec_shift2, b_coeff_vec2, lr_sol, blas, test_system, grid, partition, 2, sigma1);
+        CalculateCoefficientsS(e_coeff3, f_coeff3, b_coeff_vec_shift3, b_coeff_vec3, lr_sol, blas, test_system, grid, partition, 3, sigma1);
 
         multi_array<double, 4> e_coeff0_comparison({grid.r, grid.r, grid.r, grid.r});
         multi_array<double, 4> e_coeff1_comparison({grid.r, grid.r, grid.r, grid.r});
@@ -287,7 +288,7 @@ TEST_CASE("s_step", "[s_step]")
         stau_comparison(1, 0) -= tau * inv_sqrt_e;
         stau_comparison(1, 1) += tau * 0.5 * inv_sqrt_e;
 
-        PerformSStep(sigma1, sigma2, lr_sol, blas, test_system, grid, tau);
+        PerformSStep(sigma1, sigma2, lr_sol, blas, test_system, grid, partition, w_x_dep, tau);
         REQUIRE(bool(lr_sol.S == stau_comparison));
         // }
 }

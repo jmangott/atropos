@@ -17,10 +17,12 @@
 #include "io_functions.hpp"
 #include "kl_step_functions.hpp"
 #include "parameters.hpp"
+#include "partition_class.hpp"
 #include "print_functions.hpp"
 // #include "reactions_ts.hpp"
 #include "reactions_lp.hpp"
 #include "s_step_functions.hpp"
+#include "weight_functions.hpp"
 
 using std::cout;
 using std::endl;
@@ -35,6 +37,19 @@ int main()
     /////////////////////////////////////////////
 
     grid_info grid(kM1, kM2, kR, kN1, kN2, kK1, kK2);
+
+    // Perform partition of the network
+    partition_info partition(grid, mysystem);
+    partition_info1<1> partition1(grid, mysystem);
+    partition_info1<2> partition2(grid, mysystem);
+
+    // Integration weights
+    multi_array<double, 3> w_x({grid.dx1, grid.dx2, mysystem.mu()});
+    vector<multi_array<double, 2>> w_x_dep(mysystem.mu());
+
+    // Calculate the integration weights
+    CalculateWeight(w_x, mysystem, grid);
+    CalculateWeightDep(w_x_dep, mysystem, grid, partition);
 
     // Declare LR-specific objects
     // Temporary objects for multiplication
@@ -93,9 +108,9 @@ int main()
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
     // Write output files for initial values
-    WriteOutMultiArray(lr_sol.X, "../output/lambda_phage_test1/x1_output_t0");
-    WriteOutMultiArray(lr_sol.S, "../output/lambda_phage_test1/s_output_t0");
-    WriteOutMultiArray(lr_sol.V, "../output/lambda_phage_test1/x2_output_t0");
+    WriteOutMultiArray(lr_sol.X, "../output/profiling/x1_output_t0");
+    WriteOutMultiArray(lr_sol.S, "../output/profiling/s_output_t0");
+    WriteOutMultiArray(lr_sol.V, "../output/profiling/x2_output_t0");
 
     auto start_time(std::chrono::high_resolution_clock::now());
 
@@ -112,7 +127,9 @@ int main()
 
         tmp_x1 = lr_sol.X;
         blas.matmul(tmp_x1, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
-        PerformKLStep(2, sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+        PerformKLStep<1>(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, w_x, kTau);
+        // PerformKLStep(2, sigma1, sigma2, lr_sol, blas, mysystem, grid, w_x, kTau);
+        
         // Perform the QR decomposition K = X * S
         gs(lr_sol.X, lr_sol.S, ip_xx1);
 
@@ -132,7 +149,12 @@ int main()
         ////////////////// S-STEP ///////////////////
         /////////////////////////////////////////////
 
-        PerformSStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+        // auto start_time_s(std::chrono::high_resolution_clock::now());
+        PerformSStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition, w_x_dep, kTau);
+        // auto end_time_s(std::chrono::high_resolution_clock::now());
+        // auto duration_s_incr = end_time_s - start_time_s;
+        // double duration_s = duration_s_incr.count();
+        // cout << "S-step: " << duration_s << endl;
 
         /////////////////////////////////////////////
         ////////////////// L-STEP ///////////////////
@@ -140,7 +162,8 @@ int main()
 
         tmp_x2 = lr_sol.V;
         blas.matmul_transb(tmp_x2, lr_sol.S, lr_sol.V); // lr_sol.V contains now L
-        PerformKLStep(1, sigma1, sigma2, lr_sol, blas, mysystem, grid, kTau);
+        PerformKLStep<2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition2, w_x, kTau);
+        // PerformKLStep(1, sigma1, sigma2, lr_sol, blas, mysystem, grid, w_x, kTau);
         // Perform the QR decomposition L = V * S^T
         gs(lr_sol.V, lr_sol.S, ip_xx2);
         transpose_inplace(lr_sol.S);
@@ -173,6 +196,10 @@ int main()
         t += kTau;
 
         // Print progress bar
+        // auto end_time(std::chrono::high_resolution_clock::now());
+        // auto duration_main_incr = end_time - start_time;
+        // double duration_main = duration_main_incr.count();
+        // cout << "main: " << duration_main << endl;
         PrintProgressBar(ts, kNsteps, start_time);
 
         std::stringstream fname_x1_output;
@@ -183,9 +210,9 @@ int main()
         {
             // Write snapshot
             t_int = (int) (ts + 1) * kTau;
-            fname_x1_output << "../output/lambda_phage_test1/x1_output_t" << t_int;
-            fname_s_output << "../output/lambda_phage_test1/s_output_t" << t_int;
-            fname_x2_output << "../output/lambda_phage_test1/x2_output_t" << t_int;
+            fname_x1_output << "../output/profiling/x1_output_t" << t_int;
+            fname_s_output << "../output/profiling/s_output_t" << t_int;
+            fname_x2_output << "../output/profiling/x2_output_t" << t_int;
             WriteOutMultiArray(lr_sol.X, fname_x1_output.str());
             WriteOutMultiArray(lr_sol.S, fname_s_output.str());
             WriteOutMultiArray(lr_sol.V, fname_x2_output.str());

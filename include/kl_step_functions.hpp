@@ -12,15 +12,131 @@
 
 #include "grid_class.hpp"
 #include "index_functions.hpp"
+#include "partition_class.hpp"
 #include "reaction_class.hpp"
 
-// Calculate the integration weight for coefficients C1 and D1 (`id` = 1) or C2 and D2 (`id` = 2), depending on `alpha1` and `mu`
-multi_array<double, 1> CalculateWeightX(int id, multi_array<Index, 1> vec_index_c, mysys reaction_system, grid_info grid, Index mu);
-
 // Calculate coefficients C1 and D1 (`id` = 1) or C2 and D2 (`id` = 2) for all values of `dep_vec` for a given reaction `mu`
-void CalculateCoefficientsX(int id, multi_array<double, 2> &c_coeff, multi_array<double, 2> &d_coeff, const lr2<double> &lr_sol, blas_ops blas, const multi_array<double, 2> &xx2_shift, multi_array<Index, 1> vec_index1, mysys reaction_system, grid_info grid, Index mu);
+void CalculateCoefficientsX(int id, multi_array<double, 2> &c_coeff, multi_array<double, 2> &d_coeff, const lr2<double> &lr_sol, blas_ops blas, const multi_array<double, 2> &xx2_shift, Index alpha2, mysys reaction_system, grid_info grid, Index mu, multi_array<double, 3> &w_x);
 
-// Perform L-Step (`id` = 1) or K-Step (`id` = 2) with time step size `tau`
-void PerformKLStep(int id, std::vector<Index> sigma1, vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, double tau);
+// Class for obtaining grid info in a given partition about species on which the propensity depends
+struct partition_info
+{
+    multi_array<Index, 1> dx_dep1;
+    multi_array<Index, 1> dx_dep2;
+    multi_array<Index, 1> dx_rem1;
+    multi_array<Index, 1> dx_rem2;
+    vector<vector<Index>> n_dep1;
+    vector<vector<Index>> n_dep2;
+    vector<vector<Index>> n_rem1;
+    vector<vector<Index>> n_rem2;
+    vector<vector<Index>> dep_vec1;
+    vector<vector<Index>> dep_vec2;
+
+    partition_info(grid_info grid, mysys reaction_system);
+};
+
+
+// Perform K-Step (`id` = 1) or L-Step (`id` = 2) with time step size `tau`
+template <Index id>
+void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info1<id> partition, multi_array<double, 3> &w_x, double tau)
+{
+    grid_info *grid_alt;
+    std::array<Index, 2> tmp_xx_dim, tmp_xx_c_dim;
+    if (id == 1)
+    {
+        tmp_xx_dim = lr_sol.V.shape();
+        tmp_xx_c_dim = lr_sol.X.shape();
+    }
+    else if (id == 2)
+    {
+        tmp_xx_dim = lr_sol.X.shape();
+        tmp_xx_c_dim = lr_sol.V.shape();
+    }
+
+    multi_array<double, 2> xx_shift(tmp_xx_dim);
+    multi_array<double, 2> tmp_xx(tmp_xx_dim), tmp_xx_c(tmp_xx_c_dim);
+    std::vector<Index> sigma, sigma_c;
+
+    int id_c;
+    if (id == 1)
+    {
+        grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2);
+        // TODO: `tmp_xx` and `tmp_xx_c` could be replaced by pointers
+        tmp_xx = lr_sol.V;
+        tmp_xx_c = lr_sol.X;
+        sigma_c = sigma2;
+        sigma = sigma1;
+        id_c = 2;
+    }
+    else if (id == 2)
+    {
+        grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.k2, grid.k1);
+        tmp_xx = lr_sol.X;
+        tmp_xx_c = lr_sol.V;
+        sigma_c = sigma1;
+        sigma = sigma2;
+        id_c = 1;
+    }
+    else
+    {
+        std::cerr << "ERROR: `id` must be 1 (=K) or 2 (=L)!" << std::endl;
+        std::abort();
+    }
+
+    multi_array<double, 2> c_coeff({grid_alt->r, grid_alt->r});
+    multi_array<double, 2> d_coeff({grid_alt->r, grid_alt->r});
+
+    // TODO: replace these quantities by lr_sol.V or lr_sol.X
+    multi_array<double, 2> prod_KLC({grid_alt->dx1, grid_alt->r});
+    multi_array<double, 2> prod_KLC_shift({grid_alt->dx1, grid_alt->r});
+    multi_array<double, 2> prod_KLD({grid_alt->dx1, grid_alt->r});
+    multi_array<double, 2> kl_dot({grid_alt->dx1, grid_alt->r});
+    set_zero(kl_dot);
+
+    Index alpha_c, comb_index_c;
+    std::vector<Index> vec_index_c_dep;
+
+    for (Index mu = 0; mu < reaction_system.mu(); mu++)
+    {
+        // Shift X1,2 for calculation of the coefficients
+        ShiftMultiArrayRows(id_c, xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid, reaction_system);
+
+        set_zero(prod_KLC);
+        set_zero(prod_KLD);
+
+        // Loop through all species in the partition on which the propensity for reaction mu depends
+        for (Index i = 0; i < partition.dx_dep(mu); i++)
+        {
+            vec_index_c_dep = CombIndexToVecIndex(i, partition.n_dep[mu]);
+
+            // TODO: store w_x in such a way, that values can be accessed by `i` (the combined index with respect to the species on which the propensities depend)
+            comb_index_c = DepCombIndexToCombIndex(i, partition.n_dep[mu], grid_alt->n1, partition.dep_vec[mu]);
+            CalculateCoefficientsX(id, c_coeff, d_coeff, lr_sol, blas, xx_shift, comb_index_c, reaction_system, grid, mu, w_x);
+            // Loop through the remaining species in the partition
+            for (Index k = 0; k < partition.dx_rem(mu); k++)
+            {
+                alpha_c = DepVecIndexRemCombIndexToCombIndex(vec_index_c_dep, k, partition.n_rem[mu], grid_alt->n1, partition.dep_vec[mu]);
+
+                // Calculate matrix-vector multiplication of C2*K and D2*K
+                for (Index j = 0; j < grid.r; j++)
+                {
+                    for (Index l = 0; l < grid.r; l++)
+                    {
+                        prod_KLC(alpha_c, j) += tau * tmp_xx_c(alpha_c, l) * c_coeff(j, l);
+                        prod_KLD(alpha_c, j) += tau * tmp_xx_c(alpha_c, l) * d_coeff(j, l);
+                    }
+                }
+            }
+        }
+        // Shift prod_KC
+        ShiftMultiArrayRows(id, prod_KLC_shift, prod_KLC, sigma[mu], reaction_system.reactions[mu]->nu, grid, reaction_system);
+
+        // Calculate k_dot = shift(C1,2 * K) - D1,2 * K
+        kl_dot += prod_KLC_shift;
+        kl_dot -= prod_KLD;
+    }
+    (id == 1) ? (lr_sol.X += kl_dot) : (lr_sol.V += kl_dot);
+    delete grid_alt;
+}
 
 #endif

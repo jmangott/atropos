@@ -16,14 +16,14 @@
 
 // Calculate the auxiliary coefficients B (`b_coeff_vec`) and B_tilde (`b_coeff_vec_shift`) 
 // for coefficients E and F (depending on `mu`)
-void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, Index mu, std::vector<Index> sigma2);
+void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info partition, Index mu, std::vector<Index> sigma2, const vector<multi_array<double, 2>> &w_x);
 
 
 // Calculate the coefficients E and F (depending on `mu`)
-void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, Index mu, std::vector<Index> sigma1);
+void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info partition, Index mu, std::vector<Index> sigma1);
 
 
 // Perform S-Step with time step size `tau`
-void PerformSStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, double tau);
+void PerformSStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info partition, const vector<multi_array<double, 2>> &w_x, double tau);
 
 #endif

@@ -13,7 +13,9 @@
 #include "grid_class.hpp"
 #include "index_functions.hpp"
 #include "kl_step_functions.hpp"
+#include "partition_class.hpp"
 #include "reaction_class.hpp"
+#include "weight_functions.hpp"
 
 vector<string> test_names = {"S1, S2"};
 mysys test_system(test_names);
@@ -53,9 +55,15 @@ lr2<double> lr_sol(kR, {grid.dx1, grid.dx2});
 std::function<double(double *, double *)> ip_xx1 = inner_product_from_const_weight(grid.h1(0), grid.dx1);
 std::function<double(double *, double *)> ip_xx2 = inner_product_from_const_weight(grid.h2(0), grid.dx2);
 blas_ops blas;
+multi_array<double, 3> w_x({grid.dx1, grid.dx2, test_system.mu()});
+std::vector<multi_array<double, 2>> w_x_dep(test_system.mu());
 
+// Perform partition of the network
+partition_info partition(grid, test_system);
+partition_info1<1> partition1(grid, test_system);
+partition_info1<2> partition2(grid, test_system);
 
-inline void InitializeTest(lr2<double> &lr_sol, grid_info grid, std::function<double(double *, double *)> ip_xx1, std::function<double(double *, double *)> ip_xx2, blas_ops blas)
+inline void InitializeTest(lr2<double> &lr_sol, grid_info grid, std::function<double(double *, double *)> ip_xx1, std::function<double(double *, double *)> ip_xx2, blas_ops blas, multi_array<double, 3> &w_x)
 {
     multi_array<double, 1> xx1({grid.dx1});
     multi_array<double, 1> xx2({grid.dx2});
@@ -76,6 +84,10 @@ inline void InitializeTest(lr2<double> &lr_sol, grid_info grid, std::function<do
     x2.push_back(it2);
 
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
+
+    // Calculate the integration weights
+    CalculateWeight(w_x, test_system, grid);
+    CalculateWeightDep(w_x_dep, test_system, grid, partition);
 }
 
 #endif
