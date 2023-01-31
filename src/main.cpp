@@ -150,7 +150,7 @@ int main()
         /////////////////////////////////////////////
 
         // auto start_time_s(std::chrono::high_resolution_clock::now());
-        PerformSStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition, w_x_dep, kTau);
+        PerformSStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep, kTau);
         // auto end_time_s(std::chrono::high_resolution_clock::now());
         // auto duration_s_incr = end_time_s - start_time_s;
         // double duration_s = duration_s_incr.count();
