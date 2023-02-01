@@ -24,7 +24,7 @@ TEST_CASE("k_step", "[k_step]")
     // Temporary objects for multiplication
     multi_array<double, 2> tmp_x1({grid.dx1, grid.r});
 
-    InitializeTest(lr_sol, grid, ip_xx1, ip_xx2, blas, w_x);
+    InitializeTest(lr_sol, grid, ip_xx1, ip_xx2, blas, w_x_dep);
 
     // SECTION("InitializeAuxiliaryObjects")
     // {
@@ -69,6 +69,9 @@ TEST_CASE("k_step", "[k_step]")
 
     CalculateShiftAmount(sigma1, sigma2, test_system, grid);
 
+    multi_array<double, 1> state_vec1({1});
+    multi_array<Index, 1> vec_index1({1});
+
     // SECTION("CalculateShiftAmount")
     // {
         vector<Index> sigma1_comparison, sigma2_comparison;
@@ -81,110 +84,114 @@ TEST_CASE("k_step", "[k_step]")
 
     // SECTION("CalculateWeightX")
     // {
-        multi_array<double, 1> weight0_comparison({2}), weight1_comparison({2}), weight2_comparison({2}), weight3_comparison({2});
-        multi_array<double, 1> state_vec1({1});
-        multi_array<Index, 1> vec_index1({1});
+        multi_array<double, 2> weight0_comparison({2, 1}), weight1_comparison({1, 2}), weight2_comparison({1, 2}), weight3_comparison({2, 1});
 
-        // CASE 0: x_1 = 0.0, CASE 1: x_1 = 1.0
-        for (Index i = 0; i < 2; i++)
-        {
-            vec_index1(0) = i;
-            state_vec1 = VecIndexToState(vec_index1, grid.n1, grid.lim1);
+        weight0_comparison(0, 0) = 0.0;
+        weight0_comparison(1, 0) = 1.0;
 
-            weight0_comparison(0) = state_vec1(0);
-            weight0_comparison(1) = state_vec1(0);
-            weight1_comparison(0) = 0.0;
-            weight1_comparison(1) = 1.0;
-            weight2_comparison(0) = 1.0;
-            weight2_comparison(1) = 0.5;
-            weight3_comparison(0) = 1.0 / (1.0 + state_vec1(0));
-            weight3_comparison(1) = 1.0 / (1.0 + state_vec1(0));
+        weight1_comparison(0, 0) = 0.0;
+        weight1_comparison(0, 1) = 1.0;
 
-            REQUIRE(bool(w_x(i, 0, 0) == weight0_comparison(0)));
-            REQUIRE(bool(w_x(i, 1, 0) == weight0_comparison(1)));
-            REQUIRE(bool(w_x(i, 0, 1) == weight1_comparison(0)));
-            REQUIRE(bool(w_x(i, 1, 1) == weight1_comparison(1)));
-            REQUIRE(bool(w_x(i, 0, 2) == weight2_comparison(0)));
-            REQUIRE(bool(w_x(i, 1, 2) == weight2_comparison(1)));
-            REQUIRE(bool(w_x(i, 0, 3) == weight3_comparison(0)));
-            REQUIRE(bool(w_x(i, 1, 3) == weight3_comparison(1)));
-        }
+        weight2_comparison(0, 0) = 1.0;
+        weight2_comparison(0, 1) = 0.5;
+
+        weight3_comparison(0, 0) = 1.0;
+        weight3_comparison(1, 0) = 0.5;
+
+        REQUIRE(bool(w_x_dep[0] == weight0_comparison));
+        REQUIRE(bool(w_x_dep[1] == weight1_comparison));
+        REQUIRE(bool(w_x_dep[2] == weight2_comparison));
+        REQUIRE(bool(w_x_dep[3] == weight3_comparison));
     // }
 
-        // SECTION("CalculateCoefficientsX")
-        // {
-        // Coefficients
-        // CASE 0: x_1 = 0.0, CASE 1: x_1 = 1.0
-        for (Index i = 0; i < 2; i++)
-        {
-            vec_index1(0) = i;
-            state_vec1 = VecIndexToState(vec_index1, grid.n1, grid.lim1);
+    // SECTION("CalculateCoefficientsX")
+    // {
+        multi_array<double, 2> c2_0_0({2, 2}), c2_0_1({2, 2}), c2_1({2, 2}), c2_2({2, 2}), c2_3_0({2, 2}), c2_3_1({2, 2});
+        multi_array<double, 2> d2_0_0({2, 2}), d2_0_1({2, 2}), d2_1({2, 2}), d2_2({2, 2}), d2_3_0({2, 2}), d2_3_1({2, 2});
 
-            multi_array<double, 2> c2_0({2, 2}), c2_1({2, 2}), c2_2({2, 2}), c2_3({2, 2});
-            multi_array<double, 2> d2_0({2, 2}), d2_1({2, 2}), d2_2({2, 2}), d2_3({2, 2});
+        multi_array<double, 2> c2_0_0_comparison({2, 2}), c2_0_1_comparison({2, 2}), c2_1_comparison({2, 2}), c2_2_comparison({2, 2}), c2_3_0_comparison({2, 2}), c2_3_1_comparison({2, 2});
+        multi_array<double, 2> d2_0_0_comparison({2, 2}), d2_0_1_comparison({2, 2}), d2_1_comparison({2, 2}), d2_2_comparison({2, 2}), d2_3_0_comparison({2, 2}), d2_3_1_comparison({2, 2});
 
-            multi_array<double, 2> c2_0_comparison({2, 2}), c2_1_comparison({2, 2}), c2_2_comparison({2, 2}), c2_3_comparison({2, 2});
-            multi_array<double, 2> d2_0_comparison({2, 2}), d2_1_comparison({2, 2}), d2_2_comparison({2, 2}), d2_3_comparison({2, 2});
+        multi_array<double, 2> xx2_shift0(lr_sol.V.shape());
+        multi_array<double, 2> xx2_shift1(lr_sol.V.shape());
+        multi_array<double, 2> xx2_shift2(lr_sol.V.shape());
+        multi_array<double, 2> xx2_shift3(lr_sol.V.shape());
 
-            multi_array<double, 2> xx2_shift0(lr_sol.V.shape());
-            multi_array<double, 2> xx2_shift1(lr_sol.V.shape());
-            multi_array<double, 2> xx2_shift2(lr_sol.V.shape());
-            multi_array<double, 2> xx2_shift3(lr_sol.V.shape());
+        ShiftMultiArrayRows(2, xx2_shift0, lr_sol.V, -sigma2[0], test_system.reactions[0]->minus_nu, grid, test_system);
+        ShiftMultiArrayRows(2, xx2_shift1, lr_sol.V, -sigma2[1], test_system.reactions[1]->minus_nu, grid, test_system);
+        ShiftMultiArrayRows(2, xx2_shift2, lr_sol.V, -sigma2[2], test_system.reactions[2]->minus_nu, grid, test_system);
+        ShiftMultiArrayRows(2, xx2_shift3, lr_sol.V, -sigma2[3], test_system.reactions[3]->minus_nu, grid, test_system);
 
-            ShiftMultiArrayRows(2, xx2_shift0, lr_sol.V, -sigma2[0], test_system.reactions[0]->minus_nu, grid, test_system);
-            ShiftMultiArrayRows(2, xx2_shift1, lr_sol.V, -sigma2[1], test_system.reactions[1]->minus_nu, grid, test_system);
-            ShiftMultiArrayRows(2, xx2_shift2, lr_sol.V, -sigma2[2], test_system.reactions[2]->minus_nu, grid, test_system);
-            ShiftMultiArrayRows(2, xx2_shift3, lr_sol.V, -sigma2[3], test_system.reactions[3]->minus_nu, grid, test_system);
+        CalculateCoefficientsX<1>(c2_0_0, d2_0_0, lr_sol, blas, xx2_shift0, 0, test_system, grid, partition2, 0, w_x_dep);
+        CalculateCoefficientsX<1>(c2_0_1, d2_0_1, lr_sol, blas, xx2_shift0, 1, test_system, grid, partition2, 0, w_x_dep);
+        CalculateCoefficientsX<1>(c2_1, d2_1, lr_sol, blas, xx2_shift1, 0, test_system, grid, partition2, 1, w_x_dep);
+        CalculateCoefficientsX<1>(c2_2, d2_2, lr_sol, blas, xx2_shift2, 0, test_system, grid, partition2, 2, w_x_dep);
+        CalculateCoefficientsX<1>(c2_3_0, d2_3_0, lr_sol, blas, xx2_shift3, 0, test_system, grid, partition2, 3, w_x_dep);
+        CalculateCoefficientsX<1>(c2_3_1, d2_3_1, lr_sol, blas, xx2_shift3, 1, test_system, grid, partition2, 3, w_x_dep);
 
-            CalculateCoefficientsX(1, c2_0, d2_0, lr_sol, blas, xx2_shift0, i, test_system, grid, 0, w_x);
-            CalculateCoefficientsX(1, c2_1, d2_1, lr_sol, blas, xx2_shift1, i, test_system, grid, 1, w_x);
-            CalculateCoefficientsX(1, c2_2, d2_2, lr_sol, blas, xx2_shift2, i, test_system, grid, 2, w_x);
-            CalculateCoefficientsX(1, c2_3, d2_3, lr_sol, blas, xx2_shift3, i, test_system, grid, 3, w_x);
+        c2_0_0_comparison(0, 0) = 0.0;
+        c2_0_0_comparison(0, 1) = 0.0;
+        c2_0_0_comparison(1, 0) = 0.0;
+        c2_0_0_comparison(1, 1) = 0.0;
 
-            c2_0_comparison(0, 0) = state_vec1(0);
-            c2_0_comparison(0, 1) = 0.0;
-            c2_0_comparison(1, 0) = 0.0;
-            c2_0_comparison(1, 1) = state_vec1(0);
+        c2_0_1_comparison(0, 0) = 1.0;
+        c2_0_1_comparison(0, 1) = 0.0;
+        c2_0_1_comparison(1, 0) = 0.0;
+        c2_0_1_comparison(1, 1) = 1.0;
 
-            c2_1_comparison(0, 0) = 0.5;
-            c2_1_comparison(0, 1) =-0.5;
-            c2_1_comparison(1, 0) = 0.5;
-            c2_1_comparison(1, 1) =-0.5;
+        c2_1_comparison(0, 0) = 0.5;
+        c2_1_comparison(0, 1) =-0.5;
+        c2_1_comparison(1, 0) = 0.5;
+        c2_1_comparison(1, 1) =-0.5;
 
-            c2_2_comparison(0, 0) = 0.75;
-            c2_2_comparison(0, 1) = 0.25;
-            c2_2_comparison(1, 0) = 0.25;
-            c2_2_comparison(1, 1) = 0.75;
+        c2_2_comparison(0, 0) = 0.75;
+        c2_2_comparison(0, 1) = 0.25;
+        c2_2_comparison(1, 0) = 0.25;
+        c2_2_comparison(1, 1) = 0.75;
 
-            c2_3_comparison(0, 0) = 0.5 / (1.0 + state_vec1(0));
-            c2_3_comparison(0, 1) = 0.5 / (1.0 + state_vec1(0));
-            c2_3_comparison(1, 0) =-0.5 / (1.0 + state_vec1(0));
-            c2_3_comparison(1, 1) =-0.5 / (1.0 + state_vec1(0));
+        c2_3_0_comparison(0, 0) = 0.5;
+        c2_3_0_comparison(0, 1) = 0.5;
+        c2_3_0_comparison(1, 0) =-0.5;
+        c2_3_0_comparison(1, 1) =-0.5;
 
-            d2_0_comparison = c2_0_comparison;
+        c2_3_1_comparison(0, 0) = 0.25;
+        c2_3_1_comparison(0, 1) = 0.25;
+        c2_3_1_comparison(1, 0) =-0.25;
+        c2_3_1_comparison(1, 1) =-0.25;
 
-            d2_1_comparison(0, 0) = 0.5;
-            d2_1_comparison(0, 1) =-0.5;
-            d2_1_comparison(1, 0) =-0.5;
-            d2_1_comparison(1, 1) = 0.5;
+        d2_0_0_comparison = c2_0_0_comparison;
+        d2_0_1_comparison = c2_0_1_comparison;
 
-            d2_2_comparison = c2_2_comparison;
+        d2_1_comparison(0, 0) = 0.5;
+        d2_1_comparison(0, 1) =-0.5;
+        d2_1_comparison(1, 0) =-0.5;
+        d2_1_comparison(1, 1) = 0.5;
 
-            d2_3_comparison(0, 0) = 1.0 / (1.0 + state_vec1(0));
-            d2_3_comparison(0, 1) = 0.0;
-            d2_3_comparison(1, 0) = 0.0;
-            d2_3_comparison(1, 1) = 1.0 / (1.0 + state_vec1(0));
+        d2_2_comparison = c2_2_comparison;
 
-            REQUIRE(bool(c2_0 == c2_0_comparison));
-            REQUIRE(bool(c2_1 == c2_1_comparison));
-            REQUIRE(bool(c2_2 == c2_2_comparison));
-            REQUIRE(bool(c2_3 == c2_3_comparison));
+        d2_3_0_comparison(0, 0) = 1.0;
+        d2_3_0_comparison(0, 1) = 0.0;
+        d2_3_0_comparison(1, 0) = 0.0;
+        d2_3_0_comparison(1, 1) = 1.0;
 
-            REQUIRE(bool(d2_0 == d2_0_comparison));
-            REQUIRE(bool(d2_1 == d2_1_comparison));
-            REQUIRE(bool(d2_2 == d2_2_comparison));
-            REQUIRE(bool(d2_3 == d2_3_comparison));
-        }
+        d2_3_1_comparison(0, 0) = 0.5;
+        d2_3_1_comparison(0, 1) = 0.0;
+        d2_3_1_comparison(1, 0) = 0.0;
+        d2_3_1_comparison(1, 1) = 0.5;
+
+        REQUIRE(bool(c2_0_0 == c2_0_0_comparison));
+        REQUIRE(bool(c2_0_1 == c2_0_1_comparison));
+        REQUIRE(bool(c2_1 == c2_1_comparison));
+        REQUIRE(bool(c2_2 == c2_2_comparison));
+        REQUIRE(bool(c2_3_0 == c2_3_0_comparison));
+        REQUIRE(bool(c2_3_1 == c2_3_1_comparison));
+
+        REQUIRE(bool(d2_0_0 == d2_0_0_comparison));
+        REQUIRE(bool(d2_0_1 == d2_0_1_comparison));
+        REQUIRE(bool(d2_1 == d2_1_comparison));
+        REQUIRE(bool(d2_2 == d2_2_comparison));
+        REQUIRE(bool(d2_3_0 == d2_3_0_comparison));
+        REQUIRE(bool(d2_3_1 == d2_3_1_comparison));
     // }
 
     // SECTION("PerformKStep")
@@ -196,7 +203,7 @@ TEST_CASE("k_step", "[k_step]")
         ktau_comparison(1, 0) -= tau * 1.25 * norm_2e;
         ktau_comparison(1, 1) += tau * 0.75 * norm_2e;
 
-        PerformKLStep<1>(sigma1, sigma2, lr_sol, blas, test_system, grid, partition1, w_x, tau);
+        PerformKLStep<1>(sigma1, sigma2, lr_sol, blas, test_system, grid, partition1, partition2, w_x_dep, tau);
         REQUIRE(bool(lr_sol.X == ktau_comparison));
     // }
 }

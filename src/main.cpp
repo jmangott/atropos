@@ -39,17 +39,14 @@ int main()
     grid_info grid(kM1, kM2, kR, kN1, kN2, kK1, kK2);
 
     // Perform partition of the network
-    partition_info partition(grid, mysystem);
-    partition_info1<1> partition1(grid, mysystem);
-    partition_info1<2> partition2(grid, mysystem);
+    partition_info<1> partition1(grid, mysystem);
+    partition_info<2> partition2(grid, mysystem);
 
     // Integration weights
-    multi_array<double, 3> w_x({grid.dx1, grid.dx2, mysystem.mu()});
     vector<multi_array<double, 2>> w_x_dep(mysystem.mu());
 
     // Calculate the integration weights
-    CalculateWeight(w_x, mysystem, grid);
-    CalculateWeightDep(w_x_dep, mysystem, grid, partition);
+    CalculateWeightDep(w_x_dep, mysystem, grid, partition1, partition2);
 
     // Declare LR-specific objects
     // Temporary objects for multiplication
@@ -127,8 +124,7 @@ int main()
 
         tmp_x1 = lr_sol.X;
         blas.matmul(tmp_x1, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
-        PerformKLStep<1>(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, w_x, kTau);
-        // PerformKLStep(2, sigma1, sigma2, lr_sol, blas, mysystem, grid, w_x, kTau);
+        PerformKLStep<1>(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep, kTau);
         
         // Perform the QR decomposition K = X * S
         gs(lr_sol.X, lr_sol.S, ip_xx1);
@@ -162,8 +158,7 @@ int main()
 
         tmp_x2 = lr_sol.V;
         blas.matmul_transb(tmp_x2, lr_sol.S, lr_sol.V); // lr_sol.V contains now L
-        PerformKLStep<2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition2, w_x, kTau);
-        // PerformKLStep(1, sigma1, sigma2, lr_sol, blas, mysystem, grid, w_x, kTau);
+        PerformKLStep<2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition2, partition1, w_x_dep, kTau);
         // Perform the QR decomposition L = V * S^T
         gs(lr_sol.V, lr_sol.S, ip_xx2);
         transpose_inplace(lr_sol.S);

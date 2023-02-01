@@ -16,29 +16,49 @@
 #include "reaction_class.hpp"
 
 // Calculate coefficients C1 and D1 (`id` = 1) or C2 and D2 (`id` = 2) for all values of `dep_vec` for a given reaction `mu`
-void CalculateCoefficientsX(int id, multi_array<double, 2> &c_coeff, multi_array<double, 2> &d_coeff, const lr2<double> &lr_sol, blas_ops blas, const multi_array<double, 2> &xx2_shift, Index alpha2, mysys reaction_system, grid_info grid, Index mu, multi_array<double, 3> &w_x);
-
-// Class for obtaining grid info in a given partition about species on which the propensity depends
-struct partition_info
+template <Index id>
+void CalculateCoefficientsX(multi_array<double, 2> &c_coeff, multi_array<double, 2> &d_coeff, const lr2<double> &lr_sol, blas_ops blas, const multi_array<double, 2> &xx_shift, Index alpha2_dep, mysys reaction_system, grid_info grid, partition_info<id == 1 ? 2 : 1> partition2, Index mu, std::vector<multi_array<double, 2>> &w_x_dep)
 {
-    multi_array<Index, 1> dx_dep1;
-    multi_array<Index, 1> dx_dep2;
-    multi_array<Index, 1> dx_rem1;
-    multi_array<Index, 1> dx_rem2;
-    vector<vector<Index>> n_dep1;
-    vector<vector<Index>> n_dep2;
-    vector<vector<Index>> n_rem1;
-    vector<vector<Index>> n_rem2;
-    vector<vector<Index>> dep_vec1;
-    vector<vector<Index>> dep_vec2;
+    std::array<Index, 2> tmp_xx_dim;
+    Index weight_dim;
+    (id == 1) ? (tmp_xx_dim = lr_sol.V.shape()) : (tmp_xx_dim = lr_sol.X.shape());
+    (id == 1) ? (weight_dim = grid.dx2) : (weight_dim = grid.dx1);
+    multi_array<double, 2> tmp_xx(tmp_xx_dim);
+    multi_array<double, 1> weight({weight_dim});
+    Index alpha1_dep;
 
-    partition_info(grid_info grid, mysys reaction_system);
-};
+    if (id == 1)
+    {
+        tmp_xx = lr_sol.V;
+        for (Index alpha1 = 0; alpha1 < grid.dx2; alpha1++)
+        {
+            alpha1_dep = CombIndexToDepCombIndex(alpha1, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
+            weight(alpha1) = w_x_dep[mu](alpha2_dep, alpha1_dep) * grid.h2_mult;
+        }
+    }
+    else if (id == 2)
+    {
+        tmp_xx = lr_sol.X;
+        for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
+        {
+            alpha1_dep = CombIndexToDepCombIndex(alpha1, partition2.n_dep[mu], grid.n1, partition2.dep_vec[mu]);
+            weight(alpha1) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h1_mult;
+        }
+    }
+    else
+    {
+        std::cerr << "ERROR: id must be 1 (=L) or 2 (=K)!" << endl;
+        std::abort();
+    }
+
+    coeff(xx_shift, tmp_xx, weight, c_coeff, blas);
+    coeff(tmp_xx, tmp_xx, weight, d_coeff, blas);
+}
 
 
 // Perform K-Step (`id` = 1) or L-Step (`id` = 2) with time step size `tau`
 template <Index id>
-void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info1<id> partition, multi_array<double, 3> &w_x, double tau)
+void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<id> partition, partition_info<id == 1 ? 2 : 1> partition2, std::vector<multi_array<double, 2>> &w_x_dep, double tau)
 {
     grid_info *grid_alt;
     std::array<Index, 2> tmp_xx_dim, tmp_xx_c_dim;
@@ -93,7 +113,7 @@ void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<dou
     multi_array<double, 2> kl_dot({grid_alt->dx1, grid_alt->r});
     set_zero(kl_dot);
 
-    Index alpha_c, comb_index_c;
+    Index alpha_c;
     std::vector<Index> vec_index_c_dep;
 
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
@@ -110,12 +130,11 @@ void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<dou
         {
             CombIndexToVecIndex(vec_index_c_dep, i, partition.n_dep[mu]);
 
-            // TODO: store w_x in such a way, that values can be accessed by `i` (the combined index with respect to the species on which the propensities depend)
-            comb_index_c = DepCombIndexToCombIndex(i, partition.n_dep[mu], grid_alt->n1, partition.dep_vec[mu]);
-            CalculateCoefficientsX(id, c_coeff, d_coeff, lr_sol, blas, xx_shift, comb_index_c, reaction_system, grid, mu, w_x);
+            CalculateCoefficientsX<id>(c_coeff, d_coeff, lr_sol, blas, xx_shift, i, reaction_system, grid, partition2, mu, w_x_dep);
             // Loop through the remaining species in the partition
             for (Index k = 0; k < partition.dx_rem(mu); k++)
             {
+                // TODO: Check if this function is really needed
                 alpha_c = DepVecIndexRemCombIndexToCombIndex(vec_index_c_dep, k, partition.n_rem[mu], grid_alt->n1, partition.dep_vec[mu]);
 
                 // Calculate matrix-vector multiplication of C2*K and D2*K

@@ -100,7 +100,6 @@ set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
 set(SRC_FILES ${SRC}/grid_class.cpp
               ${SRC}/index_functions.cpp
               ${SRC}/io_functions.cpp
-              ${SRC}/kl_step_functions.cpp
               ${SRC}/print_functions.cpp
               ${SRC}/reaction_class.cpp
               ${SRC}/s_step_functions.cpp
