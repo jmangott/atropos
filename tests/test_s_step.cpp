@@ -24,28 +24,28 @@ TEST_CASE("s_step", "[s_step]")
 {
     double inv_sqrt_e = 1 / std::sqrt(std::exp(1.0));
     
-    InitializeTest(lr_sol, grid, ip_xx1, ip_xx2, blas, w_x);
+    InitializeTest(lr_sol, grid, ip_xx1, ip_xx2, blas, w_x_dep);
     CalculateShiftAmount(sigma1, sigma2, test_system, grid);
 
     // SECTION("CalculateCoefficientsB")
     // {
-        multi_array<double, 3> b_coeff_vec_shift0({partition.dx_dep1(0), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec_shift1({partition.dx_dep1(1), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec_shift2({partition.dx_dep1(2), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec_shift3({partition.dx_dep1(3), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec0({partition.dx_dep1(0), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec1({partition.dx_dep1(1), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec2({partition.dx_dep1(2), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec3({partition.dx_dep1(3), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift0({partition1.dx_dep(0), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift1({partition1.dx_dep(1), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift2({partition1.dx_dep(2), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift3({partition1.dx_dep(3), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec0({partition1.dx_dep(0), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec1({partition1.dx_dep(1), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec2({partition1.dx_dep(2), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec3({partition1.dx_dep(3), grid.r, grid.r});
 
-        multi_array<double, 3> b_coeff_vec_shift0_comparison({partition.dx_dep1(0), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec_shift1_comparison({partition.dx_dep1(1), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec_shift2_comparison({partition.dx_dep1(2), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec_shift3_comparison({partition.dx_dep1(3), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec0_comparison({partition.dx_dep1(0), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec1_comparison({partition.dx_dep1(1), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec2_comparison({partition.dx_dep1(2), grid.r, grid.r});
-        multi_array<double, 3> b_coeff_vec3_comparison({partition.dx_dep1(3), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift0_comparison({partition1.dx_dep(0), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift1_comparison({partition1.dx_dep(1), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift2_comparison({partition1.dx_dep(2), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec_shift3_comparison({partition1.dx_dep(3), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec0_comparison({partition1.dx_dep(0), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec1_comparison({partition1.dx_dep(1), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec2_comparison({partition1.dx_dep(2), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec3_comparison({partition1.dx_dep(3), grid.r, grid.r});
 
         CalculateCoefficientsB(b_coeff_vec_shift0, b_coeff_vec0, lr_sol, blas, test_system, grid, partition1, partition2, 0, sigma2, w_x_dep);
         CalculateCoefficientsB(b_coeff_vec_shift1, b_coeff_vec1, lr_sol, blas, test_system, grid, partition1, partition2, 1, sigma2, w_x_dep);

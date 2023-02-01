@@ -61,21 +61,21 @@ struct partition_base
 };
 
 template <Index id>
-struct partition_info1 {};
+struct partition_info {};
 
 template <>
-struct partition_info1<1> : partition_base
+struct partition_info<1> : partition_base
 {
-    partition_info1(grid_info _grid, mysys _reaction_system) : partition_base(_grid, _reaction_system)
+    partition_info(grid_info _grid, mysys _reaction_system) : partition_base(_grid, _reaction_system)
     {
         partition_base::partition_common_init(_grid, _reaction_system, 0);
     }
 };
 
 template <>
-struct partition_info1<2> : partition_base
+struct partition_info<2> : partition_base
 {
-    partition_info1(grid_info _grid, mysys _reaction_system) : partition_base(_grid, _reaction_system)
+    partition_info(grid_info _grid, mysys _reaction_system) : partition_base(_grid, _reaction_system)
     {
         grid_info grid_alt(_grid.m2, _grid.m1, _grid.r, _grid.n2, _grid.n1, _grid.k2, _grid.k1);
         partition_base::partition_common_init(grid_alt, _reaction_system, _grid.m1);

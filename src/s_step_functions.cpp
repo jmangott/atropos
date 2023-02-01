@@ -3,7 +3,7 @@
 
 using std::vector;
 
-void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info1<1> partition1, partition_info1<2> partition2, Index mu, vector<Index> sigma2, const vector<multi_array<double, 2>> &w_x)
+void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, Index mu, vector<Index> sigma2, const vector<multi_array<double, 2>> &w_x_dep)
 {
     multi_array<double, 2> b_coeff({grid.r, grid.r});
     multi_array<double, 2> b_coeff_shift({grid.r, grid.r});
@@ -21,7 +21,7 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
         for (Index alpha2 = 0; alpha2 < grid.dx2; alpha2++)
         {
             alpha2_dep = CombIndexToDepCombIndex(alpha2, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
-            w_x2(alpha2) = w_x[mu](alpha1_dep, alpha2_dep) * grid.h2_mult;
+            w_x2(alpha2) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h2_mult;
         }
         coeff(xx2_shift, lr_sol.V, w_x2, b_coeff_shift, blas);
         coeff(lr_sol.V, lr_sol.V, w_x2, b_coeff, blas);
@@ -38,7 +38,7 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
 }
 
 
-void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info1<1> partition1, Index mu, vector<Index> sigma1)
+void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, Index mu, vector<Index> sigma1)
 {
     multi_array<double, 2> e_coeff({grid.r, grid.r});
     multi_array<double, 2> f_coeff({grid.r, grid.r});
@@ -80,7 +80,7 @@ void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<dou
 
 
 // Perform S-Step with time step size `tau`
-void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info1<1> partition1, partition_info1<2> partition2, const vector<multi_array<double, 2>> &w_x, double tau)
+void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep, double tau)
 {
     multi_array<double, 3> b_coeff_vec_shift;
     multi_array<double, 3> b_coeff_vec;
@@ -93,7 +93,7 @@ void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &
     {
         b_coeff_vec_shift.resize({partition1.dx_dep(mu), grid.r, grid.r});
         b_coeff_vec.resize({partition1.dx_dep(mu), grid.r, grid.r});
-        CalculateCoefficientsB(b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, partition1, partition2, mu, sigma2, w_x);
+        CalculateCoefficientsB(b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, partition1, partition2, mu, sigma2, w_x_dep);
         CalculateCoefficientsS(e_coeff, f_coeff, b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, partition1, mu, sigma1);
 
         for (Index i = 0; i < grid.r; i++)
