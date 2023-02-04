@@ -55,17 +55,13 @@ Index VecIndexToCombIndex(vector<Index> vec_index, vector<Index> interval)
 
 Index DepCombIndexToCombIndex(Index comb_index_dep, vector<Index> n_dep, multi_array<Index, 1> n, vector<Index> dep_vec)
 {
-    // cout << "deptest0";
     vector<Index> vec_index(n.shape()[0], 0);
     vector<Index> vec_index_dep(n_dep.size());
     Index comb_index;
-    // cout << "1";
     CombIndexToVecIndex(vec_index_dep, comb_index_dep, n_dep);
     // Convert vec_index_dep to a vector with n.shape()[0]
-    // cout << "2";
     for (vector<Index>::size_type i = 0; i < dep_vec.size(); i++)
         vec_index[dep_vec[i]] = vec_index_dep[i];
-    // cout << "3" << endl;
     comb_index = VecIndexToCombIndex(vec_index, n);
     return comb_index;
 }

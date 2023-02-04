@@ -22,37 +22,65 @@ Index VecIndexToCombIndex(multi_array<Index, 1> vec_index, multi_array<Index, 1>
 
 Index VecIndexToCombIndex(std::vector<Index> vec_index, multi_array<Index, 1> interval);
 
+
 Index VecIndexToCombIndex(std::vector<Index> vec_index, std::vector<Index> interval);
+
+
+// inline void CombIndexToVecIndex(multi_array<Index, 1> &vec_index, Index comb_index, const multi_array<Index, 1> &interval)
+// {
+//     Index dim = interval.shape()[0];
+//     for (Index i = 0; i < dim; i++)
+//     {
+//         if (i == (dim - 1))
+//             vec_index(i) = comb_index;
+//         else
+//         {
+//             vec_index(i) = comb_index % interval(i);
+//             comb_index = int(comb_index / interval(i));
+//         }
+//     }
+// }
+
 
 inline void CombIndexToVecIndex(multi_array<Index, 1> &vec_index, Index comb_index, const multi_array<Index, 1> &interval)
 {
     Index dim = interval.shape()[0];
-    for (Index i = 0; i < dim; i++)
+    for (Index i = 0; i < (dim - 1); i++)
     {
-        if (i == (dim - 1))
-            vec_index(i) = comb_index;
-        else
-        {
-            vec_index(i) = comb_index % interval(i);
-            comb_index = int(comb_index / interval(i));
-        }
+        vec_index(i) = comb_index % interval(i);
+        comb_index = int(comb_index / interval(i));
     }
+    if (dim > 0) vec_index(dim - 1) = comb_index;
 }
+
+
+// inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index, const std::vector<Index> &interval)
+// {
+//     Index dim = interval.size();
+//     for (Index i = 0; i < dim; i++)
+//     {
+//         if (i == (dim - 1))
+//             vec_index[i] = comb_index;
+//         else
+//         {
+//             vec_index[i] = comb_index % interval[i];
+//             comb_index = int(comb_index / interval[i]);
+//         }
+//     }
+// }
+
 
 inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index, const std::vector<Index> &interval)
 {
     Index dim = interval.size();
-    for (Index i = 0; i < dim; i++)
+    for (Index i = 0; i < (dim - 1); i++)
     {
-        if (i == (dim - 1))
-            vec_index[i] = comb_index;
-        else
-        {
-            vec_index[i] = comb_index % interval[i];
-            comb_index = int(comb_index / interval[i]);
-        }
+        vec_index[i] = comb_index % interval[i];
+        comb_index = int(comb_index / interval[i]);
     }
+    if (dim > 0) vec_index[dim - 1] = comb_index;
 }
+
 
 inline void CombIndexToState(std::vector<double> &state, Index comb_index, const multi_array<Index, 1> &interval, const multi_array<double, 1> &limit)
 {
@@ -93,6 +121,7 @@ inline Index CombIndexToDepCombIndex(Index comb_index, const vector<Index> &n_de
 
 // Convert a combined index for the participating and the remaining species in reaction mu to a general combined index
 Index DepVecIndexRemCombIndexToCombIndex(std::vector<Index> vec_index_dep, Index comb_index_rem, std::vector<Index> n_rem, multi_array<Index, 1> n, std::vector<Index> dep_vec);
+
 
 // Calculate for all reactions the number of indices by which arrays have to be shifted in order to calculate the coefficients C1, C2, D1, D2
 void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2, mysys reaction_system, grid_info grid);
