@@ -26,7 +26,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
 
 else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall")
-    set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -Wall")
+    set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb -Wall -D_GLIBCXX_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak -fsanitize=undefined")
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native")
     set(CMAKE_CXX_FLAGS_PROFILE "-g1 -O3 -fno-inline -fno-optimize-sibling-calls")
 endif()
@@ -103,6 +103,7 @@ set(SRC_FILES ${SRC}/grid_class.cpp
               ${SRC}/print_functions.cpp
               ${SRC}/reaction_class.cpp
               ${SRC}/s_step_functions.cpp
+              ${SRC}/timer_class.cpp
               ${SRC}/weight_functions.cpp)
 
 ########################
