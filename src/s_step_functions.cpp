@@ -1,5 +1,4 @@
 #include "s_step_functions.hpp"
-#include <chrono>
 
 using std::vector;
 
@@ -17,14 +16,17 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
 
     for (Index alpha1_dep = 0; alpha1_dep < partition1.dx_dep(mu); alpha1_dep++)
     {
-        // alpha1_dep = CombIndexToDepCombIndex(alpha1, partition.n_dep1[mu], grid.n1, partition.dep_vec1[mu]);
+        get_time::start("bweightvec");
         for (Index alpha2 = 0; alpha2 < grid.dx2; alpha2++)
         {
             alpha2_dep = CombIndexToDepCombIndex(alpha2, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
             w_x2(alpha2) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h2_mult;
         }
+        get_time::stop("bweightvec");
+        get_time::start("bcoeff_s");
         coeff(xx2_shift, lr_sol.V, w_x2, b_coeff_shift, blas);
         coeff(lr_sol.V, lr_sol.V, w_x2, b_coeff, blas);
+        get_time::stop("bcoeff_s");
 
         for (Index i = 0; i < grid.r; i++)
         {
@@ -56,15 +58,21 @@ void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<dou
         for (Index l = 0; l < grid.r; l++)
         {
             // Calculate integration weights
+            get_time::start("sweightvec");
             for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
             {
+                // get_time::start("sweightvec_index");
                 alpha1_dep = CombIndexToDepCombIndex(alpha1, partition1.n_dep[mu], grid.n1, partition1.dep_vec[mu]);
+                // get_time::stop("sweightvec_index");
                 w_x1_shift(alpha1) = b_coeff_vec_shift(alpha1_dep, j, l) * grid.h1_mult;
                 w_x1(alpha1) = b_coeff_vec(alpha1_dep, j, l) * grid.h1_mult;
             }
+            get_time::stop("sweightvec");
 
+            get_time::start("scoeff_s");
             coeff(xx1_shift, lr_sol.X, w_x1_shift, e_coeff, blas);
             coeff(lr_sol.X, lr_sol.X, w_x1, f_coeff, blas);
+            get_time::stop("scoeff_s");
 
             for (Index i = 0; i < grid.r; i++)
             {
@@ -82,8 +90,8 @@ void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<dou
 // Perform S-Step with time step size `tau`
 void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep, double tau)
 {
-    multi_array<double, 3> b_coeff_vec_shift;
-    multi_array<double, 3> b_coeff_vec;
+    // multi_array<double, 3> b_coeff_vec_shift;
+    // multi_array<double, 3> b_coeff_vec;
     multi_array<double, 4> e_coeff({grid.r, grid.r, grid.r, grid.r});
     multi_array<double, 4> f_coeff({grid.r, grid.r, grid.r, grid.r});
     multi_array<double, 2> s_dot(lr_sol.S.shape());
@@ -91,10 +99,20 @@ void PerformSStep(vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &
 
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
-        b_coeff_vec_shift.resize({partition1.dx_dep(mu), grid.r, grid.r});
-        b_coeff_vec.resize({partition1.dx_dep(mu), grid.r, grid.r});
+        // TODO: Ask Lukas if this is good practice
+        multi_array<double, 3> b_coeff_vec_shift({partition1.dx_dep(mu), grid.r, grid.r});
+        multi_array<double, 3> b_coeff_vec({partition1.dx_dep(mu), grid.r, grid.r});
+        
+        // This causes a memory leak
+        // b_coeff_vec_shift.resize({partition1.dx_dep(mu), grid.r, grid.r});
+        // b_coeff_vec.resize({partition1.dx_dep(mu), grid.r, grid.r});
+
+        get_time::start("bcoeff");
         CalculateCoefficientsB(b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, partition1, partition2, mu, sigma2, w_x_dep);
+        get_time::stop("bcoeff");
+        get_time::start("scoeff");
         CalculateCoefficientsS(e_coeff, f_coeff, b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, partition1, mu, sigma1);
+        get_time::stop("scoeff");
 
         for (Index i = 0; i < grid.r; i++)
         {

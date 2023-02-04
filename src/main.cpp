@@ -22,6 +22,7 @@
 // #include "reactions_ts.hpp"
 #include "reactions_lp.hpp"
 #include "s_step_functions.hpp"
+#include "timer_class.hpp"
 #include "weight_functions.hpp"
 
 using std::cout;
@@ -32,6 +33,7 @@ using std::vector;
 
 int main()
 {
+    get_time::start("main");
     /////////////////////////////////////////////
     /////////////////// SETUP ///////////////////
     /////////////////////////////////////////////
@@ -124,7 +126,9 @@ int main()
 
         tmp_x1 = lr_sol.X;
         blas.matmul(tmp_x1, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
+        get_time::start("kstep");
         PerformKLStep<1>(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep, kTau);
+        get_time::stop("kstep");
         
         // Perform the QR decomposition K = X * S
         gs(lr_sol.X, lr_sol.S, ip_xx1);
@@ -144,13 +148,9 @@ int main()
         /////////////////////////////////////////////
         ////////////////// S-STEP ///////////////////
         /////////////////////////////////////////////
-
-        // auto start_time_s(std::chrono::high_resolution_clock::now());
+        get_time::start("sstep");
         PerformSStep(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep, kTau);
-        // auto end_time_s(std::chrono::high_resolution_clock::now());
-        // auto duration_s_incr = end_time_s - start_time_s;
-        // double duration_s = duration_s_incr.count();
-        // cout << "S-step: " << duration_s << endl;
+        get_time::stop("sstep");
 
         /////////////////////////////////////////////
         ////////////////// L-STEP ///////////////////
@@ -158,7 +158,9 @@ int main()
 
         tmp_x2 = lr_sol.V;
         blas.matmul_transb(tmp_x2, lr_sol.S, lr_sol.V); // lr_sol.V contains now L
+        get_time::start("lstep");
         PerformKLStep<2>(sigma1, sigma2, lr_sol, blas, mysystem, grid, partition2, partition1, w_x_dep, kTau);
+        get_time::stop("lstep");
         // Perform the QR decomposition L = V * S^T
         gs(lr_sol.V, lr_sol.S, ip_xx2);
         transpose_inplace(lr_sol.S);
@@ -213,6 +215,9 @@ int main()
             WriteOutMultiArray(lr_sol.V, fname_x2_output.str());
         }
     }
+
+    get_time::stop("main");
+    cout << endl << endl << "Timer results: " << endl << get_time::sorted_output();
 
     return 0;
 }

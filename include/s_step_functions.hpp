@@ -12,7 +12,7 @@
 #include "index_functions.hpp"
 #include "kl_step_functions.hpp"
 #include "reaction_class.hpp"
-
+#include "timer_class.hpp"
 
 // Calculate the auxiliary coefficients B (`b_coeff_vec`) and B_tilde (`b_coeff_vec_shift`) 
 // for coefficients E and F (depending on `mu`)
