@@ -48,17 +48,19 @@ TEST_CASE("index_functions", "[index_functions]")
     {
         multi_array<Index, 1> vec_index({5});
         multi_array<Index, 1> interval({5});
-        multi_array<double, 1> limit({5});
+        multi_array<double, 1> liml({5});
+        multi_array<double, 1> limr({5});
         multi_array<double, 1> state_vec({5});
         multi_array<double, 1> comparison_vec({5});
         for (Index i = 0; i < 5; i++)
         {
             vec_index(i) = 5 * i;
             interval(i) = 5 * (i + 1) + 1;
-            limit(i) = 10.0 * (i + 1);
+            liml(i) = 0.0;
+            limr(i) = 10.0 * (i + 1);
             comparison_vec(i) = 10.0 * i;
         }
-        state_vec = VecIndexToState(vec_index, interval, limit);
+        state_vec = VecIndexToState(vec_index, interval, liml, limr);
         REQUIRE(bool(state_vec == comparison_vec));
     }
 

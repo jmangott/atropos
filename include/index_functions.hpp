@@ -13,7 +13,7 @@
 // TODO: Rewrite all index functions in the same style as `CombIndexToState`
 
 // Convert index vector to state vector
-multi_array<double, 1> VecIndexToState(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval, multi_array<double, 1> limit);
+multi_array<double, 1> VecIndexToState(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval, multi_array<double,1 > liml, multi_array<double, 1> limr);
 
 
 // Convert index vector associated with the population numbers to combined index
@@ -82,16 +82,16 @@ inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index,
 }
 
 
-inline void CombIndexToState(std::vector<double> &state, Index comb_index, const multi_array<Index, 1> &interval, const multi_array<double, 1> &limit)
+inline void CombIndexToState(std::vector<double> &state, Index comb_index, const multi_array<Index, 1> &interval, const multi_array<double, 1> &liml, const multi_array<double, 1> &limr)
 {
     Index dim = interval.shape()[0];
     for (Index i = 0; i < dim; i++)
     {
         if (i == (dim - 1))
-            state[i] = comb_index * limit(i) / (interval(i) - 1.0);
+            state[i] = liml(i) + limr(i) * comb_index / (interval(i) - 1.0);
         else
         {
-            state[i] = (comb_index % interval(i)) * limit(i) / (interval(i) - 1.0);
+            state[i] = liml(i) + limr(i) * (comb_index % interval(i)) / (interval(i) - 1.0);
             comb_index = int(comb_index / interval(i));
         }
     }

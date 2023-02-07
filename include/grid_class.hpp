@@ -19,9 +19,12 @@ struct grid_info
     multi_array<Index, 1> k1;
     multi_array<Index, 1> k2;
     multi_array<Index, 1> k;
-    multi_array<double, 1> lim1;
-    multi_array<double, 1> lim2;
-    multi_array<double, 1> lim;
+    multi_array<double, 1> liml1;
+    multi_array<double, 1> liml2;
+    multi_array<double, 1> liml;
+    multi_array<double, 1> limr1;
+    multi_array<double, 1> limr2;
+    multi_array<double, 1> limr;
     multi_array<double, 1> h1;
     multi_array<double, 1> h2;
     multi_array<double, 1> h;
@@ -31,11 +34,11 @@ struct grid_info
     // Initialize grid limits, grid spacing and the total number of grid points
     void grid_common_init();
 
-    grid_info(Index _m1, Index _m2, Index _r, Index _n, Index _k);
+    grid_info(Index _m1, Index _m2, Index _r, Index _n, Index _k, std::vector<double> _liml1, std::vector<double> _liml2);
 
-    grid_info(Index _m1, Index _m2, Index _r, multi_array<Index, 1> _n1, multi_array<Index, 1> _n2, multi_array<Index, 1> _k1, multi_array<Index, 1> _k2);
+    grid_info(Index _m1, Index _m2, Index _r, multi_array<Index, 1> _n1, multi_array<Index, 1> _n2, multi_array<Index, 1> _k1, multi_array<Index, 1> _k2, multi_array<double, 1> _liml1, multi_array<double, 1> _liml2);
 
-    grid_info(Index _m1, Index _m2, Index _r, std::vector<Index> _n1, std::vector<Index> _n2, std::vector<Index> _k1, std::vector<Index> _k2);
+    grid_info(Index _m1, Index _m2, Index _r, std::vector<Index> _n1, std::vector<Index> _n2, std::vector<Index> _k1, std::vector<Index> _k2, std::vector<double> _liml1, std::vector<double> _liml2);
 };
 
 

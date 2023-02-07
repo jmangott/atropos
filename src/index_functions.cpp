@@ -3,13 +3,13 @@
 
 using std::vector;
 
-multi_array<double, 1> VecIndexToState(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval, multi_array<double, 1> limit)
+multi_array<double, 1> VecIndexToState(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval, multi_array<double, 1> liml, multi_array<double, 1> limr)
 {
     Index dim = vec_index.shape()[0];
     multi_array<double, 1> state_vec({dim});
     for (Index i = 0; i < dim; i++)
     {
-        state_vec(i) = vec_index(i) * limit(i) / (interval(i) - 1.0);
+        state_vec(i) = liml(i) + limr(i) * vec_index(i) / (interval(i) - 1.0);
     }
     return state_vec;
 }
@@ -125,12 +125,12 @@ void ShiftMultiArrayRows(int id, multi_array<double, 2> &output_array, const mul
 
     if (id == 1)
     {
-        grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2);
+        grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2, grid.liml1, grid.liml2);
         inc = 0;
     }
     else if (id == 2)
     {
-        grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.k2, grid.k1);
+        grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.k2, grid.k1, grid.liml2, grid.liml1);
         inc = grid.m1;
     }
     else

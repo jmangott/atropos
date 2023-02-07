@@ -40,13 +40,16 @@ vector<Index> sigma1, sigma2;
 const Index kR = 2;
 const Index kN = 2;
 const Index kK = 1;
+std::vector<double> kLiml1 {0.0};
+std::vector<double> kLiml2 {0.0};
+
 const Index kM1 = 1;
 const Index kM2 = 1;
 Index nsteps = 1;
 double tstar = 1.0;
 double tau = tstar / nsteps;
 
-grid_info grid(kM1, kM2, kR, kN, kK);
+grid_info grid(kM1, kM2, kR, kN, kK, kLiml1, kLiml2);
 
 // Low rank structure (for storing X1, X2 and S)
 lr2<double> lr_sol(kR, {grid.dx1, grid.dx2});

@@ -19,7 +19,7 @@ void CalculateWeightDep(vector<multi_array<double, 2>> &w_x_dep, mysys reaction_
             {
                 comb_index2 = DepCombIndexToCombIndex(alpha2, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
                 comb_index_tot = comb_index1 + grid.dx1 * comb_index2;
-                CombIndexToState(state, comb_index_tot, grid.n, grid.lim);
+                CombIndexToState(state, comb_index_tot, grid.n, grid.liml, grid.limr);
                 w_x_dep[mu](alpha1, alpha2) = reaction_system.reactions[mu]->propensity(state);
             }
         }

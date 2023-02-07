@@ -37,8 +37,8 @@ TEST_CASE("k_step", "[k_step]")
         h1_comparison(0) = 1.0;
         h2_comparison(0) = 1.0;
 
-        REQUIRE(bool(grid.lim1 == lim1_comparison));
-        REQUIRE(bool(grid.lim2 == lim2_comparison));
+        REQUIRE(bool(grid.limr1 == lim1_comparison));
+        REQUIRE(bool(grid.limr2 == lim2_comparison));
         REQUIRE(bool(grid.h1 == h1_comparison));
         REQUIRE(bool(grid.h2 == h2_comparison));
         REQUIRE(bool(grid.dx1 == dx1_comparison));

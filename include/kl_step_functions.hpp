@@ -80,7 +80,7 @@ void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<dou
     int id_c;
     if (id == 1)
     {
-        grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2);
+        grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2, grid.liml1, grid.liml2);
         // TODO: `tmp_xx` and `tmp_xx_c` could be replaced by pointers
         tmp_xx = lr_sol.V;
         tmp_xx_c = lr_sol.X;
@@ -90,7 +90,7 @@ void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<dou
     }
     else if (id == 2)
     {
-        grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.k2, grid.k1);
+        grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.k2, grid.k1, grid.liml2, grid.liml1);
         tmp_xx = lr_sol.X;
         tmp_xx_c = lr_sol.V;
         sigma_c = sigma1;
