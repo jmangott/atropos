@@ -30,8 +30,8 @@ def eval_p0(x):
     # mu = np.array([30, 5])
     # p0 = np.exp(-0.5 * np.dot(np.transpose(x - mu), np.dot(Cinv, (x - mu))))
 
-    # Lambda phage
-    # abs_x = np.linalg.norm(x)
+    # # Lambda phage
+    # abs_x = np.sum(x) # np.linalg.norm(x)
     # if (abs_x <= 3):
     #     p0 = factorial(3) * (0.05 ** abs_x) * ((1.0 - 5 * 0.05) ** (3 - abs_x)) / (np.prod(factorial(x)) * factorial(3 - abs_x))
     # else:
