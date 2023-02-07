@@ -20,7 +20,8 @@
 #include "partition_class.hpp"
 #include "print_functions.hpp"
 // #include "reactions_ts.hpp"
-#include "reactions_lp.hpp"
+// #include "reactions_lp.hpp"
+#include "reactions_tgfb6.hpp"
 #include "s_step_functions.hpp"
 #include "timer_class.hpp"
 #include "weight_functions.hpp"
@@ -38,7 +39,7 @@ int main()
     /////////////////// SETUP ///////////////////
     /////////////////////////////////////////////
 
-    grid_info grid(kM1, kM2, kR, kN1, kN2, kK1, kK2);
+    grid_info grid(kM1, kM2, kR, kN1, kN2, kK1, kK2, kLiml1, kLiml2);
 
     // Perform partition of the network
     partition_info<1> partition1(grid, mysystem);
@@ -56,8 +57,10 @@ int main()
     multi_array<double, 2> tmp_x2({grid.dx2, grid.r});
 
     // Objects for setting up X1 and X2 for t = 0
-    multi_array<double, 2> xx1({grid.dx1, grid.r});
-    multi_array<double, 2> xx2({grid.dx2, grid.r});
+    // multi_array<double, 2> xx1({grid.dx1, grid.r});
+    // multi_array<double, 2> xx2({grid.dx2, grid.r});
+    multi_array<double, 2> xx1({grid.dx1, 1});
+    multi_array<double, 2> xx2({grid.dx2, 1});
     vector<const double *> x1, x2;
 
     // Low rank structure (for storing X1, X2 and S)
@@ -77,13 +80,15 @@ int main()
     // Point to the beginning of every column of X1 and X2
     double *it1 = xx1.begin();
     double *it2 = xx2.begin();
-    for (int i = 0; i < kR; i++)
-    {
-        x1.push_back(it1);
-        x2.push_back(it2);
-        it1 += grid.dx1;
-        it2 += grid.dx2;
-    }
+    // for (int i = 0; i < kR; i++)
+    // {
+    //     x1.push_back(it1);
+    //     x2.push_back(it2);
+    //     it1 += grid.dx1;
+    //     it2 += grid.dx2;
+    // }
+    x1.push_back(it1);
+    x2.push_back(it2);
 
     // Set up the low-rank structure and the inner products
     double h_xx_mult1 = 1, h_xx_mult2 = 1;
@@ -99,9 +104,9 @@ int main()
     // For testing
     // WriteOutMultiArray(lr_sol.S, "../output/s_output_init");
     // TODO: these lines are actually superfluous, provided Ensign works correctly
-    multi_array<double, 2> ss({grid.r, grid.r});
-    ReadInMultiArray(ss, "../input/s_input.csv");
-    lr_sol.S = ss;
+    // multi_array<double, 2> ss({grid.r, grid.r});
+    // ReadInMultiArray(ss, "../input/s_input.csv");
+    // lr_sol.S = ss;
 
     // Calculate the shift amount for all reactions (this has to be done only once)
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
