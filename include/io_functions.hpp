@@ -5,7 +5,12 @@
 #include <iostream>
 #include <sstream>
 
+#include <generic/netcdf.hpp>
 #include <generic/storage.hpp>
+
+#include <lr/lr.hpp>
+
+#include "grid_class.hpp"
 
 
 // Read in multi_array from a .csv file

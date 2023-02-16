@@ -8,4 +8,4 @@ set_source_files_properties(${ENSIGN_FILES} PROPERTIES GENERATED TRUE)
 
 target_include_directories(kinetic-cme PRIVATE ${HEADER_FILES})
 
-target_link_libraries(kinetic-cme ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} Threads::Threads "-lgfortran")
+target_link_libraries(kinetic-cme ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} ${NETCDF_LIBRARIES} Threads::Threads "-lgfortran")
