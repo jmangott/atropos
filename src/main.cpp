@@ -23,8 +23,8 @@
 #include "timer_class.hpp"
 #include "weight_functions.hpp"
 
-#include "models/reactions_ts.hpp"
-// #include "models/reactions_lp.hpp"
+// #include "models/reactions_ts.hpp"
+#include "models/reactions_lp.hpp"
 // #include "models/reactions_tgfb6.hpp"
 
 using std::cout;
@@ -114,10 +114,18 @@ int main()
     // Calculate the shift amount for all reactions (this has to be done only once)
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
+    std::stringstream fname_x1_output;
+    std::stringstream fname_s_output;
+    std::stringstream fname_x2_output;
+
+    fname_x1_output << "../output/" << kFilename << "/x1_output_t0";
+    fname_s_output << "../output/" << kFilename << "/s_output_t0";
+    fname_x2_output << "../output/" << kFilename << "/x2_output_t0";
+
     // Write output files for initial values
-    WriteOutMultiArray(lr_sol.X, "../output/toggle_switch_new_250_400/x1_output_t0");
-    WriteOutMultiArray(lr_sol.S, "../output/toggle_switch_new_250_400/s_output_t0");
-    WriteOutMultiArray(lr_sol.V, "../output/toggle_switch_new_250_400/x2_output_t0");
+    WriteOutMultiArray(lr_sol.X, fname_x1_output.str());
+    WriteOutMultiArray(lr_sol.S, fname_s_output.str());
+    WriteOutMultiArray(lr_sol.V, fname_x2_output.str());
 
     auto start_time(std::chrono::high_resolution_clock::now());
 
@@ -203,17 +211,18 @@ int main()
         // Print progress bar
         PrintProgressBar(ts, kNsteps, start_time);
 
-        std::stringstream fname_x1_output;
-        std::stringstream fname_s_output;
-        std::stringstream fname_x2_output;
+
 
         if ((ts + 1) % kSnapshot == 0)
         {
             // Write snapshot
             // t_int = (int) (ts + 1) * kTau;
-            fname_x1_output << "../output/toggle_switch_new_250_400/x1_output_t" << ts + 1;
-            fname_s_output << "../output/toggle_switch_new_250_400/s_output_t" << ts + 1;
-            fname_x2_output << "../output/toggle_switch_new_250_400/x2_output_t" << ts + 1;
+            fname_x1_output.str("");
+            fname_s_output.str("");
+            fname_x2_output.str("");
+            fname_x1_output << "../output/" << kFilename << "/x1_output_t" << ts + 1;
+            fname_s_output << "../output/" << kFilename << "/s_output_t" << ts + 1;
+            fname_x2_output << "../output/" << kFilename << "/x2_output_t" << ts + 1;
             WriteOutMultiArray(lr_sol.X, fname_x1_output.str());
             WriteOutMultiArray(lr_sol.S, fname_s_output.str());
             WriteOutMultiArray(lr_sol.V, fname_x2_output.str());
