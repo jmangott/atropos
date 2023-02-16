@@ -9,7 +9,7 @@ multi_array<double, 1> VecIndexToState(multi_array<Index, 1> vec_index, multi_ar
     multi_array<double, 1> state_vec({dim});
     for (Index i = 0; i < dim; i++)
     {
-        state_vec(i) = liml(i) + limr(i) * vec_index(i) / (interval(i) - 1.0);
+        state_vec(i) = liml(i) + (limr(i) - liml(i)) * vec_index(i) / (interval(i) - 1.0);
     }
     return state_vec;
 }
@@ -86,7 +86,7 @@ void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2
     Index stride1, stride2;
     Index sigma1_sum, sigma2_sum;
 
-    for (auto &it : reaction_system.reactions)
+    for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
         stride1 = 1;
         stride2 = 1;
@@ -94,21 +94,21 @@ void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2
         sigma2_sum = 0;
         for (Index i = 0; i < grid.m1; i++)
         {
-            sigma1_sum += it->nu[i] * stride1 / grid.k1(i);
+            sigma1_sum += reaction_system.reactions[mu]->nu[i] * stride1 / grid.k1(i);
             stride1 *= grid.n1(i);
         }
         for (Index i = 0; i < grid.m2; i++)
         {
-            sigma2_sum += it->nu[i + grid.m1] * stride2 / grid.k2(i);
+            sigma2_sum += reaction_system.reactions[mu]->nu[i + grid.m1] * stride2 / grid.k2(i);
             stride2 *= grid.n2(i);
         }
-        sigma1.push_back(sigma1_sum);
-        sigma2.push_back(sigma2_sum);
+        sigma1[mu] = sigma1_sum;
+        sigma2[mu] = sigma2_sum;
     }
 }
 
 
-void ShiftMultiArrayRows(int id, multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, int shift, vector<int> nu, grid_info grid, mysys reaction_system)
+void ShiftMultiArrayRows(int id, multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, Index shift, vector<int> nu, grid_info grid)
 {
     if ((output_array.shape()[0] != input_array.shape()[0]) ||
         (output_array.shape()[1] != input_array.shape()[1]))
@@ -161,14 +161,10 @@ void ShiftMultiArrayRows(int id, multi_array<double, 2> &output_array, const mul
             for (int k = 0; k < grid_alt->m1; k++)
             {
                 k_inc = k + inc;
-                if ((nu[k_inc] / grid_alt->k1(k) > 0) &&
-                    (vec_index(k) - nu[k_inc] / grid_alt->k1(k) < 0))
-                {
-                    output_array(i, j) = 0;
-                    break;
-                }
-                else if ((nu[k_inc] / grid_alt->k1(k) < 0) &&
-                         (vec_index(k) - nu[k_inc] / grid_alt->k1(k) >= grid_alt->n1(k)))
+                if (((nu[k_inc] / grid_alt->k1(k) > 0) &&
+                     (vec_index(k) - nu[k_inc] / grid_alt->k1(k) < 0)) ||
+                    ((nu[k_inc] / grid_alt->k1(k) < 0) &&
+                     (vec_index(k) - nu[k_inc] / grid_alt->k1(k) >= grid_alt->n1(k))))
                 {
                     output_array(i, j) = 0;
                     break;
