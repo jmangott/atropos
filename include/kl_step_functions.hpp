@@ -19,6 +19,7 @@
 template <Index id>
 void CalculateCoefficientsX(multi_array<double, 2> &c_coeff, multi_array<double, 2> &d_coeff, const lr2<double> &lr_sol, blas_ops blas, const multi_array<double, 2> &xx_shift, Index alpha2_dep, mysys reaction_system, grid_info grid, partition_info<id == 1 ? 2 : 1> partition2, Index mu, std::vector<multi_array<double, 2>> &w_x_dep)
 {
+    // TODO: use a pointer for `tmp_xx`
     std::array<Index, 2> tmp_xx_dim;
     Index weight_dim;
     (id == 1) ? (tmp_xx_dim = lr_sol.V.shape()) : (tmp_xx_dim = lr_sol.X.shape());
@@ -27,6 +28,7 @@ void CalculateCoefficientsX(multi_array<double, 2> &c_coeff, multi_array<double,
     multi_array<double, 1> weight({weight_dim});
     Index alpha1_dep;
 
+    // TODO: write a custom `coeff` routine, such that the conversion to a `weight` vector with length dx1 or dx2 is no longer needed
     if (id == 1)
     {
         tmp_xx = lr_sol.V;
@@ -119,7 +121,7 @@ void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<dou
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
         // Shift X1,2 for calculation of the coefficients
-        ShiftMultiArrayRows(id_c, xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid, reaction_system);
+        ShiftMultiArrayRows(id_c, xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid);
 
         vec_index_c_dep.resize(partition.n_dep[mu].size());
         set_zero(prod_KLC);
@@ -149,7 +151,7 @@ void PerformKLStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<dou
             }
         }
         // Shift prod_KC
-        ShiftMultiArrayRows(id, prod_KLC_shift, prod_KLC, sigma[mu], reaction_system.reactions[mu]->nu, grid, reaction_system);
+        ShiftMultiArrayRows(id, prod_KLC_shift, prod_KLC, sigma[mu], reaction_system.reactions[mu]->nu, grid);
 
         // Calculate k_dot = shift(C1,2 * K) - D1,2 * K
         kl_dot += prod_KLC_shift;

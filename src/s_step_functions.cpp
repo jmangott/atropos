@@ -10,7 +10,7 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
     multi_array<double, 2> xx2_shift(lr_sol.V.shape());
 
     // Calculate the shifted X2
-    ShiftMultiArrayRows(2, xx2_shift, lr_sol.V, -sigma2[mu], reaction_system.reactions[mu]->minus_nu, grid, reaction_system);
+    ShiftMultiArrayRows(2, xx2_shift, lr_sol.V, -sigma2[mu], reaction_system.reactions[mu]->minus_nu, grid);
 
     Index alpha2_dep;
 
@@ -51,7 +51,7 @@ void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<dou
     Index alpha1_dep;
 
     // Calculate the shifted X1
-    ShiftMultiArrayRows(1, xx1_shift, lr_sol.X, -sigma1[mu], reaction_system.reactions[mu]->minus_nu, grid, reaction_system);
+    ShiftMultiArrayRows(1, xx1_shift, lr_sol.X, -sigma1[mu], reaction_system.reactions[mu]->minus_nu, grid);
 
     for (Index j = 0; j < grid.r; j++)
     {
