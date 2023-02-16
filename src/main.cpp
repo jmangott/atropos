@@ -19,12 +19,13 @@
 #include "parameters.hpp"
 #include "partition_class.hpp"
 #include "print_functions.hpp"
-// #include "reactions_ts.hpp"
-// #include "reactions_lp.hpp"
-#include "reactions_tgfb6.hpp"
 #include "s_step_functions.hpp"
 #include "timer_class.hpp"
 #include "weight_functions.hpp"
+
+#include "models/reactions_ts.hpp"
+// #include "models/reactions_lp.hpp"
+// #include "models/reactions_tgfb6.hpp"
 
 using std::cout;
 using std::endl;
@@ -56,12 +57,40 @@ int main()
     multi_array<double, 2> tmp_x1({grid.dx1, grid.r});
     multi_array<double, 2> tmp_x2({grid.dx2, grid.r});
 
-    // Objects for setting up X1 and X2 for t = 0
-    // multi_array<double, 2> xx1({grid.dx1, grid.r});
-    // multi_array<double, 2> xx2({grid.dx2, grid.r});
-    multi_array<double, 2> xx1({grid.dx1, 1});
-    multi_array<double, 2> xx2({grid.dx2, 1});
+    // Container for the initial values
+    multi_array<double, 2> xx1, xx2, ss;
     vector<const double *> x1, x2;
+    double *it1, *it2;
+
+    // Objects for setting up X1 and X2 for t = 0
+    if (kFullMatrixInitialCondition)
+    {
+        xx1.resize({grid.dx1, grid.r});
+        xx2.resize({grid.dx2, grid.r});
+        it1 = xx1.begin();
+        it2 = xx2.begin();
+        ss.resize({grid.r, grid.r});
+        ReadInMultiArray(ss, "../input/s_input.csv");
+        for (int i = 0; i < kR; i++)
+        {
+            x1.push_back(it1);
+            x2.push_back(it2);
+            it1 += grid.dx1;
+            it2 += grid.dx2;
+        }
+    }
+    else
+    {
+        xx1.resize({grid.dx1, kNBasisFunctions});
+        xx2.resize({grid.dx2, kNBasisFunctions});
+        it1 = xx1.begin();
+        it2 = xx2.begin();
+        x1.push_back(it1);
+        x2.push_back(it2);
+    }
+
+    ReadInMultiArray(xx1, "../input/x1_input.csv");
+    ReadInMultiArray(xx2, "../input/x2_input.csv");
 
     // Low rank structure (for storing X1, X2 and S)
     lr2<double> lr_sol(grid.r, {grid.dx1, grid.dx2});
@@ -72,54 +101,28 @@ int main()
     blas_ops blas;
     gram_schmidt gs(&blas);
 
-    vector<Index> sigma1, sigma2;
-
-    ReadInMultiArray(xx1, "../input/x1_input.csv");
-    ReadInMultiArray(xx2, "../input/x2_input.csv");
-
-    // Point to the beginning of every column of X1 and X2
-    double *it1 = xx1.begin();
-    double *it2 = xx2.begin();
-    // for (int i = 0; i < kR; i++)
-    // {
-    //     x1.push_back(it1);
-    //     x2.push_back(it2);
-    //     it1 += grid.dx1;
-    //     it2 += grid.dx2;
-    // }
-    x1.push_back(it1);
-    x2.push_back(it2);
+    vector<Index> sigma1(mysystem.mu()), sigma2(mysystem.mu());
 
     // Set up the low-rank structure and the inner products
-    double h_xx_mult1 = 1, h_xx_mult2 = 1;
-    for (Index i = 0; i < grid.m1; i++)
-        h_xx_mult1 *= grid.h1(i);
-    for (Index i = 0; i < grid.m2; i++)
-        h_xx_mult2 *= grid.h2(i);
-
-    ip_xx1 = inner_product_from_const_weight(h_xx_mult1, grid.dx1);
-    ip_xx2 = inner_product_from_const_weight(h_xx_mult2, grid.dx2);
+    ip_xx1 = inner_product_from_const_weight(grid.h1_mult, grid.dx1);
+    ip_xx2 = inner_product_from_const_weight(grid.h2_mult, grid.dx2);
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
-    // For testing
-    // WriteOutMultiArray(lr_sol.S, "../output/s_output_init");
-    // TODO: these lines are actually superfluous, provided Ensign works correctly
-    // multi_array<double, 2> ss({grid.r, grid.r});
-    // ReadInMultiArray(ss, "../input/s_input.csv");
-    // lr_sol.S = ss;
+    // TODO: this line is actually superfluous, provided Ensign works correctly
+    if (kFullMatrixInitialCondition) lr_sol.S = ss;
 
     // Calculate the shift amount for all reactions (this has to be done only once)
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
     // Write output files for initial values
-    WriteOutMultiArray(lr_sol.X, "../output/profiling/x1_output_t0");
-    WriteOutMultiArray(lr_sol.S, "../output/profiling/s_output_t0");
-    WriteOutMultiArray(lr_sol.V, "../output/profiling/x2_output_t0");
+    WriteOutMultiArray(lr_sol.X, "../output/toggle_switch_new_250_400/x1_output_t0");
+    WriteOutMultiArray(lr_sol.S, "../output/toggle_switch_new_250_400/s_output_t0");
+    WriteOutMultiArray(lr_sol.V, "../output/toggle_switch_new_250_400/x2_output_t0");
 
     auto start_time(std::chrono::high_resolution_clock::now());
 
     double t = 0.0;
-    int t_int;
+    // int t_int;
     for (Index ts = 0; ts < kNsteps; ts++) 
     {
         if (kTstar - t < kTau)
@@ -198,10 +201,6 @@ int main()
         t += kTau;
 
         // Print progress bar
-        // auto end_time(std::chrono::high_resolution_clock::now());
-        // auto duration_main_incr = end_time - start_time;
-        // double duration_main = duration_main_incr.count();
-        // cout << "main: " << duration_main << endl;
         PrintProgressBar(ts, kNsteps, start_time);
 
         std::stringstream fname_x1_output;
@@ -211,10 +210,10 @@ int main()
         if ((ts + 1) % kSnapshot == 0)
         {
             // Write snapshot
-            t_int = (int) (ts + 1) * kTau;
-            fname_x1_output << "../output/profiling/x1_output_t" << t_int;
-            fname_s_output << "../output/profiling/s_output_t" << t_int;
-            fname_x2_output << "../output/profiling/x2_output_t" << t_int;
+            // t_int = (int) (ts + 1) * kTau;
+            fname_x1_output << "../output/toggle_switch_new_250_400/x1_output_t" << ts + 1;
+            fname_s_output << "../output/toggle_switch_new_250_400/s_output_t" << ts + 1;
+            fname_x2_output << "../output/toggle_switch_new_250_400/x2_output_t" << ts + 1;
             WriteOutMultiArray(lr_sol.X, fname_x1_output.str());
             WriteOutMultiArray(lr_sol.S, fname_s_output.str());
             WriteOutMultiArray(lr_sol.V, fname_x2_output.str());

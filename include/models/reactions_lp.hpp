@@ -1,7 +1,7 @@
 #ifndef REACTIONS_HPP
 #define REACTIONS_HPP
 
-#include "reaction_class.hpp"
+#include "../reaction_class.hpp"
 
 const std::vector<std::string> kNN = {"S1", "S2", "S3", "S4", "S5"};
 constexpr double kA0 = 0.5;
