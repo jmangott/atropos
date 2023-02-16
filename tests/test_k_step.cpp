@@ -74,7 +74,7 @@ TEST_CASE("k_step", "[k_step]")
 
     // SECTION("CalculateShiftAmount")
     // {
-        vector<Index> sigma1_comparison, sigma2_comparison;
+        vector<Index> sigma1_comparison(test_system.mu()), sigma2_comparison(test_system.mu());
         sigma1_comparison = {-1, 0, 1, 0};
         sigma2_comparison = {0, -1, 0, 1};
 

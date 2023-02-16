@@ -33,15 +33,20 @@ TEST_CASE("index_functions", "[index_functions]")
     const Index m2 = 1;
     multi_array<Index, 1> n1({m1});
     multi_array<Index, 1> k1({m1});
+    multi_array<double, 1> liml1({m1});
     multi_array<Index, 1> n2({m2});
     multi_array<Index, 1> k2({m2});
+    multi_array<double, 1> liml2({m2});
     n1(0) = 4;
     n1(1) = 3;
     k1(0) = 1;
     k1(1) = 1;
+    liml1(0) = 0.0;
+    liml1(1) = 0.0;
     n2(0) = 2;
     k2(0) = 1;
-    grid_info grid(m1, m2, 1, n1, n2, k1, k2);
+    liml2(0) = 0.0;
+    grid_info grid(m1, m2, 1, n1, n2, k1, k2, liml1, liml2);
     CalculateShiftAmount(sigma1, sigma2, test_system, grid);
 
     SECTION("VecIndexToState")
@@ -136,7 +141,7 @@ TEST_CASE("index_functions", "[index_functions]")
         comparison_array(5, 0) = 11.0;
         comparison_array(6, 0) = 12.0;
 
-        ShiftMultiArrayRows(1, output_array, input_array, sigma1[0], test_system.reactions[0]->nu, grid, test_system);
+        ShiftMultiArrayRows(1, output_array, input_array, sigma1[0], test_system.reactions[0]->nu, grid);
 
         REQUIRE(bool(output_array == comparison_array));
     }
@@ -172,7 +177,7 @@ TEST_CASE("index_functions", "[index_functions]")
         comparison_array(10, 1) = 7.0;
         comparison_array(11, 1) = 8.0;
 
-        ShiftMultiArrayRows(1, output_array, input_array, -sigma1[0], test_system.reactions[0]->minus_nu, grid, test_system);
+        ShiftMultiArrayRows(1, output_array, input_array, -sigma1[0], test_system.reactions[0]->minus_nu, grid);
 
         REQUIRE(bool(output_array == comparison_array));
     }
@@ -193,7 +198,7 @@ TEST_CASE("index_functions", "[index_functions]")
         set_zero(comparison_array);
         comparison_array(0, 0) = 2.0;
 
-        ShiftMultiArrayRows(2, output_array, input_array, sigma2[1], test_system.reactions[1]->nu, grid, test_system);
+        ShiftMultiArrayRows(2, output_array, input_array, sigma2[1], test_system.reactions[1]->nu, grid);
 
         REQUIRE(bool(output_array == comparison_array));
     }
