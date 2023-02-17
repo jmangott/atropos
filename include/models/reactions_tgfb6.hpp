@@ -24,7 +24,7 @@ constexpr double kA16 = 1.108779807581306898e+01;
 constexpr double kA17 = 3.491475235854992198e-01;
 
 // Check if these constants are correct
-constexpr double kX0 = 0.0;
+constexpr double kX0 = 0.005;
 constexpr double kX1 = 1.0;
 constexpr double kX2 = 0.0;
 constexpr double kX3 = 0.0;
