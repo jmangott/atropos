@@ -48,7 +48,7 @@ inline void CombIndexToVecIndex(multi_array<Index, 1> &vec_index, Index comb_ind
     for (Index i = 0; i < (dim - 1); i++)
     {
         vec_index(i) = comb_index % interval(i);
-        comb_index = int(comb_index / interval(i));
+        comb_index = Index (comb_index / interval(i));
     }
     if (dim > 0) vec_index(dim - 1) = comb_index;
 }
@@ -76,7 +76,7 @@ inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index,
     for (Index i = 0; i < (dim - 1); i++)
     {
         vec_index[i] = comb_index % interval[i];
-        comb_index = int(comb_index / interval[i]);
+        comb_index = Index (comb_index / interval[i]);
     }
     if (dim > 0) vec_index[dim - 1] = comb_index;
 }
@@ -92,7 +92,7 @@ inline void CombIndexToState(std::vector<double> &state, Index comb_index, const
         else
         {
             state[i] = liml(i) + (limr(i) - liml(i)) * (comb_index % interval(i)) / (interval(i) - 1.0);
-            comb_index = int(comb_index / interval(i));
+            comb_index = Index (comb_index / interval(i));
         }
     }
 }
