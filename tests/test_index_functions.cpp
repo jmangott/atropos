@@ -49,23 +49,23 @@ TEST_CASE("index_functions", "[index_functions]")
     grid_info grid(m1, m2, 1, n1, n2, k1, k2, liml1, liml2);
     CalculateShiftAmount(sigma1, sigma2, test_system, grid);
 
+    // TODO: replace this by `CombIndexToState` and delete the `VecIndexToState` function
     SECTION("VecIndexToState")
     {
         multi_array<Index, 1> vec_index({5});
         multi_array<Index, 1> interval({5});
-        multi_array<double, 1> liml({5});
-        multi_array<double, 1> limr({5});
+        multi_array<double, 1> lim({5, 2});
         multi_array<double, 1> state_vec({5});
         multi_array<double, 1> comparison_vec({5});
         for (Index i = 0; i < 5; i++)
         {
             vec_index(i) = 5 * i;
             interval(i) = 5 * (i + 1) + 1;
-            liml(i) = 0.0;
-            limr(i) = 10.0 * (i + 1);
+            lim(i, 0) = 0.0;
+            lim(i, 1) = 10.0 * (i + 1);
             comparison_vec(i) = 10.0 * i;
         }
-        state_vec = VecIndexToState(vec_index, interval, liml, limr);
+        state_vec = VecIndexToState(vec_index, interval, lim);
         REQUIRE(bool(state_vec == comparison_vec));
     }
 
