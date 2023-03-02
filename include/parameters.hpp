@@ -9,6 +9,16 @@
 #include <lr/lr.hpp>
 
 /////////////////////////////////////////////
+/////////////////// MODEL ///////////////////
+/////////////////////////////////////////////
+
+
+// #include "models/reactions_ts.hpp"
+// #include "models/reactions_lp.hpp"
+#include "models/reactions_tgfb6.hpp"
+
+
+/////////////////////////////////////////////
 //////////////// PARAMETERS /////////////////
 /////////////////////////////////////////////
 
@@ -57,18 +67,18 @@
 // constexpr Index kM1 = 2;                          // number of species in partition 1
 // constexpr Index kM2 = 3;                          // number of species in partition 2
 
-// std::vector<Index> kN1 {6, 151};
-// std::vector<Index> kN2 {6, 11, 21};
-// // std::vector<Index> kN1 {6, 61};
+// // std::vector<Index> kN1 {6, 151};
 // // std::vector<Index> kN2 {6, 11, 21};
+// std::vector<Index> kN1 {6, 41};
+// std::vector<Index> kN2 {6, 11, 21};
 // std::vector<Index> kK1 {1, 1};
 // std::vector<Index> kK2 {1, 1, 1};
-// std::vector<double> kLiml1 {0.0, 0.0};
-// // std::vector<double> kLiml1 {0.0, 60.0};
+// // std::vector<double> kLiml1 {0.0, 0.0};
+// std::vector<double> kLiml1 {0.0, 70.0};
 // std::vector<double> kLiml2 {0.0, 0.0, 0.0};
 
 // TGFb6
-constexpr Index kR = 5;                            // rank
+constexpr Index kR = 4;                            // rank
 constexpr Index kD = 8;                            // number of species
 constexpr Index kM1 = 4;                           // number of species in partition 1
 constexpr Index kM2 = 4;                           // number of species in partition 2
@@ -80,14 +90,15 @@ std::vector<Index> kK2 {1, 1, 1, 1};
 std::vector<double> kLiml1 {333.0, 0.0, 470.0, 20.0};
 std::vector<double> kLiml2 {1890.0, 0.0, 20.0, 0.0};
 
-constexpr double kTstar = 1.0;                  // final time
-double kTau = 0.001;                            // time step size
-Index kNsteps = ceil(kTstar / kTau);            // number of time steps
-constexpr Index kSnapshot = 10;                 // number of time steps between snapshots
+constexpr double kTstar = 0.01;                // final time
+double kTau = 0.01;                            // time step size
+Index kNsteps = ceil(kTstar / kTau);           // number of time steps
+constexpr Index kSnapshot = 1;                 // number of time steps between snapshots
 
-constexpr bool kFullMatrixInitialCondition = false;
-constexpr Index kNBasisFunctions = 1;
+constexpr Index kNBasisFunctions = 1;          // number of basis functions for the initial condition,
+                                               // must be > 0 and <= kR!
 
-std::string kFilename = "tgfb6_new_1e-3";
+std::string kFilename = "tgfb6";
+constexpr bool kPrintDiagnostics = true;
 
 #endif
