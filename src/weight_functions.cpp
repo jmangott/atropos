@@ -3,10 +3,13 @@
 using std::vector;
 
 // TODO: Only use two weight vectors w_x1 and w_x2 in the program
-void CalculateWeightDep(vector<multi_array<double, 2>> &w_x_dep, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2)
+void CalculateWeightDep(vector<multi_array<double, 2>> &w_x_dep, double &max_prop, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2)
 {
     Index comb_index_tot, comb_index1, comb_index2;
     vector<double> state(grid.m1 + grid.m2, 0.0);
+    double propensity;
+
+    max_prop = 0.0;
 
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
@@ -19,8 +22,10 @@ void CalculateWeightDep(vector<multi_array<double, 2>> &w_x_dep, mysys reaction_
             {
                 comb_index2 = DepCombIndexToCombIndex(alpha2, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
                 comb_index_tot = comb_index1 + grid.dx1 * comb_index2;
-                CombIndexToState(state, comb_index_tot, grid.n, grid.liml, grid.limr);
-                w_x_dep[mu](alpha1, alpha2) = reaction_system.reactions[mu]->propensity(state);
+                CombIndexToState(state, comb_index_tot, grid.n, grid.lim);
+                propensity = reaction_system.reactions[mu]->propensity(state);
+                w_x_dep[mu](alpha1, alpha2) = propensity;
+                if (propensity > max_prop) max_prop = propensity;
             }
         }
     }

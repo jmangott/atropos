@@ -15,6 +15,6 @@
 
 // Calculate the integration weight for coefficients B1, B2, C1, C2, D1 and D2
 // NOTE: the result has to be multiplied with h1_mult or h2_mult!
-void CalculateWeightDep(vector<multi_array<double, 2>> &w_x_dep, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2);
+void CalculateWeightDep(vector<multi_array<double, 2>> &w_x_dep, double &max_prop, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2);
 
 #endif
