@@ -3,6 +3,8 @@
 using std::cout;
 using std::endl;
 
+// TODO: output width is not always the same
+// TODO: calculate `time_left` with a moving mean (of the last n steps)
 void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::time_point start_time)
 {
     int bar_width = 40;
@@ -45,7 +47,7 @@ void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::t
     std::fill(progress_bar.begin(), progress_bar.begin() + pos, '#');
     std::fill(progress_bar.begin() + pos, progress_bar.end(), '-');
 
-    printf("[%*s], step: %li/%li, time per step: %.2f%*s, time left: %2.2lli:%2.2lli:%2.2lli, progress: %4.2f%%\r", bar_width, progress_bar.c_str(), ts + 1, kNsteps, time_per_step_count, (int)time_unit.size(), time_unit.c_str(), hours.count(), minutes.count(), seconds.count(), progress * 100);
+    printf("[%*s], step: %ti/%ti, time per step: %.2f%*s, time left: %2.2lli:%2.2lli:%2.2lli, progress: %4.2f%%\r", bar_width, progress_bar.c_str(), ts + 1, kNsteps, time_per_step_count, (int)time_unit.size(), time_unit.c_str(), hours.count(), minutes.count(), seconds.count(), progress * 100);
     fflush(stdout);
 
     // cout << std::fixed << std::setprecision(3);
