@@ -1,5 +1,7 @@
+from numba import njit
 import numpy as np
 
+@njit
 def CombIndexToVecIndex(comb_index, interval):
     vec_index = np.zeros(interval.size, dtype="int64")
     for i, int_ele in enumerate(interval):
@@ -10,6 +12,7 @@ def CombIndexToVecIndex(comb_index, interval):
             comb_index = comb_index // int_ele
     return vec_index
 
+@njit
 def VecIndexToCombIndex(vec_index, interval):
     stride = 1
     comb_index = 0

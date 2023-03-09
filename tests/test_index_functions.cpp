@@ -28,7 +28,7 @@ TEST_CASE("index_functions", "[index_functions]")
         { return 1.0 / (1.0 + y[0]); },
         test_system);
 
-    vector<Index> sigma1, sigma2;
+    vector<Index> sigma1(test_system.mu()), sigma2(test_system.mu());
     const Index m1 = 2;
     const Index m2 = 1;
     multi_array<Index, 1> n1({m1});
@@ -51,21 +51,22 @@ TEST_CASE("index_functions", "[index_functions]")
 
     SECTION("VecIndexToState")
     {
-        multi_array<Index, 1> vec_index({5});
+        Index comb_index = 0;
+        Index stride = 1;
         multi_array<Index, 1> interval({5});
-        multi_array<double, 1> liml({5});
-        multi_array<double, 1> limr({5});
-        multi_array<double, 1> state_vec({5});
-        multi_array<double, 1> comparison_vec({5});
+        multi_array<double, 2> lim({5, 2});
+        vector<double> state_vec(5);
+        vector<double> comparison_vec(5);
         for (Index i = 0; i < 5; i++)
         {
-            vec_index(i) = 5 * i;
             interval(i) = 5 * (i + 1) + 1;
-            liml(i) = 0.0;
-            limr(i) = 10.0 * (i + 1);
-            comparison_vec(i) = 10.0 * i;
+            comb_index += 5 * i * stride;
+            stride *= interval(i);
+            lim(i, 0) = 5.0 * (i + 1.0);
+            lim(i, 1) = 10.0 * (i + 1.0);
+            comparison_vec[i] = 5.0 + 10.0 * i;
         }
-        state_vec = VecIndexToState(vec_index, interval, liml, limr);
+        CombIndexToState(state_vec, comb_index, interval, lim);
         REQUIRE(bool(state_vec == comparison_vec));
     }
 
@@ -141,7 +142,7 @@ TEST_CASE("index_functions", "[index_functions]")
         comparison_array(5, 0) = 11.0;
         comparison_array(6, 0) = 12.0;
 
-        ShiftMultiArrayRows(1, output_array, input_array, sigma1[0], test_system.reactions[0]->nu, grid);
+        ShiftMultiArrayRows<1>(output_array, input_array, sigma1[0], test_system.reactions[0]->nu, grid);
 
         REQUIRE(bool(output_array == comparison_array));
     }
@@ -177,7 +178,7 @@ TEST_CASE("index_functions", "[index_functions]")
         comparison_array(10, 1) = 7.0;
         comparison_array(11, 1) = 8.0;
 
-        ShiftMultiArrayRows(1, output_array, input_array, -sigma1[0], test_system.reactions[0]->minus_nu, grid);
+        ShiftMultiArrayRows<1>(output_array, input_array, -sigma1[0], test_system.reactions[0]->minus_nu, grid);
 
         REQUIRE(bool(output_array == comparison_array));
     }
@@ -198,7 +199,7 @@ TEST_CASE("index_functions", "[index_functions]")
         set_zero(comparison_array);
         comparison_array(0, 0) = 2.0;
 
-        ShiftMultiArrayRows(2, output_array, input_array, sigma2[1], test_system.reactions[1]->nu, grid);
+        ShiftMultiArrayRows<2>(output_array, input_array, sigma2[1], test_system.reactions[1]->nu, grid);
 
         REQUIRE(bool(output_array == comparison_array));
     }

@@ -13,8 +13,8 @@ from scipy.special import factorial
 r = 4
 kk1 = np.array([1, 1])
 kk2 = np.array([1, 1, 1])
-nx1 = np.array([16, 41])
-nx2 = np.array([11, 11, 11])
+nx1 = np.array([6, 111])
+nx2 = np.array([6, 11, 21])
 
 x_max1 = np.rint((nx1 - np.ones(nx1.size)) / kk1)
 x_max2 = np.rint((nx2 - np.ones(nx2.size)) / kk2)
@@ -38,7 +38,7 @@ def eval_p0(x):
     #     p0 = 0.0
 
     # Lambda phage x1 = 1
-    if ((x == [1, 0, 0, 0, 0]).all()):
+    if ((x == [0, 85, 0, 5, 10]).all()):
         p0 = 1.0
     else:
         p0 = 0.0

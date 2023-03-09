@@ -18,10 +18,12 @@
 // for coefficients E and F (depending on `mu`)
 void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, Index mu, std::vector<Index> sigma2, const vector<multi_array<double, 2>> &w_x_dep);
 
+// void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, Index mu, std::vector<Index> sigma1);
+
 // Calculate the coefficients E and F (depending on `mu`)
-void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, Index mu, std::vector<Index> sigma1);
+void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<double, 5> &f_coeff_tot, std::vector<Index> sigma1, std::vector<Index> sigma2, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep);
 
 // Perform S-Step with time step size `tau`
-void PerformSStep(std::vector<Index> sigma1, std::vector<Index> sigma2, lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep, double tau);
+void PerformSStep(multi_array<double, 2> &s_dot, const multi_array<double, 2> &s, const multi_array<double, 5> &e_coeff, const multi_array<double, 5> &f_coeff, std::vector<Index> sigma1, std::vector<Index> sigma2, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep, double tau);
 
 #endif

@@ -6,7 +6,7 @@ project(kinetic-cme
         LANGUAGES CXX)
 enable_testing()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake-modules")
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Profile" CACHE STRING "" FORCE)
@@ -26,7 +26,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
 
 else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall")
-    set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb -Wall -D_GLIBCXX_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak -fsanitize=undefined")
+    set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb -Wall -D_GLIBCXX_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak -fsanitize=undefined -ftrapv")
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native")
     set(CMAKE_CXX_FLAGS_PROFILE "-g1 -O3 -fno-inline -fno-optimize-sibling-calls")
 endif()
@@ -66,15 +66,15 @@ find_package(Threads REQUIRED)
 set(FFTW_LIBRARIES "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3_omp.a")
 
 # Find NetCDF
-# find_package(NetCDF)
-# if(${NETCDF_FOUND})
-#   include_directories(${NETCDF_INCLUDE_DIR})
-#   message("test: ${NETCDF_INCLUDE_DIR}")
-#   add_definitions("-D__NETCDF__")
-# else()
-#   message("NetCDF has _not_ been found. If you want to write snapshots to disk please set the path in CMake appropriately.")
-#   set(NETCDF_LIBRARIES "")
-# endif()
+find_package(NetCDF)
+if(${NETCDF_FOUND})
+  include_directories(${NETCDF_INCLUDE_DIR})
+  message("test: ${NETCDF_INCLUDE_DIR}")
+  add_definitions("-D__NETCDF__")
+else()
+  message("NetCDF has _not_ been found. If you want to write snapshots to disk please set the path in CMake appropriately.")
+  set(NETCDF_LIBRARIES "")
+endif()
 
 ###############################################################
 # Define a short hand for source, the Ensign and header files #
@@ -99,6 +99,7 @@ set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
 
 set(SRC_FILES ${SRC}/grid_class.cpp
               ${SRC}/index_functions.cpp
+              ${SRC}/integrators.cpp
               ${SRC}/io_functions.cpp
               ${SRC}/print_functions.cpp
               ${SRC}/reaction_class.cpp
