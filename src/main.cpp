@@ -136,8 +136,10 @@ int main()
         cout << "DIAGNOSTICS" << endl;
         cout << "-----------" << endl;
         cout << "Memory requirement: "
-             << " (partition 1), "
-             << " (partition 2), " << endl;
+             << 8.0 * grid.dx1 * grid.r / 1.0e9
+             << "GB (X1), "
+             << 8.0 * grid.dx2 * grid.r / 1.0e9
+             << "GB (X2), " << endl;
         cout << "Maximum propensity value: " << max_prop << ", time step size: " << kTau << endl;
     }
 
@@ -148,9 +150,9 @@ int main()
         if (kTstar - t < kTau)
             kTau = kTstar - t;
 
-        IntegrateFirstOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau);
+        // IntegrateFirstOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau);
 
-        // IntegrateSecondOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau);
+        IntegrateSecondOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, kNSubsteps);
 
         t += kTau;
 
@@ -160,17 +162,6 @@ int main()
         // Write snapshot
         if ((ts + 1) % kSnapshot == 0 || (ts + 1) == kNsteps)
         {
-            // t_int = (int) (ts + 1) * kTau;
-            // fname_x1_output.str("");
-            // fname_s_output.str("");
-            // fname_x2_output.str("");
-            // fname_x1_output << "../output/" << kFilename << "/x1_output_t" << ts + 1;
-            // fname_s_output << "../output/" << kFilename << "/s_output_t" << ts + 1;
-            // fname_x2_output << "../output/" << kFilename << "/x2_output_t" << ts + 1;
-            // WriteCSV(lr_sol.X, fname_x1_output.str());
-            // WriteCSV(lr_sol.S, fname_s_output.str());
-            // WriteCSV(lr_sol.V, fname_x2_output.str());
-
             fname.str("");
             fname << "../output/" << kFilename << "/output_t" << ts + 1 << ".nc";
             WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
