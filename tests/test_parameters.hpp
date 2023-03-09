@@ -35,7 +35,7 @@ myreact test_react3(
     {0, 1}, {0}, [](std::vector<double> y)
     { return 1.0 / (1.0 + y[0]); },
     test_system);
-vector<Index> sigma1, sigma2;
+vector<Index> sigma1(test_system.mu()), sigma2(test_system.mu());
 
 const Index kR = 2;
 const Index kN = 2;
@@ -49,6 +49,8 @@ Index nsteps = 1;
 double tstar = 1.0;
 double tau = tstar / nsteps;
 
+double max_prop;
+
 grid_info grid(kM1, kM2, kR, kN, kK, kLiml1, kLiml2);
 
 // Low rank structure (for storing X1, X2 and S)
@@ -58,7 +60,13 @@ lr2<double> lr_sol(kR, {grid.dx1, grid.dx2});
 std::function<double(double *, double *)> ip_xx1 = inner_product_from_const_weight(grid.h1(0), grid.dx1);
 std::function<double(double *, double *)> ip_xx2 = inner_product_from_const_weight(grid.h2(0), grid.dx2);
 blas_ops blas;
+
 std::vector<multi_array<double, 2>> w_x_dep(test_system.mu());
+
+// Coefficients
+vector<multi_array<double, 3>> c_coeff1(test_system.mu()), d_coeff1(test_system.mu());
+vector<multi_array<double, 3>> c_coeff2(test_system.mu()), d_coeff2(test_system.mu());
+multi_array<double, 5> e_coeff({test_system.mu(), grid.r, grid.r, grid.r, grid.r}), f_coeff({test_system.mu(), grid.r, grid.r, grid.r, grid.r});
 
 // Perform partition of the network
 partition_info<1> partition1(grid, test_system);
@@ -72,6 +80,18 @@ inline void InitializeTest(lr2<double> &lr_sol, grid_info grid, std::function<do
     std::vector<const double *> x1, x2;
     x1.reserve(1);
     x2.reserve(1);
+
+    CalculateShiftAmount(sigma1, sigma2, test_system, grid);
+
+    // Allocate memory
+    for (Index mu = 0; mu < test_system.mu(); mu++)
+    {
+        w_x_dep[mu].resize({partition1.dx_dep(mu), partition2.dx_dep(mu)});
+        c_coeff1[mu].resize({partition1.dx_dep(mu), grid.r, grid.r});
+        d_coeff1[mu].resize({partition1.dx_dep(mu), grid.r, grid.r});
+        c_coeff2[mu].resize({partition2.dx_dep(mu), grid.r, grid.r});
+        d_coeff2[mu].resize({partition2.dx_dep(mu), grid.r, grid.r});
+    }
 
     xx1(0) = std::exp(-std::pow(-0.5, 2));
     xx1(1) = std::exp(-std::pow( 0.5, 2));
@@ -87,7 +107,7 @@ inline void InitializeTest(lr2<double> &lr_sol, grid_info grid, std::function<do
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
     // Calculate the integration weights
-    CalculateWeightDep(w_x_dep, test_system, grid, partition1, partition2);
+    CalculateWeightDep(w_x_dep, max_prop, test_system, grid, partition1, partition2);
 }
 
 #endif

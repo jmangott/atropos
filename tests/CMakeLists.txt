@@ -23,7 +23,7 @@ target_include_directories(test_k_step PRIVATE "${ENSIGN_BUILD_DIR}/extern/Catch
 target_include_directories(test_s_step PRIVATE "${ENSIGN_BUILD_DIR}/extern/Catch2/src/Catch2/single_include" ${HEADER_FILES})
 target_include_directories(test_l_step PRIVATE "${ENSIGN_BUILD_DIR}/extern/Catch2/src/Catch2/single_include" ${HEADER_FILES})
 
-target_link_libraries(test_index_functions ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} Threads::Threads "-lgfortran")
-target_link_libraries(test_k_step ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} Threads::Threads "-lgfortran")
-target_link_libraries(test_s_step ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} Threads::Threads "-lgfortran")
-target_link_libraries(test_l_step ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} Threads::Threads "-lgfortran")
+target_link_libraries(test_index_functions ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} ${NETCDF_LIBRARIES}  Threads::Threads "-lgfortran")
+target_link_libraries(test_k_step ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} ${NETCDF_LIBRARIES} Threads::Threads "-lgfortran")
+target_link_libraries(test_s_step ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} ${NETCDF_LIBRARIES} Threads::Threads "-lgfortran")
+target_link_libraries(test_l_step ${FFTW_LIBRARIES} ${OPENBLAS_LIBRARIES} ${NETCDF_LIBRARIES} Threads::Threads "-lgfortran")
