@@ -12,9 +12,6 @@
 
 // TODO: Rewrite all index functions in the same style as `CombIndexToState`
 
-// Convert index vector to state vector
-multi_array<double, 1> VecIndexToState(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval, multi_array<double, 2> lim);
-
 
 // Convert index vector associated with the population numbers to combined index
 Index VecIndexToCombIndex(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval);
@@ -24,22 +21,6 @@ Index VecIndexToCombIndex(std::vector<Index> vec_index, multi_array<Index, 1> in
 
 
 Index VecIndexToCombIndex(std::vector<Index> vec_index, std::vector<Index> interval);
-
-
-// inline void CombIndexToVecIndex(multi_array<Index, 1> &vec_index, Index comb_index, const multi_array<Index, 1> &interval)
-// {
-//     Index dim = interval.shape()[0];
-//     for (Index i = 0; i < dim; i++)
-//     {
-//         if (i == (dim - 1))
-//             vec_index(i) = comb_index;
-//         else
-//         {
-//             vec_index(i) = comb_index % interval(i);
-//             comb_index = int(comb_index / interval(i));
-//         }
-//     }
-// }
 
 
 inline void CombIndexToVecIndex(multi_array<Index, 1> &vec_index, Index comb_index, const multi_array<Index, 1> &interval)
@@ -52,22 +33,6 @@ inline void CombIndexToVecIndex(multi_array<Index, 1> &vec_index, Index comb_ind
     }
     if (dim > 0) vec_index(dim - 1) = comb_index;
 }
-
-
-// inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index, const std::vector<Index> &interval)
-// {
-//     Index dim = interval.size();
-//     for (Index i = 0; i < dim; i++)
-//     {
-//         if (i == (dim - 1))
-//             vec_index[i] = comb_index;
-//         else
-//         {
-//             vec_index[i] = comb_index % interval[i];
-//             comb_index = int(comb_index / interval[i]);
-//         }
-//     }
-// }
 
 
 inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index, const std::vector<Index> &interval)
@@ -123,7 +88,7 @@ inline Index CombIndexToDepCombIndex(Index comb_index, const vector<Index> &n_de
 Index DepVecIndexRemCombIndexToCombIndex(std::vector<Index> vec_index_dep, Index comb_index_rem, std::vector<Index> n_rem, multi_array<Index, 1> n, std::vector<Index> dep_vec);
 
 
-// Calculate for all reactions the number of indices by which arrays have to be shifted in order to calculate the coefficients C1, C2, D1, D2
+// Calculate for all reactions the number of indices by which arrays have to be shifted in order to calculate coefficients
 void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2, mysys reaction_system, grid_info grid);
 
 

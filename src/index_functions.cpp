@@ -3,17 +3,6 @@
 
 using std::vector;
 
-multi_array<double, 1> VecIndexToState(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval, multi_array<double, 2> lim)
-{
-    Index dim = vec_index.shape()[0];
-    multi_array<double, 1> state_vec({dim});
-    for (Index i = 0; i < dim; i++)
-    {
-        state_vec(i) = lim(i, 0) + (lim(i, 1) - lim(i, 0)) * vec_index(i) / (interval(i) - 1.0);
-    }
-    return state_vec;
-}
-
 
 Index VecIndexToCombIndex(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval)
 {
