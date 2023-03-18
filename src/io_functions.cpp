@@ -107,6 +107,7 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
     int retval, ncid;
 
     multi_array<long long, 1> n1(grid.n1.shape()), n2(grid.n2.shape());
+    multi_array<long long, 1> binsize(grid.binsize.shape());
 
     for (Index i = 0; i < grid.m1; i++)
         n1(i) = (long long) grid.n1(i);
@@ -114,14 +115,17 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
     for (Index i = 0; i < grid.m2; i++)
         n2(i) = (long long) grid.n2(i);
 
+    for (Index i = 0; i < grid.d; i++)
+        binsize(i) = (long long) grid.binsize(i);
+
     if ((retval = nc_create(fn.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid)))
         ERROR_NETCDF(retval);
 
     // Dimensions
-    int id_r, id_d, id_m1, id_m2, id_dx1, id_dx2, id_np;
+    int id_r, id_d, id_m1, id_m2, id_dx1, id_dx2;
     if ((retval = nc_def_dim(ncid, "r", grid.r, &id_r)))
         ERROR_NETCDF(retval);
-    if ((retval = nc_def_dim(ncid, "d", grid.m1 + grid.m2, &id_d)))
+    if ((retval = nc_def_dim(ncid, "d", grid.d, &id_d)))
         ERROR_NETCDF(retval);
     if ((retval = nc_def_dim(ncid, "m1", grid.m1, &id_m1)))
         ERROR_NETCDF(retval);
@@ -131,11 +135,9 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
         ERROR_NETCDF(retval);
     if ((retval = nc_def_dim(ncid, "dx2", grid.dx2, &id_dx2)))
         ERROR_NETCDF(retval);
-    if ((retval = nc_def_dim(ncid, "two", 2, &id_np)))
-        ERROR_NETCDF(retval);
 
     // Variables
-    int varid_X, varid_V, varid_S, varid_names, varid_n1, varid_n2, varid_lim1, varid_lim2, varid_t, varid_dt;
+    int varid_X, varid_V, varid_S, varid_names, varid_n1, varid_n2, varid_binsize, varid_liml, varid_t, varid_dt;
     // X
     int dimids_X[2] = {id_r, id_dx1};
     if ((retval = nc_def_var(ncid, "X", NC_DOUBLE, 2, dimids_X, &varid_X)))
@@ -157,13 +159,11 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
     // n2
     if ((retval = nc_def_var(ncid, "n2", NC_INT64, 1, &id_m2, &varid_n2)))
         ERROR_NETCDF(retval);
-    // lim1
-    int dimids_lim1[2] = {id_np, id_m1};
-    if ((retval = nc_def_var(ncid, "lim1", NC_DOUBLE, 2, dimids_lim1, &varid_lim1)))
+    // binsize
+    if ((retval = nc_def_var(ncid, "binsize", NC_INT64, 1, &id_d, &varid_binsize)))
         ERROR_NETCDF(retval);
-    // lim2
-    int dimids_lim2[2] = {id_np, id_m2};
-    if ((retval = nc_def_var(ncid, "lim2", NC_DOUBLE, 2, dimids_lim2, &varid_lim2)))
+    // liml
+    if ((retval = nc_def_var(ncid, "liml", NC_DOUBLE, 2, &id_d, &varid_liml)))
         ERROR_NETCDF(retval);
     // t
     if ((retval = nc_def_var(ncid, "t", NC_DOUBLE, 0, 0, &varid_t)))
@@ -192,9 +192,9 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
         ERROR_NETCDF(retval);
     if ((retval = nc_put_var_longlong(ncid, varid_n2, n2.data())))
         ERROR_NETCDF(retval);
-    if ((retval = nc_put_var_double(ncid, varid_lim1, grid.lim1.data())))
+    if ((retval = nc_put_var_longlong(ncid, varid_binsize, binsize.data())))
         ERROR_NETCDF(retval);
-    if ((retval = nc_put_var_double(ncid, varid_lim2, grid.lim2.data())))
+    if ((retval = nc_put_var_double(ncid, varid_liml, grid.liml.data())))
         ERROR_NETCDF(retval);
     if ((retval = nc_put_var_double(ncid, varid_t, t)))
         ERROR_NETCDF(retval);
