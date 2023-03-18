@@ -38,7 +38,7 @@ int main()
     /////////////////// SETUP ///////////////////
     /////////////////////////////////////////////
 
-    grid_info grid(kM1, kM2, kR, kN1, kN2, kK1, kK2, kLiml1, kLiml2);
+    grid_info grid(kM1, kM2, kR, kN1, kN2, kBinsize1, kBinsize2, kLiml1, kLiml2);
 
     // Perform partition of the network
     partition_info<1> partition1(grid, mysystem);
@@ -63,8 +63,9 @@ int main()
     }
 
     // Calculate the integration weights
-    double max_prop = 0.0;
-    CalculateWeightDep(w_x_dep, max_prop, mysystem, grid, partition1, partition2);
+    double min_prop, max_prop;
+    double norm;
+    CalculateWeightDep(w_x_dep, min_prop, max_prop, mysystem, grid, partition1, partition2);
 
     // Container for the initial values
     multi_array<double, 2> xx1({grid.dx1, kNBasisFunctions}), xx2({grid.dx2, kNBasisFunctions});
@@ -95,8 +96,8 @@ int main()
     vector<Index> sigma1(mysystem.mu()), sigma2(mysystem.mu());
 
     // Set up the low-rank structure and the inner products
-    ip_xx1 = inner_product_from_const_weight(grid.h1_mult, grid.dx1);
-    ip_xx2 = inner_product_from_const_weight(grid.h2_mult, grid.dx2);
+    ip_xx1 = inner_product_from_const_weight((double) grid.h1_mult, grid.dx1);
+    ip_xx2 = inner_product_from_const_weight((double) grid.h2_mult, grid.dx2);
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
     // TODO: this lines are actually superfluous, provided Ensign works correctly
@@ -130,18 +131,7 @@ int main()
     WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
 
     // Diagnostics
-    // TODO: memory requirement
-    if (kPrintDiagnostics)
-    {
-        cout << "DIAGNOSTICS" << endl;
-        cout << "-----------" << endl;
-        cout << "Memory requirement: "
-             << 8.0 * grid.dx1 * grid.r / 1.0e9
-             << "GB (X1), "
-             << 8.0 * grid.dx2 * grid.r / 1.0e9
-             << "GB (X2), " << endl;
-        cout << "Maximum propensity value: " << max_prop << ", time step size: " << kTau << endl;
-    }
+    if (kPrintDiagnostics) PrintDiagnostics(grid, min_prop, max_prop, kTau);
 
     auto start_time(std::chrono::high_resolution_clock::now());
 
@@ -150,14 +140,14 @@ int main()
         if (kTstar - t < kTau)
             kTau = kTstar - t;
 
-        // IntegrateFirstOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau);
+        // IntegrateFirstOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, norm);
 
-        IntegrateSecondOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, kNSubsteps);
+        IntegrateSecondOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, kNSubsteps, norm);
 
         t += kTau;
 
         // Print progress bar
-        PrintProgressBar(ts, kNsteps, start_time);
+        PrintProgressBar(ts, kNsteps, start_time, norm);
 
         // Write snapshot
         if ((ts + 1) % kSnapshot == 0 || (ts + 1) == kNsteps)
@@ -169,7 +159,10 @@ int main()
     }
 
     get_time::stop("main");
-    cout << endl << endl << "Timer results: " << endl << get_time::sorted_output();
+    cout << endl << endl; 
+    cout << "TIMER RESULTS" << endl;
+    cout << "-------------" << endl;
+    cout << get_time::sorted_output();
 
     return 0;
 }

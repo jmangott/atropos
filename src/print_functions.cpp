@@ -5,9 +5,9 @@ using std::endl;
 
 // TODO: output width is not always the same
 // TODO: calculate `time_left` with a moving mean (of the last n steps)
-void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::time_point start_time)
+void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::time_point start_time, double norm)
 {
-    int bar_width = 40;
+    int bar_width = 30;
     double progress = (ts + 1.0) / kNsteps;
     int pos = bar_width * progress;
     string time_unit;
@@ -47,15 +47,23 @@ void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::t
     std::fill(progress_bar.begin(), progress_bar.begin() + pos, '#');
     std::fill(progress_bar.begin() + pos, progress_bar.end(), '-');
 
-    printf("[%*s], step: %ti/%ti, time per step: %.2f%*s, time left: %2.2lli:%2.2lli:%2.2lli, progress: %4.2f%%\r", bar_width, progress_bar.c_str(), ts + 1, kNsteps, time_per_step_count, (int)time_unit.size(), time_unit.c_str(), hours.count(), minutes.count(), seconds.count(), progress * 100);
+    printf("[%*s], step: %ti/%ti, time per step: %.2f%*s, time left: %2.2lli:%2.2lli:%2.2lli, progress: %4.2f%%, |norm(P)-1|: %3.2e\r", bar_width, progress_bar.c_str(), ts + 1, kNsteps, time_per_step_count, (int)time_unit.size(), time_unit.c_str(), hours.count(), minutes.count(), seconds.count(), progress * 100, std::abs(norm - 1.0));
     fflush(stdout);
+}
 
-    // cout << std::fixed << std::setprecision(3);
-    // cout << "[" << progress_bar << "]";
-    // cout << ", step: " << ts + 1 << "/" << kNsteps;
-    // cout << ", time per step: " << time_per_step_count << " " << time_unit;
-    // cout << std::setw(2) << std::setfill('0') << std::left;
-    // cout << ", time left: " << hours.count() << ":" << minutes.count() << ":" << seconds.count();
-    // cout << ", progress: " << progress * 100 << "%\r";
-    // cout << std::flush;
+
+// TODO: memory requirement
+void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau)
+{
+        cout << "DIAGNOSTICS" << endl;
+        cout << "-----------" << endl;
+        cout << "Memory requirement: "
+             << 8.0 * grid.dx1 * grid.r / 1.0e9
+             << " GB (X1), "
+             << 8.0 * grid.dx2 * grid.r / 1.0e9
+             << " GB (X2)" << endl;
+        cout << "Min, max propensity: " << min_prop << ", " << max_prop << endl;
+        cout << "Time step size: " << tau << endl;
+        cout << "-----------" << endl;
+        cout << endl;
 }
