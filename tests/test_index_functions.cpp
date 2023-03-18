@@ -54,19 +54,20 @@ TEST_CASE("index_functions", "[index_functions]")
         Index comb_index = 0;
         Index stride = 1;
         multi_array<Index, 1> interval({5});
-        multi_array<double, 2> lim({5, 2});
+        multi_array<double, 1> liml({5});
+        multi_array<Index, 1> binsize({5});
         vector<double> state_vec(5);
         vector<double> comparison_vec(5);
         for (Index i = 0; i < 5; i++)
         {
             interval(i) = 5 * (i + 1) + 1;
+            binsize(i) = 1;
             comb_index += 5 * i * stride;
             stride *= interval(i);
-            lim(i, 0) = 5.0 * (i + 1.0);
-            lim(i, 1) = 10.0 * (i + 1.0);
+            liml(i) = 5.0 * (i + 1.0);
             comparison_vec[i] = 5.0 + 10.0 * i;
         }
-        CombIndexToState(state_vec, comb_index, interval, lim);
+        CombIndexToState(state_vec, comb_index, interval, liml, binsize);
         REQUIRE(bool(state_vec == comparison_vec));
     }
 

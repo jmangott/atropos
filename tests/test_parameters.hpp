@@ -39,7 +39,7 @@ vector<Index> sigma1(test_system.mu()), sigma2(test_system.mu());
 
 const Index kR = 2;
 const Index kN = 2;
-const Index kK = 1;
+const Index kBinsize = 1;
 std::vector<double> kLiml1 {0.0};
 std::vector<double> kLiml2 {0.0};
 
@@ -49,16 +49,16 @@ Index nsteps = 1;
 double tstar = 1.0;
 double tau = tstar / nsteps;
 
-double max_prop;
+double min_prop, max_prop;
 
-grid_info grid(kM1, kM2, kR, kN, kK, kLiml1, kLiml2);
+grid_info grid(kM1, kM2, kR, kN, kBinsize, kLiml1, kLiml2);
 
 // Low rank structure (for storing X1, X2 and S)
 lr2<double> lr_sol(kR, {grid.dx1, grid.dx2});
 
 // Inner products
-std::function<double(double *, double *)> ip_xx1 = inner_product_from_const_weight(grid.h1(0), grid.dx1);
-std::function<double(double *, double *)> ip_xx2 = inner_product_from_const_weight(grid.h2(0), grid.dx2);
+std::function<double(double *, double *)> ip_xx1 = inner_product_from_const_weight((double) grid.h1_mult, grid.dx1);
+std::function<double(double *, double *)> ip_xx2 = inner_product_from_const_weight((double) grid.h2_mult, grid.dx2);
 blas_ops blas;
 
 std::vector<multi_array<double, 2>> w_x_dep(test_system.mu());
@@ -107,7 +107,7 @@ inline void InitializeTest(lr2<double> &lr_sol, grid_info grid, std::function<do
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
     // Calculate the integration weights
-    CalculateWeightDep(w_x_dep, max_prop, test_system, grid, partition1, partition2);
+    CalculateWeightDep(w_x_dep, min_prop, max_prop, test_system, grid, partition1, partition2);
 }
 
 #endif
