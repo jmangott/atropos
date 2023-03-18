@@ -47,19 +47,28 @@ inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index,
 }
 
 
-inline void CombIndexToState(std::vector<double> &state, Index comb_index, const multi_array<Index, 1> &interval, const multi_array<double, 2> &lim)
+inline void CombIndexToState(std::vector<double> &state, Index comb_index, const multi_array<Index, 1> &interval, const multi_array<double, 1> &liml, const multi_array<Index, 1> &binsize)
 {
     Index dim = interval.shape()[0];
-    for (Index i = 0; i < dim; i++)
+    for (Index i = 0; i < (dim - 1); i++)
     {
-        if (i == (dim - 1))
-            state[i] = lim(i, 0) + (lim(i, 1) - lim(i, 0)) * comb_index / (interval(i) - 1.0);
-        else
-        {
-            state[i] = lim(i, 0) + (lim(i, 1) - lim(i, 0)) * (comb_index % interval(i)) / (interval(i) - 1.0);
-            comb_index = Index (comb_index / interval(i));
-        }
+        state[i] = liml(i) + binsize(i) * (comb_index % interval(i));
+        comb_index = Index (comb_index / interval(i));
     }
+    if (dim > 0) state[dim - 1] = liml(dim - 1) + binsize(dim - 1) * comb_index;
+        // state[i] = lim(i, 0) + (lim(i, 1) - lim(i, 0)) * comb_index / (interval(i) - 1.0);
+}
+
+
+inline void CombIndexToState(std::vector<double> &state, Index comb_index, const multi_array<Index, 1> &interval)
+{
+    Index dim = interval.shape()[0];
+    for (Index i = 0; i < (dim - 1); i++)
+    {
+        state[i] = (double) (comb_index % interval(i));
+        comb_index = Index (comb_index / interval(i));
+    }
+    if (dim > 0) state[dim - 1] = (double) comb_index;
 }
 
 
@@ -112,12 +121,12 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
 
     if constexpr (id == 1)
     {
-        grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.k1, grid.k2, grid.liml1, grid.liml2);
+        grid_alt = new grid_info(grid.m1, grid.m2, grid.r, grid.n1, grid.n2, grid.binsize1, grid.binsize2, grid.liml1, grid.liml2);
         inc = 0;
     }
     else if constexpr (id == 2)
     {
-        grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.k2, grid.k1, grid.liml2, grid.liml1);
+        grid_alt = new grid_info(grid.m2, grid.m1, grid.r, grid.n2, grid.n1, grid.binsize2, grid.binsize1, grid.liml2, grid.liml1);
         inc = grid.m1;
     }
     else
@@ -148,10 +157,10 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
             for (int k = 0; k < grid_alt->m1; k++)
             {
                 k_inc = k + inc;
-                if (((nu[k_inc] / grid_alt->k1(k) > 0) &&
-                     (vec_index(k) - nu[k_inc] / grid_alt->k1(k) < 0)) ||
-                    ((nu[k_inc] / grid_alt->k1(k) < 0) &&
-                     (vec_index(k) - nu[k_inc] / grid_alt->k1(k) >= grid_alt->n1(k))))
+                if (((nu[k_inc] > 0) &&
+                     (vec_index(k) - nu[k_inc] < 0)) ||
+                    ((nu[k_inc] < 0) &&
+                     (vec_index(k) - nu[k_inc] >= grid_alt->n1(k))))
                 {
                     output_array(i, j) = 0.0;
                     break;

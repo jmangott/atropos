@@ -83,12 +83,12 @@ void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2
         sigma2_sum = 0;
         for (Index i = 0; i < grid.m1; i++)
         {
-            sigma1_sum += reaction_system.reactions[mu]->nu[i] * stride1 / grid.k1(i);
+            sigma1_sum += reaction_system.reactions[mu]->nu[i] * stride1;
             stride1 *= grid.n1(i);
         }
         for (Index i = 0; i < grid.m2; i++)
         {
-            sigma2_sum += reaction_system.reactions[mu]->nu[i + grid.m1] * stride2 / grid.k2(i);
+            sigma2_sum += reaction_system.reactions[mu]->nu[i + grid.m1] * stride2;
             stride2 *= grid.n2(i);
         }
         sigma1[mu] = sigma1_sum;
