@@ -28,18 +28,9 @@ TEST_CASE("k_step", "[k_step]")
 
     // SECTION("InitializeAuxiliaryObjects")
     // {
-        multi_array<double, 1> h1_comparison({1}), h2_comparison({1});
         Index dx1_comparison = 2;
         Index dx2_comparison = 2;
-        double lim1_comparison = 1.0;
-        double lim2_comparison = 1.0;
-        h1_comparison(0) = 1.0;
-        h2_comparison(0) = 1.0;
-
-        REQUIRE(bool(grid.lim1(0, 1) == lim1_comparison));
-        REQUIRE(bool(grid.lim2(0, 1) == lim2_comparison));
-        REQUIRE(bool(grid.h1 == h1_comparison));
-        REQUIRE(bool(grid.h2 == h2_comparison));
+        
         REQUIRE(bool(grid.dx1 == dx1_comparison));
         REQUIRE(bool(grid.dx2 == dx2_comparison));
     // }

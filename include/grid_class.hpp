@@ -17,20 +17,14 @@ struct grid_info
     multi_array<Index, 1> n1;
     multi_array<Index, 1> n2;
     multi_array<Index, 1> n;
-    multi_array<Index, 1> k1;
-    multi_array<Index, 1> k2;
-    multi_array<Index, 1> k;
-    multi_array<double, 2> lim1;
-    multi_array<double, 2> lim2;
-    multi_array<double, 2> lim;
-    multi_array<double, 1> h1;
-    multi_array<double, 1> h2;
-    multi_array<double, 1> h;
-    Index dx1, dx2;
-    double h1_mult, h2_mult;
-
+    multi_array<Index, 1> binsize1;
+    multi_array<Index, 1> binsize2;
+    multi_array<Index, 1> binsize;
     multi_array<double, 1> liml1;
     multi_array<double, 1> liml2;
+    multi_array<double, 1> liml;
+    Index dx1, dx2;
+    Index h1_mult, h2_mult, h_mult;
 
     // Initialize grid limits, grid spacing and the total number of grid points
     void grid_common_init();
