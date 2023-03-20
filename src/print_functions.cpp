@@ -53,7 +53,7 @@ void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::t
 
 
 // TODO: memory requirement
-void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau)
+void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, Index n_substeps)
 {
         cout << "DIAGNOSTICS" << endl;
         cout << "-----------" << endl;
@@ -63,7 +63,7 @@ void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double t
              << 8.0 * grid.dx2 * grid.r / 1.0e9
              << " GB (X2)" << endl;
         cout << "Min, max propensity: " << min_prop << ", " << max_prop << endl;
-        cout << "Time step size: " << tau << endl;
+        cout << "Effective time step size: " << tau / n_substeps << endl;
         cout << "-----------" << endl;
         cout << endl;
 }

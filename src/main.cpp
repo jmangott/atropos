@@ -131,7 +131,7 @@ int main()
     WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
 
     // Diagnostics
-    if (kPrintDiagnostics) PrintDiagnostics(grid, min_prop, max_prop, kTau);
+    if (kPrintDiagnostics) PrintDiagnostics(grid, min_prop, max_prop, kTau, kNSubsteps);
 
     auto start_time(std::chrono::high_resolution_clock::now());
 
