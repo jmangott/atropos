@@ -216,5 +216,5 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
 
     // Renormalize S
     norm = CalculateNorm(lr_sol, grid);
-    // lr_sol.S /= norm;
+    lr_sol.S /= norm;
 }
