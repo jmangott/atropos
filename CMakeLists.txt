@@ -44,19 +44,23 @@ set(BIN ${CMAKE_SOURCE_DIR}/bin)
 # Find external packages and set libraries #
 ############################################
 
+# Options
+option("MKL_ENABLED" "Enable MKL" OFF)
+option("OPENMP" "Enable OpenMP" OFF)
+
 # Ensign
 ExternalProject_Add(Ensign
   PREFIX "${EXTERNALS_DIR}"
   GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
   GIT_TAG "development"
   INSTALL_COMMAND ""
+  CMAKE_ARGS "-DMKL_ENABLED=${MKL_ENABLED} -DOPENMP_ENABLED=${OPENMP_ENABLED}"
   UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
 )
 set(ENSIGN_SRC_DIR ${EXTERNALS_DIR}/src/Ensign)
 set(ENSIGN_BUILD_DIR ${EXTERNALS_DIR}/src/Ensign-build)
 
 # OpenMP
-option("OPENMP" "Enable OpenMP" OFF)
 if(${OPENMP})
   find_package(OpenMP)
   if(OPENMP_FOUND)
@@ -68,7 +72,6 @@ if(${OPENMP})
 endif()
 
 # MKL/OpenBLAS
-option("MKL_ENABLED" "Enable MKL" OFF)
 if(${MKL_ENABLED})
   set(MKL_DEFINES    "-D__MKL__" "-DMKL_ILP64" "-m64")
   set(MKL_INCLUDEDIR "$ENV{MKLROOT}/include")
