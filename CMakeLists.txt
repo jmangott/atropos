@@ -44,7 +44,7 @@ set(BIN ${CMAKE_SOURCE_DIR}/bin)
 # Find external packages and set libraries #
 ############################################
 
-# Add Ensign
+# Ensign
 ExternalProject_Add(Ensign
   PREFIX "${EXTERNALS_DIR}"
   GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
@@ -55,17 +55,35 @@ ExternalProject_Add(Ensign
 set(ENSIGN_SRC_DIR ${EXTERNALS_DIR}/src/Ensign)
 set(ENSIGN_BUILD_DIR ${EXTERNALS_DIR}/src/Ensign-build)
 
-# Find BLAS and LAPACK
-option("MKL_ENABLED" OFF)
-if(NOT ${MKL_ENABLED})
+# OpenMP
+option("OPENMP" "Enable OpenMP" OFF)
+if(${OPENMP})
+  find_package(OpenMP)
+  if(OPENMP_FOUND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    set(OPENMP_DEFINES "-D__OPENMP__")
+    add_definitions(${OPENMP_DEFINES})
+  endif()
+endif()
+
+# MKL/OpenBLAS
+option("MKL_ENABLED" "Enable MKL" OFF)
+if(${MKL_ENABLED})
+  set(MKL_DEFINES    "-D__MKL__" "-DMKL_ILP64" "-m64")
+  set(MKL_INCLUDEDIR "$ENV{MKLROOT}/include")
+  set(MKL_LIBRARIES  "-L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl")
+  add_definitions(${MKL_DEFINES})
+  include_directories(${MKL_INCLUDEDIR})
+else()
   set(OPENBLAS_LIBRARIES "${ENSIGN_BUILD_DIR}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
 endif()
 find_package(Threads REQUIRED)
 
-# Set fftw
+# fftw
 set(FFTW_LIBRARIES "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3_omp.a")
 
-# Find NetCDF
+# NetCDF
 find_package(NetCDF)
 if(${NETCDF_FOUND})
   include_directories(${NETCDF_INCLUDE_DIR})
