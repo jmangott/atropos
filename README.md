@@ -2,7 +2,7 @@
 
 ## Requirements
 - CMake (3.22.1 or later)
-- C++11 compatible C++ compiler
+- C++17 compatible C++ compiler
 - Fortran compiler (if OpenBLAS is used)
 - HDF5 (1.10.x)
 - netCDF-4
