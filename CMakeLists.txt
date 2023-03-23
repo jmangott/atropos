@@ -54,8 +54,9 @@ ExternalProject_Add(Ensign
   GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
   GIT_TAG "development"
   INSTALL_COMMAND ""
-  CMAKE_ARGS "-DMKL_ENABLED=${MKL_ENABLED} -DOPENMP_ENABLED=${OPENMP_ENABLED}"
+  CMAKE_ARGS -DMKL_ENABLED=${MKL_ENABLED} -DOPENMP=${OPENMP_ENABLED}
   UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
+  DOWNLOAD_EXTRACT_TIMESTAMP NEW
 )
 set(ENSIGN_SRC_DIR ${EXTERNALS_DIR}/src/Ensign)
 set(ENSIGN_BUILD_DIR ${EXTERNALS_DIR}/src/Ensign-build)
