@@ -202,119 +202,51 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
         ERROR_NETCDF(retval);
 }
 
-// void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_info grid, double *t, double *dt)
-// {
-//     multi_array<long long, 1> n1(grid.n1.shape()), n2(grid.n2.shape());
 
-//     for (Index i = 0; i < grid.m1; i++)
-//         n1(i) = (long long) grid.n1(i);
+void ReadNC(string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2)
+{
+    int retval, ncid;
 
-//     for (Index i = 0; i < grid.m2; i++)
-//         n2(i) = (long long) grid.n2(i);
+    if ((retval = nc_open(fn.c_str(), NC_NOWRITE, &ncid)))
+        ERROR_NETCDF(retval);
 
-//     try
-//     {
-//         netCDF::NcFile file(fn, netCDF::NcFile::replace);
-//         auto r_dim = file.addDim("r", grid.r);
-//         auto d_dim = file.addDim("d", grid.d);
-//         auto m1_dim = file.addDim("m1", grid.m1);
-//         auto m2_dim = file.addDim("m2", grid.m2);
-//         auto dx1_dim = file.addDim("dx1", grid.dx1);
-//         auto dx2_dim = file.addDim("dx2", grid.dx2);
+    // read dimensions
+    int id_r, id_dx1, id_dx2;
+    if ((retval = nc_inq_dimid(ncid, "r", &id_r)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_dimid(ncid, "dx1", &id_dx1)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_dimid(ncid, "dx2", &id_dx2)))
+        ERROR_NETCDF(retval);
 
-//         // NOTE: Ensign uses column-major order, but this interface uses row-major order,
-//         // therefore the data has to be transposed!
-//         auto x_data = file.addVar("X", netCDF::ncDouble, {r_dim, dx1_dim});
-//         auto s_data = file.addVar("S", netCDF::ncDouble, {r_dim, r_dim});
-//         auto v_data = file.addVar("V", netCDF::ncDouble, {r_dim, dx2_dim});
-//         auto names_data = file.addVar("names", netCDF::ncString, {d_dim});
-//         auto n1_data = file.addVar("n1", netCDF::ncInt64, {m1_dim});
-//         auto n2_data = file.addVar("n2", netCDF::ncInt64, {m2_dim});
-//         auto lim1_data = file.addVar("lim1", netCDF::ncDouble, {2, m1_dim});
-//         auto lim2_data = file.addVar("lim2", netCDF::ncDouble, {2, m2_dim});
-//         auto t_data = file.addVar("t", netCDF::ncDouble);
-//         auto dt_data = file.addVar("dt", netCDF::ncDouble);
+    size_t r_t, dx1_t, dx2_t;
+    char tmp[NC_MAX_NAME + 1];
+    if ((retval = nc_inq_dim(ncid, id_r, tmp, &r_t)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_dim(ncid, id_dx1, tmp, &dx1_t)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_dim(ncid, id_dx2, tmp, &dx2_t)))
+        ERROR_NETCDF(retval);
 
-//         x_data.putVar(lr_sol.X.data());
-//         s_data.putVar(lr_sol.S.data());
-//         v_data.putVar(lr_sol.V.data());
-//         names_data.putVar(names.data());
-//         n1_data.putVar(n1.data());
-//         n2_data.putVar(n2.data());
-//         lim1_data.putVar(grid.lim1.data());
-//         lim2_data.putVar(grid.lim2.data());
-//         t_data.putVar(t);
-//         dt_data.putVar(dt);
-//     }
-//     catch (netCDF::exceptions::NcException &e)
-//     {
-//         std::cout << e.what() << std::endl;
-//     }
-// }
+    Index r = (Index) r_t;
+    Index dx1 = (Index) dx1_t;
+    Index dx2 = (Index) dx2_t;
 
-// void read_nc(std::string fn, MatrixXd &U, MatrixXd &S, MatrixXd &V, vector<std::string> &names)
-// {
-//     int retval, ncid;
+    xx1.resize({dx1, r});
+    xx2.resize({dx2, r});
 
-//     if ((retval = nc_open(fn.c_str(), NC_NOWRITE, &ncid)))
-//         ERROR_NETCDF(retval);
+    // read variables
+    int id_xx1, id_xx2, id_names;
+    if ((retval = nc_inq_varid(ncid, "xx1", &id_xx1)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_varid(ncid, "xx2", &id_xx2)))
+        ERROR_NETCDF(retval);
 
-//     // read dimensions
-//     int id_d, id_r, id_n_part1, id_n_part2;
-//     if ((retval = nc_inq_dimid(ncid, "d", &id_d)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_dimid(ncid, "r", &id_r)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_dimid(ncid, "n1", &id_n_part1)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_dimid(ncid, "n2", &id_n_part2)))
-//         ERROR_NETCDF(retval);
+    if ((retval = nc_get_var_double(ncid, id_xx1, xx1.data())))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_get_var_double(ncid, id_xx2, xx2.data())))
+        ERROR_NETCDF(retval);
 
-//     size_t d, r, n1, n2;
-//     char tmp[NC_MAX_NAME + 1];
-//     if ((retval = nc_inq_dim(ncid, id_d, tmp, &d)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_dim(ncid, id_r, tmp, &r)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_dim(ncid, id_n_part1, tmp, &n1)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_dim(ncid, id_n_part2, tmp, &n2)))
-//         ERROR_NETCDF(retval);
-
-//     U.resize(n1, r);
-//     V.resize(n2, r);
-//     S.resize(r, r);
-
-//     // read variables
-//     int id_U, id_V, id_S, id_names;
-//     if ((retval = nc_inq_varid(ncid, "U", &id_U)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_varid(ncid, "V", &id_V)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_varid(ncid, "S", &id_S)))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_inq_varid(ncid, "names", &id_names)))
-//         ERROR_NETCDF(retval);
-
-//     if ((retval = nc_get_var_double(ncid, id_U, U.data())))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_get_var_double(ncid, id_V, V.data())))
-//         ERROR_NETCDF(retval);
-//     if ((retval = nc_get_var_double(ncid, id_S, S.data())))
-//         ERROR_NETCDF(retval);
-
-//     // read names
-//     vector<char *> ptr_names;
-//     for (ind i = 0; i < (ind)d; i++)
-//         ptr_names.push_back((char *)malloc(sizeof(char) * (NC_MAX_NAME + 1)));
-//     nc_get_var_string(ncid, id_names, &ptr_names[0]);
-
-//     for (ind i = 0; i < (ind)d; i++)
-//     {
-//         names.push_back(ptr_names[i]);
-//         free(ptr_names[i]);
-//     }
-
-//     if ((retval = nc_close(ncid)))
-//         ERROR_NETCDF(retval);
-// }
+    if ((retval = nc_close(ncid)))
+        ERROR_NETCDF(retval);
+}

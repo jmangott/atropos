@@ -1,4 +1,5 @@
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -71,8 +72,8 @@ int main()
     multi_array<double, 2> xx1({grid.dx1, kNBasisFunctions}), xx2({grid.dx2, kNBasisFunctions});
     vector<const double *> x1, x2;
 
-    ReadCSV(xx1, "../input/x1_input.csv");
-    ReadCSV(xx2, "../input/x2_input.csv");
+    // Read initial values and store them in `xx1` and `xx2`
+    ReadNC("../input/input.nc", xx1, xx2);
 
     // Objects for setting up X1 and X2 for t = 0
     double *it1 = xx1.begin();
@@ -111,10 +112,15 @@ int main()
     // Calculate the shift amount for all reactions (this has to be done only once)
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
+    // Check if folder in ../output/ exists, otherwise create folder
     std::stringstream fname;
+    fname << "../output/" << kFilename;
+    std::filesystem::create_directory(fname.str());
+
+    // Store initial values
+    fname.str("");
     fname << "../output/" << kFilename << "/output_t0.nc";
     double t = 0.0;
-
     WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
 
     // Diagnostics
