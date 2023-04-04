@@ -111,27 +111,17 @@ int main()
     // Calculate the shift amount for all reactions (this has to be done only once)
     CalculateShiftAmount(sigma1, sigma2, mysystem, grid);
 
-    // std::stringstream fname_x1_output;
-    // std::stringstream fname_s_output;
-    // std::stringstream fname_x2_output;
     std::stringstream fname;
-
-    // fname_x1_output << "../output/" << kFilename << "/x1_output_t0";
-    // fname_s_output << "../output/" << kFilename << "/s_output_t0";
-    // fname_x2_output << "../output/" << kFilename << "/x2_output_t0";
-
-    // Write output files for initial values
-    // WriteCSV(lr_sol.X, fname_x1_output.str());
-    // WriteCSV(lr_sol.S, fname_s_output.str());
-    // WriteCSV(lr_sol.V, fname_x2_output.str());
-
     fname << "../output/" << kFilename << "/output_t0.nc";
     double t = 0.0;
 
     WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
 
     // Diagnostics
-    if (kPrintDiagnostics) PrintDiagnostics(grid, min_prop, max_prop, kTau, kNSubsteps);
+    PrintDiagnostics(grid, min_prop, max_prop, kTau, kNSubsteps);
+
+    // Number of time steps
+    Index kNsteps = ceil(kTstar / kTau);
 
     auto start_time(std::chrono::high_resolution_clock::now());
 
@@ -140,9 +130,9 @@ int main()
         if (kTstar - t < kTau)
             kTau = kTstar - t;
 
-        // IntegrateFirstOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, norm);
+        IntegrateFirstOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, norm);
 
-        IntegrateSecondOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, kNSubsteps, norm);
+        // IntegrateSecondOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, kNSubsteps, norm);
 
         t += kTau;
 
