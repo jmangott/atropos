@@ -163,7 +163,7 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
     if ((retval = nc_def_var(ncid, "binsize", NC_INT64, 1, &id_d, &varid_binsize)))
         ERROR_NETCDF(retval);
     // liml
-    if ((retval = nc_def_var(ncid, "liml", NC_DOUBLE, 2, &id_d, &varid_liml)))
+    if ((retval = nc_def_var(ncid, "liml", NC_DOUBLE, 1, &id_d, &varid_liml)))
         ERROR_NETCDF(retval);
     // t
     if ((retval = nc_def_var(ncid, "t", NC_DOUBLE, 0, 0, &varid_t)))
