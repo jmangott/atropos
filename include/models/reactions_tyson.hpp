@@ -11,8 +11,8 @@ constexpr double kA1 = 200.0 / kNA_V;
 constexpr double kA2 = 0.018;
 constexpr double kA3 = 360.0 / kNA_V / kNA_V;
 constexpr double kA4 = 1.0;
-constexpr double kA5 = 1.0e6;
-constexpr double kA6 = 1.0e3;
+constexpr double kA5 = 100;
+constexpr double kA6 = 10;
 
 mysys mysystem(kNN);
 
