@@ -21,7 +21,8 @@ def VecIndexToCombIndex(vec_index: np.ndarray, interval: np.ndarray) -> int:
         stride *= int_ele
     return comb_index
 
-def CombIndexToState(comb_index: int, interval: np.ndarray, liml: np.ndarray, binsize: np.ndarray) -> np.ndarray:
+def CombIndexToState(comb_index: int, interval: np.ndarray, 
+                     liml: np.ndarray, binsize: np.ndarray) -> np.ndarray:
     dim = interval.size
     state = np.zeros(dim)
     for i in range(dim - 1):

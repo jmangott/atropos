@@ -25,9 +25,11 @@ class grid_info:
 
 
 def WriteNC(x1: np.ndarray, x2: np.ndarray, s: np.ndarray) -> None:
-    """Write X1, X2 and S to a netCDF file `input.nc`.
+    """
+    Write X1, X2 and S to a netCDF file `input.nc`.
     NOTE: `x1` and `x2` have to be transposed (i.e. shape=(r, dx1/2)),
-    as Ensign works with column-major order arrays"""
+    as Ensign works with column-major order arrays.
+    """
 
     ds = nc.Dataset("input.nc", mode="w", format="NETCDF4")
     ds.createDimension("r", np.shape(s)[0])
@@ -44,7 +46,10 @@ def WriteNC(x1: np.ndarray, x2: np.ndarray, s: np.ndarray) -> None:
 
 
 def SetInputKD(x10: tuple[int], x20: tuple[int], grid: grid_info) -> None:
-    """Creates a netCDF file containing X1, X2 and S for an initial  distribution of Kronecker delta form."""
+    """
+    Creates a netCDF file containing X1, X2 and S
+    for an initial distribution of Kronecker delta form.
+    """
 
     i1 = ((np.asarray(x10, dtype="int64") - grid.liml1) / grid.binsize1).astype(int)
     i2 = ((np.asarray(x20, dtype="int64") - grid.liml2) / grid.binsize2).astype(int)
@@ -73,8 +78,11 @@ def SetInputKD(x10: tuple[int], x20: tuple[int], grid: grid_info) -> None:
 
 
 def SetInputGeneral(eval_p0: callable, grid: grid_info) -> None:
-    """Creates a .netCDF file containing X1, X2 and S for a general initial distribution.
-    NOTE: This function creates the full P matrix, therefore it only should be used for small systems."""
+    """
+    Creates a .netCDF file containing X1, X2 and S for a general initial distribution.
+    NOTE: This function creates the full P matrix,
+    therefore it only should be used for small systems.
+    """
 
     p0 = np.zeros((grid.dx1, grid.dx2))
     for i in range(grid.dx1):
