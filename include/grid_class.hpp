@@ -29,11 +29,11 @@ struct grid_info
     // Initialize grid limits, grid spacing and the total number of grid points
     void grid_common_init();
 
-    grid_info(Index _m1, Index _m2, Index _r, Index _n, Index _k, std::vector<double> _liml1, std::vector<double> _liml2);
+    grid_info(Index _m1, Index _m2, Index _r, Index _n, Index _binsize, std::vector<double> _liml1, std::vector<double> _liml2);
 
-    grid_info(Index _m1, Index _m2, Index _r, multi_array<Index, 1> _n1, multi_array<Index, 1> _n2, multi_array<Index, 1> _k1, multi_array<Index, 1> _k2, multi_array<double, 1> _liml1, multi_array<double, 1> _liml2);
+    grid_info(Index _m1, Index _m2, Index _r, multi_array<Index, 1> _n1, multi_array<Index, 1> _n2, multi_array<Index, 1> _binsize1, multi_array<Index, 1> _binsize2, multi_array<double, 1> _liml1, multi_array<double, 1> _liml2);
 
-    grid_info(Index _m1, Index _m2, Index _r, std::vector<Index> _n1, std::vector<Index> _n2, std::vector<Index> _k1, std::vector<Index> _k2, std::vector<double> _liml1, std::vector<double> _liml2);
+    grid_info(Index _m1, Index _m2, Index _r, const Index _n1[], const Index _n2[], const Index _binsize1[], const Index _binsize2[], const double _liml1[], const double _liml2[]);
 };
 
 
