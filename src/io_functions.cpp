@@ -115,7 +115,7 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
 }
 
 
-void ReadNC(string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2)
+void ReadNC(string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2, multi_array<double, 2> &ss, Index &n_basisfunctions)
 {
     int retval, ncid;
 
@@ -123,15 +123,17 @@ void ReadNC(string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2)
         ERROR_NETCDF(retval);
 
     // read dimensions
-    int id_r, id_dx1, id_dx2;
+    int id_r, id_dx1, id_dx2, id_n_basisfunctions;
     if ((retval = nc_inq_dimid(ncid, "r", &id_r)))
         ERROR_NETCDF(retval);
     if ((retval = nc_inq_dimid(ncid, "dx1", &id_dx1)))
         ERROR_NETCDF(retval);
     if ((retval = nc_inq_dimid(ncid, "dx2", &id_dx2)))
         ERROR_NETCDF(retval);
+    if ((retval = nc_inq_dimid(ncid, "n_basisfunctions", &id_n_basisfunctions)))
+        ERROR_NETCDF(retval);
 
-    size_t r_t, dx1_t, dx2_t;
+    size_t r_t, dx1_t, dx2_t, n_basisfunctions_t;
     char tmp[NC_MAX_NAME + 1];
     if ((retval = nc_inq_dim(ncid, id_r, tmp, &r_t)))
         ERROR_NETCDF(retval);
@@ -139,24 +141,32 @@ void ReadNC(string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2)
         ERROR_NETCDF(retval);
     if ((retval = nc_inq_dim(ncid, id_dx2, tmp, &dx2_t)))
         ERROR_NETCDF(retval);
+    if ((retval = nc_inq_dim(ncid, id_n_basisfunctions, tmp, &n_basisfunctions_t)))
+        ERROR_NETCDF(retval);
 
     Index r = (Index) r_t;
     Index dx1 = (Index) dx1_t;
     Index dx2 = (Index) dx2_t;
+    n_basisfunctions = (Index) n_basisfunctions_t;
 
-    xx1.resize({dx1, r});
-    xx2.resize({dx2, r});
+    xx1.resize({dx1, n_basisfunctions});
+    xx2.resize({dx2, n_basisfunctions});
+    ss.resize({r, r});
 
     // read variables
-    int id_xx1, id_xx2, id_names;
+    int id_xx1, id_xx2, id_ss;
     if ((retval = nc_inq_varid(ncid, "xx1", &id_xx1)))
         ERROR_NETCDF(retval);
     if ((retval = nc_inq_varid(ncid, "xx2", &id_xx2)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_varid(ncid, "ss", &id_ss)))
         ERROR_NETCDF(retval);
 
     if ((retval = nc_get_var_double(ncid, id_xx1, xx1.data())))
         ERROR_NETCDF(retval);
     if ((retval = nc_get_var_double(ncid, id_xx2, xx2.data())))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_get_var_double(ncid, id_ss, ss.data())))
         ERROR_NETCDF(retval);
 
     if ((retval = nc_close(ncid)))

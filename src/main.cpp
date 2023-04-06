@@ -69,16 +69,17 @@ int main()
     CalculateWeightDep(w_x_dep, min_prop, max_prop, mysystem, grid, partition1, partition2);
 
     // Container for the initial values
-    multi_array<double, 2> xx1({grid.dx1, kNBasisFunctions}), xx2({grid.dx2, kNBasisFunctions});
+    multi_array<double, 2> xx1, xx2, ss;
     vector<const double *> x1, x2;
+    Index n_basisfunctions;
 
     // Read initial values and store them in `xx1` and `xx2`
-    ReadNC("../input/input.nc", xx1, xx2);
+    ReadNC("../input/input.nc", xx1, xx2, ss, n_basisfunctions);
 
     // Objects for setting up X1 and X2 for t = 0
     double *it1 = xx1.begin();
     double *it2 = xx2.begin();
-    for (int i = 0; i < kNBasisFunctions; i++)
+    for (Index i = 0; i < n_basisfunctions; i++)
     {
         x1.push_back(it1);
         x2.push_back(it2);
@@ -102,10 +103,9 @@ int main()
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
     // TODO: this lines are actually superfluous, provided Ensign works correctly
-    if constexpr (kNBasisFunctions == kR)
+    if (n_basisfunctions == kR)
     {
-        multi_array<double, 2> ss({grid.r, grid.r});
-        ReadCSV(ss, "../input/s_input.csv");
+        ReadNC("../input/input.nc", xx1, xx2, ss, n_basisfunctions);
         lr_sol.S = ss;
     }
 

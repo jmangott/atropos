@@ -20,7 +20,7 @@
 void WriteNC(std::string fn, const lr2<double> &lr_sol, vector<string> names, grid_info grid, double *t, double *dt);
 
 
-// Read a .netCDF file to multi_arrays `xx1` and `xx2`
-void ReadNC(std::string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2);
+// Read a .netCDF file to multi_arrays `xx1`, `xx2` and `ss`
+void ReadNC(std::string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2, multi_array<double, 2> &ss, Index &n_basisfunctions);
 
 #endif
