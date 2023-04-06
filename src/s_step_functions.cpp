@@ -92,6 +92,7 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
 
     Index alpha1_dep;
 
+#pragma omp parallel for
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
         // Calculate the shifted X1
