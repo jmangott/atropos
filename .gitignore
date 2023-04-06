@@ -7,7 +7,7 @@ __init__.py
 *.out
 /build/*
 /bin/*
-/input/*.csv
+/input/*.nc
 /output/*
 /reference_solution/*
 CMakeFiles
