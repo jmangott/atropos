@@ -124,7 +124,7 @@ int main()
     WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
 
     // Diagnostics
-    PrintDiagnostics(grid, min_prop, max_prop, kTau, kNSubsteps);
+    PrintDiagnostics(grid, min_prop, max_prop, kTau, kSecondOrder, kNSubsteps);
 
     // Number of time steps
     Index kNsteps = ceil(kTstar / kTau);
@@ -136,9 +136,14 @@ int main()
         if (kTstar - t < kTau)
             kTau = kTstar - t;
 
-        IntegrateFirstOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, norm);
-
-        // IntegrateSecondOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, kNSubsteps, norm);
+        if constexpr (kSecondOrder)
+        {
+            IntegrateSecondOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, kNSubsteps, norm);
+        }
+        else
+        {
+            IntegrateFirstOrder(lr_sol, w_x_dep, c_coeff1, d_coeff1, c_coeff2, d_coeff2, e_coeff, f_coeff, sigma1, sigma2, mysystem, grid, partition1, partition2, ip_xx1, ip_xx2, blas, kTau, norm);
+        }
 
         t += kTau;
 

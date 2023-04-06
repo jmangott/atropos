@@ -15,6 +15,6 @@
 void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::time_point start_time, double norm);
 
 // Print diagnostic information
-void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, Index n_substeps);
+void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, bool second_order, Index n_substeps);
 
 #endif
