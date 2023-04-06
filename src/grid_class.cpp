@@ -35,7 +35,7 @@ void grid_info::grid_common_init()
     }
 }
 
-grid_info::grid_info(Index _m1, Index _m2, Index _r, Index _n, Index _binsize, vector<double> _liml1, vector<double> _liml2) : d(_m1 + _m2), m1(_m1), m2(_m2), r(_r), n1({_m1}), n2({_m2}), n({_m1 + _m2}), binsize1({_m1}), binsize2({_m2}), binsize({_m1 + _m2}), liml1({_m1}), liml2({_m2}), liml({_m1 + _m2})
+grid_info::grid_info(Index _m1, Index _m2, Index _r, Index _n, Index _binsize, vector<double> _liml1, vector<double> _liml2) : m1(_m1), m2(_m2), r(_r), n1({_m1}), n2({_m2}), n({_m1 + _m2}), binsize1({_m1}), binsize2({_m2}), binsize({_m1 + _m2}), liml1({_m1}), liml2({_m2}), liml({_m1 + _m2})
 {
     // Use `n` and `binsize` to initialize the number of grid points and grid density uniformly for all species
     std::fill(n1.begin(), n1.end(), _n);
@@ -53,14 +53,14 @@ grid_info::grid_info(Index _m1, Index _m2, Index _r, multi_array<Index, 1> _n1, 
     grid_common_init();
 }
 
-grid_info::grid_info(Index _m1, Index _m2, Index _r, vector<Index> _n1, vector<Index> _n2, vector<Index> _binsize1, vector<Index> _binsize2, vector<double> _liml1, vector<double> _liml2) : m1(_m1), m2(_m2), r(_r), n1({_m1}), n2({_m2}), n({_m1 + _m2}), binsize1({_m1}), binsize2({_m2}), binsize({_m1 + _m2}), liml1({_m1}), liml2({_m2}), liml({_m1 + _m2})
+grid_info::grid_info(Index _m1, Index _m2, Index _r, const Index _n1[], const Index _n2[], const Index _binsize1[], const Index _binsize2[], const double _liml1[], const double _liml2[]) : m1(_m1), m2(_m2), r(_r), n1({_m1}), n2({_m2}), n({_m1 + _m2}), binsize1({_m1}), binsize2({_m2}), binsize({_m1 + _m2}), liml1({_m1}), liml2({_m2}), liml({_m1 + _m2})
 {
-    std::copy(_n1.begin(), _n1.end(), n1.begin());
-    std::copy(_n2.begin(), _n2.end(), n2.begin());
-    std::copy(_binsize1.begin(), _binsize1.end(), binsize1.begin());
-    std::copy(_binsize2.begin(), _binsize2.end(), binsize2.begin());
-    std::copy(_liml1.begin(), _liml1.end(), liml1.begin());
-    std::copy(_liml2.begin(), _liml2.end(), liml2.begin());
+    std::copy(_n1, _n1 + _m1, n1.begin());
+    std::copy(_n2, _n2 + _m2, n2.begin());
+    std::copy(_binsize1, _binsize1 + _m1, binsize1.begin());
+    std::copy(_binsize2, _binsize2 + _m2, binsize2.begin());
+    std::copy(_liml1, _liml1 + _m1, liml1.begin());
+    std::copy(_liml2, _liml2 + _m2, liml2.begin());
 
     grid_common_init();
 }
