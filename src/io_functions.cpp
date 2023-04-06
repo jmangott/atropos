@@ -109,6 +109,9 @@ void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_in
         ERROR_NETCDF(retval);
     if ((retval = nc_put_var_double(ncid, varid_dt, dt)))
         ERROR_NETCDF(retval);
+
+    if ((retval = nc_close(ncid)))
+        ERROR_NETCDF(retval);
 }
 
 
