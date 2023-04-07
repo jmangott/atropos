@@ -30,7 +30,7 @@ params.kModel = "reactions_tyson"
 r = params.kR = 6
 m1 = params.kM1 = 3
 m2 = params.kM2 = 2
-n1 = params.kN1 = (21, 61, 11)
+n1 = params.kN1 = (21, 61, 21)
 n2 = params.kN2 = (71, 61)
 bin1 = params.kBinsize1 = (1, 1, 1)
 bin2 = params.kBinsize2 = (1, 1)
