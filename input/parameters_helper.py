@@ -83,8 +83,7 @@ class ParametersParser(argparse.ArgumentParser):
         argument_default: Any = argparse.SUPPRESS,
         conflict_handler: str = 'error',
         add_help: bool = True,
-        allow_abbrev: bool = True,
-        exit_on_error: bool = True,
+        allow_abbrev: bool = True
     ) -> None:
 
         description += (
@@ -104,8 +103,7 @@ class ParametersParser(argparse.ArgumentParser):
             argument_default,
             conflict_handler,
             add_help,
-            allow_abbrev,
-            exit_on_error
+            allow_abbrev
         )
 
         self.add_argument(
