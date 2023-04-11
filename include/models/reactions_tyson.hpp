@@ -4,7 +4,7 @@
 #include "../reaction_class.hpp"
 
 const std::vector<std::string> kNN = {"cyclin", "pcyclin_pcdc2", "cdc2", "pcdc2", "pcyclin_cdc2"};
-constexpr double kNA_V = 6.02214e3;
+constexpr double kNA_V = 6.02214e1;
 
 constexpr double kA0 = 0.015 * kNA_V;
 constexpr double kA1 = 200.0 / kNA_V;
