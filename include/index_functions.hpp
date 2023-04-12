@@ -135,12 +135,14 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
         std::abort();
     }
 
-    multi_array<Index, 1> vec_index({grid_alt->m1});
-    Index k_inc;
-
     // NOTE: Ensign stores matrices in column-major order
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
     for (Index j = 0; j < n_cols; j++)
     {
+        multi_array<Index, 1> vec_index({grid_alt->m1});
+        Index k_inc;
         for (Index i = 0; i < n_rows; i++)
         {
             if ((shift < 0 && i - shift < n_rows) || (shift >= 0 && i - shift >= 0))

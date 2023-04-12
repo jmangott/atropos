@@ -33,38 +33,41 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
     Index alpha1_dep;
 
     // TODO: write a custom `coeff` routine, such that the conversion to a `weight` vector with length dx1 or dx2 is no longer needed
-#pragma omp parallel for
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
         ShiftMultiArrayRows<id == 1 ? 2 : 1>(xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid);
 
         for (Index alpha2_dep = 0; alpha2_dep < partition.dx_dep(mu); alpha2_dep++)
         {
-            if (id == 1)
+            if constexpr (id == 1)
             {
+#ifdef __OPENMP__
+#pragma omp parallel for private(alpha1_dep)
+#endif
                 for (Index alpha1 = 0; alpha1 < grid.dx2; alpha1++)
                 {
                     alpha1_dep = CombIndexToDepCombIndex(alpha1, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
                     weight(alpha1) = w_x_dep[mu](alpha2_dep, alpha1_dep) * grid.h2_mult;
                 }
             }
-            else if (id == 2)
+            else if constexpr (id == 2)
             {
+#ifdef __OPENMP__
+#pragma omp parallel for private(alpha1_dep)
+#endif
                 for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
                 {
                     alpha1_dep = CombIndexToDepCombIndex(alpha1, partition2.n_dep[mu], grid.n1, partition2.dep_vec[mu]);
                     weight(alpha1) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h1_mult;
                 }
             }
-            else
-            {
-                std::cerr << "ERROR: id must be 1 (=L) or 2 (=K)!" << endl;
-                std::abort();
-            }
 
             coeff(xx_shift, tmp_xx, weight, c_coeff, blas);
             coeff(tmp_xx, tmp_xx, weight, d_coeff, blas);
 
+#ifdef __OPENMP__
+#pragma omp parallel for collapse(2)
+#endif
             for (Index i = 0; i < grid.r; i++)
             {
                 for (Index j = 0; j < grid.r; j++)
@@ -90,7 +93,6 @@ void PerformKLStep(multi_array<double, 2> &kl_dot, const multi_array<double, 2> 
     // multi_array<double, 2> kl_dot({dx1, r});
     set_zero(kl_dot);
 
-    Index alpha;
     Index dim_n;
 
     (id == 1) ? dim_n = grid.n1.shape()[0] : dim_n = grid.n2.shape()[0];
@@ -102,9 +104,12 @@ void PerformKLStep(multi_array<double, 2> &kl_dot, const multi_array<double, 2> 
         set_zero(prod_klc);
         set_zero(prod_kld);
 
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
         for (Index i = 0; i < dx1; i++)
         {
-            alpha = CombIndexToDepCombIndex(i, partition.n_dep[mu], n, partition.dep_vec[mu]);
+            Index alpha = CombIndexToDepCombIndex(i, partition.n_dep[mu], n, partition.dep_vec[mu]);
 
             // Calculate matrix-vector multiplication of C2*K and D2*K
             for (Index j = 0; j < grid.r; j++)
