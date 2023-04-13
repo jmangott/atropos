@@ -22,13 +22,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Warn all")
     set(CMAKE_CXX_FLAGS_DEBUG   "-g -check all -traceback")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ip -xHOST")
-    set(CMAKE_CXX_FLAGS_PROFILE "-debug minimal -O3 -fno-inline -no-ip -no-ipo -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 
 else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall")
     set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb -Wall -D_GLIBCXX_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak -fsanitize=undefined -ftrapv")
     set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native")
-    set(CMAKE_CXX_FLAGS_PROFILE "-g1 -O3 -fno-inline -fno-optimize-sibling-calls")
 endif()
 
 ##############################################################
