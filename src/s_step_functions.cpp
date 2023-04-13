@@ -9,17 +9,19 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
     multi_array<double, 1> w_x2({grid.dx2});
     multi_array<double, 2> xx2_shift(lr_sol.V.shape());
 
+    Index alpha2_dep;
+
     // Calculate the shifted X2
     ShiftMultiArrayRows<2>(xx2_shift, lr_sol.V, -sigma2[mu], reaction_system.reactions[mu]->minus_nu, grid);
 
     for (Index alpha1_dep = 0; alpha1_dep < partition1.dx_dep(mu); alpha1_dep++)
     {
 #ifdef __OPENMP__
-#pragma omp parallel for
+#pragma omp parallel for private(alpha2_dep)
 #endif
         for (Index alpha2 = 0; alpha2 < grid.dx2; alpha2++)
         {
-            Index alpha2_dep = CombIndexToDepCombIndex(alpha2, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
+            alpha2_dep = CombIndexToDepCombIndex(alpha2, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
             w_x2(alpha2) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h2_mult;
         }
         coeff(xx2_shift, lr_sol.V, w_x2, b_coeff_shift, blas);
@@ -94,6 +96,8 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
     multi_array<double, 1> w_x1_shift({grid.dx1});
     multi_array<double, 2> xx1_shift(lr_sol.X.shape());
 
+    Index alpha1_dep;
+
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
         // Calculate the shifted X1
@@ -109,13 +113,13 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
             for (Index l = 0; l < grid.r; l++)
             {
 #ifdef __OPENMP__
-#pragma omp parallel for
+#pragma omp parallel for private(alpha1_dep)
 #endif
                 // Calculate integration weights
                 for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
                 {
                     // get_time::start("sweightvec_index");
-                    Index alpha1_dep = CombIndexToDepCombIndex(alpha1, partition1.n_dep[mu], grid.n1, partition1.dep_vec[mu]);
+                    alpha1_dep = CombIndexToDepCombIndex(alpha1, partition1.n_dep[mu], grid.n1, partition1.dep_vec[mu]);
                     // get_time::stop("sweightvec_index");
                     w_x1_shift(alpha1) = b_coeff_vec_shift(alpha1_dep, j, l) * grid.h1_mult;
                     w_x1(alpha1) = b_coeff_vec(alpha1_dep, j, l) * grid.h1_mult;

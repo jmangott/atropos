@@ -93,7 +93,7 @@ void PerformKLStep(multi_array<double, 2> &kl_dot, const multi_array<double, 2> 
     // multi_array<double, 2> kl_dot({dx1, r});
     set_zero(kl_dot);
 
-    Index dim_n;
+    Index dim_n, alpha;
 
     (id == 1) ? dim_n = grid.n1.shape()[0] : dim_n = grid.n2.shape()[0];
     multi_array<Index, 1> n({dim_n});
@@ -105,11 +105,11 @@ void PerformKLStep(multi_array<double, 2> &kl_dot, const multi_array<double, 2> 
         set_zero(prod_kld);
 
 #ifdef __OPENMP__
-#pragma omp parallel for
+#pragma omp parallel for private(alpha)
 #endif
         for (Index i = 0; i < dx1; i++)
         {
-            Index alpha = CombIndexToDepCombIndex(i, partition.n_dep[mu], n, partition.dep_vec[mu]);
+            alpha = CombIndexToDepCombIndex(i, partition.n_dep[mu], n, partition.dep_vec[mu]);
 
             // Calculate matrix-vector multiplication of C2*K and D2*K
             for (Index j = 0; j < grid.r; j++)
