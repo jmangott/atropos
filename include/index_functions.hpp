@@ -138,7 +138,9 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
     Index k_inc;
 
     // NOTE: Ensign stores matrices in column-major order
+#ifdef __OPENMP__
 #pragma omp parallel
+#endif
     for (Index j = 0; j < n_cols; j++)
     {
         multi_array<Index, 1> vec_index({grid_alt->m1});
