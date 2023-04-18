@@ -22,7 +22,7 @@ and build the program by executing
 ```shell
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 
@@ -32,7 +32,7 @@ The generated executable `kinetic-cme` can be found in `bin`.
 If you prefer to use Intel MKL as the BLAS and LAPACK backend instead of OpenBLAS set 
 ```shell
 export MKLROOT=/path/to/intel/mkl
-cmake -DMKL_ENABLED=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DMKL_ENABLED=ON ..
 make
 ```
 and make sure to add the MKL libraries to your `LD_LIBRARY_PATH`, i.e.
@@ -44,7 +44,7 @@ before running the executable.
 ### OpenMP
 OpenMP can be activated via
 ```shell
-cmake -DOPENMP_ENABLED=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DOPENMP=ON ..
 ```
 MacOS: Note that XCode compilers do not support OpenMP. For using OpenMP on macOS, a manual installation (e.g. of `gcc11`) is required and the `CXX`, `CC` and `FC` environment variables have to be set accordingly.
 
