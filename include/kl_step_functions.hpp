@@ -14,6 +14,7 @@
 #include "index_functions.hpp"
 #include "partition_class.hpp"
 #include "reaction_class.hpp"
+#include "timer_class.hpp"
 
 
 // Calculate coefficients C1 and D1 (`id` = 1) or C2 and D2 (`id` = 2) for all values of `dep_vec` for a given reaction `mu`
@@ -30,15 +31,22 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
     multi_array<double, 2> tmp_xx(tmp_xx_dim), xx_shift(tmp_xx_dim);
     (id == 1) ? (tmp_xx = lr_sol.V) : (tmp_xx = lr_sol.X);
     multi_array<double, 1> weight({weight_dim});
-    Index alpha1_dep;
+    Index alpha1_dep, stride;
+    vector<Index> vec_index;
+
+    (id == 1) ? vec_index.resize(grid.m2) : vec_index.resize(grid.m1);
 
     // TODO: write a custom `coeff` routine, such that the conversion to a `weight` vector with length dx1 or dx2 is no longer needed
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
+        get_time::start("shift_kl");
         ShiftMultiArrayRows<id == 1 ? 2 : 1>(xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid);
+        get_time::stop("shift_kl");
 
         for (Index alpha2_dep = 0; alpha2_dep < partition.dx_dep(mu); alpha2_dep++)
         {
+            get_time::start("weight_kl");
+            std::fill(vec_index.begin(), vec_index.end(), 0);
             if constexpr (id == 1)
             {
 #ifdef __OPENMP__
@@ -46,8 +54,9 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
 #endif
                 for (Index alpha1 = 0; alpha1 < grid.dx2; alpha1++)
                 {
-                    alpha1_dep = CombIndexToDepCombIndex(alpha1, partition2.n_dep[mu], grid.n2, partition2.dep_vec[mu]);
+                    alpha1_dep = VecIndextoDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
                     weight(alpha1) = w_x_dep[mu](alpha2_dep, alpha1_dep) * grid.h2_mult;
+                    IncrVecIndex(vec_index, grid.n2, grid.m2);
                 }
             }
             else if constexpr (id == 2)
@@ -57,14 +66,19 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
 #endif
                 for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
                 {
-                    alpha1_dep = CombIndexToDepCombIndex(alpha1, partition2.n_dep[mu], grid.n1, partition2.dep_vec[mu]);
+                    alpha1_dep = VecIndextoDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
                     weight(alpha1) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h1_mult;
+                    IncrVecIndex(vec_index, grid.n1, grid.m1);
                 }
             }
+            get_time::stop("weight_kl");
 
+            get_time::start("coeff_kl");
             coeff(xx_shift, tmp_xx, weight, c_coeff, blas);
             coeff(tmp_xx, tmp_xx, weight, d_coeff, blas);
+            get_time::stop("coeff_kl");
 
+            get_time::start("write_coeff_kl");
 #ifdef __OPENMP__
 #pragma omp parallel for collapse(2)
 #endif
@@ -76,7 +90,13 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
                     d_coeff_dep[mu](alpha2_dep, i, j) = d_coeff(i, j);
                 }
             }
+            get_time::stop("write_coeff_kl");
         }
+        cout << "K (=1) or L (=2): " << id << endl;
+        cout << "mu: " << mu << endl;
+        cout << get_time::sorted_output() << endl;
+        cout << endl;
+        get_time::reset();
     }
 }
 

@@ -76,6 +76,32 @@ inline void CombIndexToState(std::vector<double> &state, Index comb_index, const
 Index DepCombIndexToCombIndex(Index comb_index_dep, std::vector<Index> n_dep, multi_array<Index, 1> n, std::vector<Index> dep_vec);
 
 
+inline void IncrVecIndex(std::vector<Index> &vec_index, const multi_array<Index, 1> &interval, Index dim)
+{
+    for (Index k = 0; k < dim - 1; k++)
+    {
+        vec_index[k]++;
+        if (vec_index[k] < interval(k))
+            return;
+        vec_index[k] = 0;
+    }
+    if (dim > 0) vec_index[dim - 1]++;
+}
+
+
+inline Index VecIndextoDepCombIndex(std::vector<Index> &vec_index, const std::vector<Index> &n_dep, const std::vector<Index> &dep_vec)
+{
+    Index comb_index = 0;
+    Index stride = 1;
+    for (vector<Index>::size_type i = 0; i < dep_vec.size(); i++)
+    {
+        comb_index += vec_index[dep_vec[i]] * stride;
+        stride *= n_dep[i];
+    }
+    return comb_index;
+}
+
+
 // Convert a general combined index to a combined index for the participating species in reaction mu
 inline Index CombIndexToDepCombIndex(Index comb_index, const vector<Index> &n_dep, const multi_array<Index, 1> &n, const vector<Index> &dep_vec)
 {
