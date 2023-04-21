@@ -167,9 +167,9 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
 #ifdef __OPENMP__
 #pragma omp parallel
 #endif
+    multi_array<Index, 1> vec_index({grid_alt->m1});
     for (Index j = 0; j < n_cols; j++)
     {
-        multi_array<Index, 1> vec_index({grid_alt->m1});
 #ifdef __OPENMP__
 #pragma omp for private(k_inc)
 #endif
