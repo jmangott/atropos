@@ -45,52 +45,6 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
 }
 
 
-// void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const multi_array<double, 3> &b_coeff_vec_shift, const multi_array<double, 3> &b_coeff_vec, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, Index mu, vector<Index> sigma1)
-// {
-//     multi_array<double, 2> e_coeff({grid.r, grid.r});
-//     multi_array<double, 2> f_coeff({grid.r, grid.r});
-//     multi_array<double, 1> w_x1({grid.dx1});
-//     multi_array<double, 1> w_x1_shift({grid.dx1});
-//     multi_array<double, 2> xx1_shift(lr_sol.X.shape());
-
-//     Index alpha1_dep;
-
-//     // Calculate the shifted X1
-//     ShiftMultiArrayRows<1>(xx1_shift, lr_sol.X, -sigma1[mu], reaction_system.reactions[mu]->minus_nu, grid);
-
-//     for (Index j = 0; j < grid.r; j++)
-//     {
-//         for (Index l = 0; l < grid.r; l++)
-//         {
-//             // Calculate integration weights
-//             get_time::start("sweightvec");
-//             for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
-//             {
-//                 // get_time::start("sweightvec_index");
-//                 alpha1_dep = CombIndexToDepCombIndex(alpha1, partition1.n_dep[mu], grid.n1, partition1.dep_vec[mu]);
-//                 // get_time::stop("sweightvec_index");
-//                 w_x1_shift(alpha1) = b_coeff_vec_shift(alpha1_dep, j, l) * grid.h1_mult;
-//                 w_x1(alpha1) = b_coeff_vec(alpha1_dep, j, l) * grid.h1_mult;
-//             }
-//             get_time::stop("sweightvec");
-
-//             get_time::start("scoeff_s");
-//             coeff(xx1_shift, lr_sol.X, w_x1_shift, e_coeff, blas);
-//             coeff(lr_sol.X, lr_sol.X, w_x1, f_coeff, blas);
-//             get_time::stop("scoeff_s");
-
-//             for (Index i = 0; i < grid.r; i++)
-//             {
-//                 for (Index k = 0; k < grid.r; k++)
-//                 {
-//                     e_coeff_tot(i, j, k, l) = e_coeff(i, k);
-//                     f_coeff_tot(i, j, k, l) = f_coeff(i, k);
-//                 }
-//             }
-//         }
-//     }
-// }
-
 void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<double, 5> &f_coeff_tot, vector<Index> sigma1, vector<Index> sigma2, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep)
 {
     multi_array<double, 2> e_coeff({grid.r, grid.r});
