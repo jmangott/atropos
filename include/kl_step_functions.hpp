@@ -47,28 +47,33 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
         {
             // get_time::start("weight_kl");
             std::fill(vec_index.begin(), vec_index.end(), 0);
-            if constexpr (id == 1)
-            {
 #ifdef __OPENMP__
-#pragma omp parallel for private(alpha1_dep)
+#pragma omp parallel firstprivate(vec_index) private(alpha1_dep)
 #endif
-                for (Index alpha1 = 0; alpha1 < grid.dx2; alpha1++)
+            {
+                if constexpr (id == 1)
                 {
-                    alpha1_dep = VecIndextoDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
-                    weight(alpha1) = w_x_dep[mu](alpha2_dep, alpha1_dep) * grid.h2_mult;
-                    IncrVecIndex(vec_index, grid.n2, grid.m2);
+#ifdef __OPENMP__
+#pragma omp for
+#endif
+                    for (Index alpha1 = 0; alpha1 < grid.dx2; alpha1++)
+                    {
+                        alpha1_dep = VecIndextoDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
+                        weight(alpha1) = w_x_dep[mu](alpha2_dep, alpha1_dep) * grid.h2_mult;
+                        IncrVecIndex(vec_index, grid.n2, grid.m2);
+                    }
                 }
-            }
-            else if constexpr (id == 2)
-            {
-#ifdef __OPENMP__
-#pragma omp parallel for private(alpha1_dep)
-#endif
-                for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
+                else if constexpr (id == 2)
                 {
-                    alpha1_dep = VecIndextoDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
-                    weight(alpha1) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h1_mult;
-                    IncrVecIndex(vec_index, grid.n1, grid.m1);
+#ifdef __OPENMP__
+#pragma omp for
+#endif
+                    for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
+                    {
+                        alpha1_dep = VecIndextoDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
+                        weight(alpha1) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h1_mult;
+                        IncrVecIndex(vec_index, grid.n1, grid.m1);
+                    }
                 }
             }
             // get_time::stop("weight_kl");
