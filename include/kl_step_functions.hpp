@@ -39,13 +39,13 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
     // TODO: write a custom `coeff` routine, such that the conversion to a `weight` vector with length dx1 or dx2 is no longer needed
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
-        get_time::start("shift_kl");
+        // get_time::start("shift_kl");
         ShiftMultiArrayRows<id == 1 ? 2 : 1>(xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid);
-        get_time::stop("shift_kl");
+        // get_time::stop("shift_kl");
 
         for (Index alpha2_dep = 0; alpha2_dep < partition.dx_dep(mu); alpha2_dep++)
         {
-            get_time::start("weight_kl");
+            // get_time::start("weight_kl");
             std::fill(vec_index.begin(), vec_index.end(), 0);
             if constexpr (id == 1)
             {
@@ -71,14 +71,14 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
                     IncrVecIndex(vec_index, grid.n1, grid.m1);
                 }
             }
-            get_time::stop("weight_kl");
+            // get_time::stop("weight_kl");
 
-            get_time::start("coeff_kl");
+            // get_time::start("coeff_kl");
             coeff(xx_shift, tmp_xx, weight, c_coeff, blas);
             coeff(tmp_xx, tmp_xx, weight, d_coeff, blas);
-            get_time::stop("coeff_kl");
+            // get_time::stop("coeff_kl");
 
-            get_time::start("write_coeff_kl");
+            // get_time::start("write_coeff_kl");
 #ifdef __OPENMP__
 #pragma omp parallel for collapse(2)
 #endif
@@ -90,13 +90,13 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
                     d_coeff_dep[mu](alpha2_dep, i, j) = d_coeff(i, j);
                 }
             }
-            get_time::stop("write_coeff_kl");
+            // get_time::stop("write_coeff_kl");
         }
-        cout << "K (=1) or L (=2): " << id << endl;
-        cout << "mu: " << mu << endl;
-        cout << get_time::sorted_output() << endl;
-        cout << endl;
-        get_time::reset();
+        // cout << "K (=1) or L (=2): " << id << endl;
+        // cout << "mu: " << mu << endl;
+        // cout << get_time::sorted_output() << endl;
+        // cout << endl;
+        // get_time::reset();
     }
 }
 

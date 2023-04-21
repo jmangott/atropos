@@ -34,7 +34,7 @@ using std::vector;
 
 int main()
 {
-    // get_time::start("main");
+    get_time::start("main");
     /////////////////////////////////////////////
     /////////////////// SETUP ///////////////////
     /////////////////////////////////////////////
@@ -159,11 +159,11 @@ int main()
         }
     }
 
-    // get_time::stop("main");
-    // cout << endl << endl; 
-    // cout << "TIMER RESULTS" << endl;
-    // cout << "-------------" << endl;
-    // cout << get_time::sorted_output();
+    get_time::stop("main");
+    cout << endl << endl; 
+    cout << "TIMER RESULTS" << endl;
+    cout << "-------------" << endl;
+    cout << get_time::sorted_output();
 
     return 0;
 }
