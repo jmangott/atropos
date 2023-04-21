@@ -31,7 +31,7 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
     multi_array<double, 2> tmp_xx(tmp_xx_dim), xx_shift(tmp_xx_dim);
     (id == 1) ? (tmp_xx = lr_sol.V) : (tmp_xx = lr_sol.X);
     multi_array<double, 1> weight({weight_dim});
-    Index alpha1_dep, stride;
+    Index alpha1_dep;
     vector<Index> vec_index;
 
     (id == 1) ? vec_index.resize(grid.m2) : vec_index.resize(grid.m1);
