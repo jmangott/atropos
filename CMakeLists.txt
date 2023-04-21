@@ -26,7 +26,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
 else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall")
     set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb -Wall -D_GLIBCXX_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak -fsanitize=undefined -ftrapv")
-    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -s -DNDEBUG -march=native -mtune=native")
 endif()
 
 ##############################################################
