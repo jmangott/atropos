@@ -247,7 +247,6 @@ class ParametersParser(argparse.ArgumentParser):
     def add_secondorder(self):
         self.add_argument(
             '--so',
-            default=False,
             type=bool,
             metavar="kSecondOrder",
             dest="kSecondOrder",
@@ -257,7 +256,6 @@ class ParametersParser(argparse.ArgumentParser):
     def add_substeps(self):
         self.add_argument(
             '--substeps',
-            default=1,
             type=int,
             metavar="kNSubsteps",
             dest="kNSubsteps",
