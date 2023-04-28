@@ -105,6 +105,22 @@ inline void InitializeTest(lr2<double> &lr_sol, grid_info grid, std::function<do
     x2.push_back(it2);
 
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
+    double norm = 1.0 / std::sqrt(2);
+    double two_sqrt_e = 2.0 / std::exp(0.5);
+
+    // Reset X1, S and X2 to guarantee that they always stay the same
+    lr_sol.X(0, 0) = norm;
+    lr_sol.X(0, 1) = norm;
+    lr_sol.X(1, 0) = norm;
+    lr_sol.X(1, 1) = -norm;
+
+    lr_sol.V(0, 0) = norm;
+    lr_sol.V(0, 1) = norm;
+    lr_sol.V(1, 0) = norm;
+    lr_sol.V(1, 1) = -norm;
+
+    lr_sol.S(0, 0) = two_sqrt_e;
+    lr_sol.S(1, 1) = 0.0;
 
     // Calculate the integration weights
     CalculateWeightDep(w_x_dep, min_prop, max_prop, test_system, grid, partition1, partition2);

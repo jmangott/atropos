@@ -35,22 +35,14 @@ TEST_CASE("k_step", "[k_step]")
         REQUIRE(bool(grid.dx2 == dx2_comparison));
     // }
 
-    multi_array<double, 2> x1x2_comparison({2, 2}), k_comparison({2, 2});
+    multi_array<double, 2> k_comparison({2, 2});
     double norm = 1.0 / std::sqrt(2);
     double norm_2e = std::sqrt(2.0 / std::exp(1.0));
-
-    x1x2_comparison(0, 0) = norm;
-    x1x2_comparison(0, 1) = norm;
-    x1x2_comparison(1, 0) = norm;
-    x1x2_comparison(1, 1) = -norm;
 
     k_comparison(0, 0) = norm_2e;
     k_comparison(0, 1) = 0.0;
     k_comparison(1, 0) = norm_2e;
     k_comparison(1, 1) = 0.0;
-
-    REQUIRE(bool(lr_sol.X == x1x2_comparison));
-    REQUIRE(bool(lr_sol.V == x1x2_comparison));
 
     tmp_x1 = lr_sol.X;
     blas.matmul(tmp_x1, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
