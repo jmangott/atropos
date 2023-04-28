@@ -7,6 +7,10 @@
 
 #include <generic/storage.hpp>
 
+#ifdef __OPENMP__
+#include <omp.h>
+#endif
+
 #include "grid_class.hpp"
 #include "reaction_class.hpp"
 
@@ -88,6 +92,20 @@ inline void IncrVecIndex(std::vector<Index> &vec_index, const multi_array<Index,
     if (dim > 0) vec_index[dim - 1]++;
 }
 
+#ifdef __OPENMP__
+inline void SetVecIndexStart(multi_array<Index, 1> &vec_index_start, const multi_array<Index, 1> &interval, Index dx)
+{
+    Index chunk_size, start_index, rem;
+    int num_threads = omp_get_num_threads();
+    int thread_num = omp_get_thread_num();
+    chunk_size = (Index)std::ceil((double) dx / num_threads);
+    rem = (Index) dx % num_threads;
+    start_index = thread_num * chunk_size;
+    if (thread_num > num_threads - rem)
+        start_index -= (thread_num - (num_threads - rem));
+    CombIndexToVecIndex(vec_index_start, start_index, interval);
+}
+#endif
 
 inline Index VecIndextoDepCombIndex(std::vector<Index> &vec_index, const std::vector<Index> &n_dep, const std::vector<Index> &dep_vec)
 {
