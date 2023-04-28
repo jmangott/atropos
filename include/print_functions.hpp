@@ -9,6 +9,10 @@
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
 
+#ifdef __OPENMP__
+#include <omp.h>
+#endif
+
 #include "grid_class.hpp"
 
 // Print progress bar
