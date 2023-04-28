@@ -17,7 +17,6 @@
 #include "reaction_class.hpp"
 #include "timer_class.hpp"
 
-
 // Calculate coefficients C1 and D1 (`id` = 1) or C2 and D2 (`id` = 2) for all values of `dep_vec` for a given reaction `mu`
 template <Index id>
 void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, std::vector<multi_array<double, 3>> &d_coeff_dep, const std::vector<Index> &sigma_c, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<id> partition, partition_info<id == 1 ? 2 : 1> partition2, const std::vector<multi_array<double, 2>> &w_x_dep)
@@ -38,31 +37,27 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
     (id == 1) ? vec_index.resize(grid.m2) : vec_index.resize(grid.m1);
     (id == 1) ? vec_index_start.resize({grid.m2}) : vec_index_start.resize({grid.m1});
     std::fill(vec_index.begin(), vec_index.end(), 0);
+    // TODO: Remove superfluous `vec_index_start`
     std::fill(vec_index_start.begin(), vec_index_start.end(), 0);
 
+    for (Index mu = 0; mu < reaction_system.mu(); mu++)
+    {
+        // get_time::start("shift_kl");
+        ShiftMultiArrayRows<id == 1 ? 2 : 1>(xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid);
+        // get_time::stop("shift_kl");
+
+        for (Index alpha2_dep = 0; alpha2_dep < partition.dx_dep(mu); alpha2_dep++)
+        {
+
+            // get_time::start("weight_kl");
 #ifdef __OPENMP__
 #pragma omp parallel firstprivate(vec_index_start, vec_index)
 #endif
-    {
-        Index alpha1_dep;
-#ifdef __OPENMP__
-        (id == 1) ? SetVecIndexStart(vec_index_start, grid.n2, grid.dx2) : SetVecIndexStart(vec_index_start, grid.n1, grid.dx1);
-#endif
-
-        for (Index mu = 0; mu < reaction_system.mu(); mu++)
-        {
-            // get_time::start("shift_kl");
-#ifdef __OPENMP__
-#pragma omp single
-#endif
             {
-                ShiftMultiArrayRows<id == 1 ? 2 : 1>(xx_shift, tmp_xx, -sigma_c[mu], reaction_system.reactions[mu]->minus_nu, grid);
-            }
-            // get_time::stop("shift_kl");
-
-            for (Index alpha2_dep = 0; alpha2_dep < partition.dx_dep(mu); alpha2_dep++)
-            {
-                // get_time::start("weight_kl");
+                Index alpha1_dep;
+#ifdef __OPENMP__
+                (id == 1) ? SetVecIndexStart(vec_index_start, grid.n2, grid.dx2) : SetVecIndexStart(vec_index_start, grid.n1, grid.dx1);
+#endif
                 std::copy(vec_index_start.begin(), vec_index_start.end(), vec_index.begin());
 
                 if constexpr (id == 1)
@@ -89,41 +84,32 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
                         IncrVecIndex(vec_index, grid.n1, grid.m1);
                     }
                 }
-                // get_time::stop("weight_kl");
-
-                // get_time::start("coeff_kl");
-#ifdef __OPENMP__
-#pragma omp single
-#endif
-                {
-                    coeff(xx_shift, tmp_xx, weight, c_coeff, blas);
-                    coeff(tmp_xx, tmp_xx, weight, d_coeff, blas);
-                }
-                // get_time::stop("coeff_kl");
-
-                // get_time::start("write_coeff_kl");
-#ifdef __OPENMP__
-#pragma omp for collapse(2)
-#endif
-                for (Index i = 0; i < grid.r; i++)
-                {
-                    for (Index j = 0; j < grid.r; j++)
-                    {
-                        c_coeff_dep[mu](alpha2_dep, i, j) = c_coeff(i, j);
-                        d_coeff_dep[mu](alpha2_dep, i, j) = d_coeff(i, j);
-                    }
-                }
-                // get_time::stop("write_coeff_kl");
             }
-            // cout << "K (=1) or L (=2): " << id << endl;
-            // cout << "mu: " << mu << endl;
-            // cout << get_time::sorted_output() << endl;
-            // cout << endl;
-            // get_time::reset();
+            // get_time::stop("weight_kl");
+
+            // get_time::start("coeff_kl");
+            coeff(xx_shift, tmp_xx, weight, c_coeff, blas);
+            coeff(tmp_xx, tmp_xx, weight, d_coeff, blas);
+            // get_time::stop("coeff_kl");
+
+            // get_time::start("write_coeff_kl");
+            for (Index i = 0; i < grid.r; i++)
+            {
+                for (Index j = 0; j < grid.r; j++)
+                {
+                    c_coeff_dep[mu](alpha2_dep, i, j) = c_coeff(i, j);
+                    d_coeff_dep[mu](alpha2_dep, i, j) = d_coeff(i, j);
+                }
+            }
+            // get_time::stop("write_coeff_kl");
         }
+        // cout << "K (=1) or L (=2): " << id << endl;
+        // cout << "mu: " << mu << endl;
+        // cout << get_time::sorted_output() << endl;
+        // cout << endl;
+        // get_time::reset();
     }
 }
-
 
 // Perform K-Step (`id` = 1) or L-Step (`id` = 2) with time step size `tau`
 template <Index id>

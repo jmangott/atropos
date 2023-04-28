@@ -14,24 +14,19 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
     std::fill(vec_index.begin(), vec_index.end(), 0);
     std::fill(vec_index_start.begin(), vec_index_start.end(), 0);
 
+    // Calculate the shifted X2
+    ShiftMultiArrayRows<2>(xx2_shift, lr_sol.V, -sigma2[mu], reaction_system.reactions[mu]->minus_nu, grid);
+
+    for (Index alpha1_dep = 0; alpha1_dep < partition1.dx_dep(mu); alpha1_dep++)
+    {
 #ifdef __OPENMP__
 #pragma omp parallel firstprivate(vec_index_start, vec_index)
 #endif
-    {
-        Index alpha2_dep;
-#ifdef __OPENMP__
-        SetVecIndexStart(vec_index_start, grid.n2, grid.dx2);
-#endif
-        // Calculate the shifted X2
-#ifdef __OPENMP__
-#pragma omp single
-#endif
         {
-            ShiftMultiArrayRows<2>(xx2_shift, lr_sol.V, -sigma2[mu], reaction_system.reactions[mu]->minus_nu, grid);
-        }
-
-        for (Index alpha1_dep = 0; alpha1_dep < partition1.dx_dep(mu); alpha1_dep++)
-        {
+            Index alpha2_dep;
+#ifdef __OPENMP__
+            SetVecIndexStart(vec_index_start, grid.n2, grid.dx2);
+#endif
             std::copy(vec_index_start.begin(), vec_index_start.end(), vec_index.begin());
 
 #ifdef __OPENMP__
@@ -43,25 +38,17 @@ void CalculateCoefficientsB(multi_array<double, 3> &b_coeff_vec_shift, multi_arr
                 w_x2(alpha2) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h2_mult;
                 IncrVecIndex(vec_index, grid.n2, grid.m2);
             }
+        }
 
-#ifdef __OPENMP__
-#pragma omp single
-#endif
-            {
-                coeff(xx2_shift, lr_sol.V, w_x2, b_coeff_shift, blas);
-                coeff(lr_sol.V, lr_sol.V, w_x2, b_coeff, blas);
-            }
+        coeff(xx2_shift, lr_sol.V, w_x2, b_coeff_shift, blas);
+        coeff(lr_sol.V, lr_sol.V, w_x2, b_coeff, blas);
 
-#ifdef __OPENMP__
-#pragma omp parallel for collapse(2)
-#endif
-            for (Index i = 0; i < grid.r; i++)
+        for (Index i = 0; i < grid.r; i++)
+        {
+            for (Index j = 0; j < grid.r; j++)
             {
-                for (Index j = 0; j < grid.r; j++)
-                {
-                    b_coeff_vec_shift(alpha1_dep, i, j) = b_coeff_shift(i, j);
-                    b_coeff_vec(alpha1_dep, i, j) = b_coeff(i, j);
-                }
+                b_coeff_vec_shift(alpha1_dep, i, j) = b_coeff_shift(i, j);
+                b_coeff_vec(alpha1_dep, i, j) = b_coeff(i, j);
             }
         }
     }
@@ -92,19 +79,18 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
         b_coeff_vec_shift.resize({partition1.dx_dep(mu), grid.r, grid.r});
         CalculateCoefficientsB(b_coeff_vec_shift, b_coeff_vec, lr_sol, blas, reaction_system, grid, partition1, partition2, mu, sigma2, w_x_dep);
 
+        for (Index j = 0; j < grid.r; j++)
+        {
+            for (Index l = 0; l < grid.r; l++)
+            {
 #ifdef __OPENMP__
 #pragma omp parallel firstprivate(vec_index_start, vec_index)
 #endif
-        {
-            Index alpha1_dep;
-
-#ifdef __OPENMP__
-            SetVecIndexStart(vec_index_start, grid.n1, grid.dx1);
-#endif
-            for (Index j = 0; j < grid.r; j++)
-            {
-                for (Index l = 0; l < grid.r; l++)
                 {
+                    Index alpha1_dep;
+#ifdef __OPENMP__
+                    SetVecIndexStart(vec_index_start, grid.n1, grid.dx1);
+#endif
                     std::copy(vec_index_start.begin(), vec_index_start.end(), vec_index.begin());
 
 #ifdef __OPENMP__
@@ -120,24 +106,17 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
                         w_x1(alpha1) = b_coeff_vec(alpha1_dep, j, l) * grid.h1_mult;
                         IncrVecIndex(vec_index, grid.n1, grid.m1);
                     }
-#ifdef __OPENMP__
-#pragma omp single
-#endif
-                    {
-                        coeff(xx1_shift, lr_sol.X, w_x1_shift, e_coeff, blas);
-                        coeff(lr_sol.X, lr_sol.X, w_x1, f_coeff, blas);
-                    }
+                }
 
-#ifdef __OPENMP__
-#pragma omp for collapse(2)
-#endif
-                    for (Index i = 0; i < grid.r; i++)
+                coeff(xx1_shift, lr_sol.X, w_x1_shift, e_coeff, blas);
+                coeff(lr_sol.X, lr_sol.X, w_x1, f_coeff, blas);
+
+                for (Index i = 0; i < grid.r; i++)
+                {
+                    for (Index k = 0; k < grid.r; k++)
                     {
-                        for (Index k = 0; k < grid.r; k++)
-                        {
-                            e_coeff_tot(mu, i, j, k, l) = e_coeff(i, k);
-                            f_coeff_tot(mu, i, j, k, l) = f_coeff(i, k);
-                        }
+                        e_coeff_tot(mu, i, j, k, l) = e_coeff(i, k);
+                        f_coeff_tot(mu, i, j, k, l) = f_coeff(i, k);
                     }
                 }
             }
@@ -155,7 +134,7 @@ void PerformSStep(multi_array<double, 2> &s_dot, const multi_array<double, 2> &s
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
 #ifdef __OPENMP__
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(4)
 #endif
         for (Index i = 0; i < grid.r; i++)
         {
