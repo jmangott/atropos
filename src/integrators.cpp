@@ -70,7 +70,7 @@ void IntegrateFirstOrder(lr2<double> &lr_sol, const vector<multi_array<double, 2
 
     get_time::start("sstep");
     get_time::start("sstep_coeff");
-    CalculateCoefficientsS(e_coeff, f_coeff, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
+    CalculateCoefficientsS(e_coeff, f_coeff, c_coeff1, d_coeff1, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("sstep_coeff");
     PerformSStep(tmp_s, lr_sol.S, e_coeff, f_coeff, sigma1, sigma2, blas, mysystem, grid, partition1, partition2, w_x_dep, tau);
     lr_sol.S -= tmp_s;
@@ -145,7 +145,7 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
 
     get_time::start("sstep");
     get_time::start("sstep_coeff");
-    CalculateCoefficientsS(e_coeff, f_coeff, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
+    CalculateCoefficientsS(e_coeff, f_coeff, c_coeff1, d_coeff1, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("sstep_coeff");
     for (Index i = 0; i < n_substeps; i++)
     {
@@ -181,7 +181,7 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
 
     get_time::start("sstep");
     get_time::start("sstep_coeff");
-    CalculateCoefficientsS(e_coeff, f_coeff, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
+    CalculateCoefficientsS(e_coeff, f_coeff, c_coeff1, d_coeff1, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("sstep_coeff");
     for (Index i = 0; i < n_substeps; i++)
     {
