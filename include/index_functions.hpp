@@ -107,7 +107,7 @@ inline void SetVecIndexStart(multi_array<Index, 1> &vec_index_start, const multi
 }
 #endif
 
-inline Index VecIndextoDepCombIndex(std::vector<Index> &vec_index, const std::vector<Index> &n_dep, const std::vector<Index> &dep_vec)
+inline Index VecIndexToDepCombIndex(std::vector<Index> &vec_index, const std::vector<Index> &n_dep, const std::vector<Index> &dep_vec)
 {
     Index comb_index = 0;
     Index stride = 1;
