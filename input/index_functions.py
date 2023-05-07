@@ -12,6 +12,7 @@ def CombIndexToVecIndex(comb_index: int, interval: np.ndarray) -> np.ndarray:
             comb_index = comb_index // int_ele
     return vec_index
 
+
 @njit
 def VecIndexToCombIndex(vec_index: np.ndarray, interval: np.ndarray) -> int:
     stride = 1
@@ -21,6 +22,8 @@ def VecIndexToCombIndex(vec_index: np.ndarray, interval: np.ndarray) -> int:
         stride *= int_ele
     return comb_index
 
+
+@njit
 def CombIndexToState(comb_index: int, interval: np.ndarray, 
                      liml: np.ndarray, binsize: np.ndarray) -> np.ndarray:
     dim = interval.size
@@ -31,3 +34,15 @@ def CombIndexToState(comb_index: int, interval: np.ndarray,
     if (dim > 0): 
         state[dim - 1] = liml[dim - 1] + binsize[dim - 1] * comb_index
     return state
+
+
+@njit
+def IncrVecIndex(vec_index: np.ndarray, interval: np.ndarray, dim: int) -> None:
+    for k in range(dim):
+        vec_index[k] += 1
+        if (vec_index[k] < interval[k]):
+            return
+        vec_index[k] = 0
+    if (dim > 0):
+        vec_index[dim - 1] += 1
+    return
