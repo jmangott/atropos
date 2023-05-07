@@ -67,7 +67,7 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
 #endif
                     for (Index alpha1 = 0; alpha1 < grid.dx2; alpha1++)
                     {
-                        alpha1_dep = VecIndextoDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
+                        alpha1_dep = VecIndexToDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
                         weight(alpha1) = w_x_dep[mu](alpha2_dep, alpha1_dep) * grid.h2_mult;
                         IncrVecIndex(vec_index, grid.n2, grid.m2);
                     }
@@ -79,7 +79,7 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
 #endif
                     for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
                     {
-                        alpha1_dep = VecIndextoDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
+                        alpha1_dep = VecIndexToDepCombIndex(vec_index, partition2.n_dep[mu], partition2.dep_vec[mu]);
                         weight(alpha1) = w_x_dep[mu](alpha1_dep, alpha2_dep) * grid.h1_mult;
                         IncrVecIndex(vec_index, grid.n1, grid.m1);
                     }
@@ -123,11 +123,20 @@ void PerformKLStep(multi_array<double, 2> &kl_dot, const multi_array<double, 2> 
     // multi_array<double, 2> kl_dot({dx1, r});
     set_zero(kl_dot);
 
-    Index dim_n, alpha;
+    Index dim_n;
 
     (id == 1) ? dim_n = grid.n1.shape()[0] : dim_n = grid.n2.shape()[0];
     multi_array<Index, 1> n({dim_n});
     (id == 1) ? n = grid.n1 : n = grid.n2;
+
+    vector<Index> vec_index;
+    multi_array<Index, 1> vec_index_start;
+
+    (id == 1) ? vec_index.resize(grid.m1) : vec_index.resize(grid.m2);
+    (id == 1) ? vec_index_start.resize({grid.m1}) : vec_index_start.resize({grid.m2});
+    std::fill(vec_index.begin(), vec_index.end(), 0);
+    // TODO: Remove superfluous `vec_index_start`
+    std::fill(vec_index_start.begin(), vec_index_start.end(), 0);
 
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
@@ -135,19 +144,31 @@ void PerformKLStep(multi_array<double, 2> &kl_dot, const multi_array<double, 2> 
         set_zero(prod_kld);
 
 #ifdef __OPENMP__
-#pragma omp parallel for private(alpha)
+#pragma omp parallel firstprivate(vec_index_start, vec_index)
 #endif
-        for (Index i = 0; i < dx1; i++)
         {
-            alpha = CombIndexToDepCombIndex(i, partition.n_dep[mu], n, partition.dep_vec[mu]);
+            Index alpha;
+#ifdef __OPENMP__
+            (id == 1) ? SetVecIndexStart(vec_index_start, grid.n1, grid.dx1) : SetVecIndexStart(vec_index_start, grid.n2, grid.dx2);
+#endif
+            std::copy(vec_index_start.begin(), vec_index_start.end(), vec_index.begin());
 
-            // Calculate matrix-vector multiplication of C2*K and D2*K
-            for (Index j = 0; j < grid.r; j++)
+#ifdef __OPENMP__
+#pragma omp for schedule(static)
+#endif
+            for (Index i = 0; i < dx1; i++)
             {
-                for (Index l = 0; l < grid.r; l++)
+                alpha = VecIndexToDepCombIndex(vec_index, partition.n_dep[mu], partition.dep_vec[mu]);
+                IncrVecIndex(vec_index, n, dim_n);
+
+                // Calculate matrix-vector multiplication of C2*K and D2*K
+                for (Index j = 0; j < grid.r; j++)
                 {
-                    prod_klc(i, j) += tau * kl(i, l) * c_coeff_dep[mu](alpha, j, l);
-                    prod_kld(i, j) += tau * kl(i, l) * d_coeff_dep[mu](alpha, j, l);
+                    for (Index l = 0; l < grid.r; l++)
+                    {
+                        prod_klc(i, j) += tau * kl(i, l) * c_coeff_dep[mu](alpha, j, l);
+                        prod_kld(i, j) += tau * kl(i, l) * d_coeff_dep[mu](alpha, j, l);
+                    }
                 }
             }
         }
