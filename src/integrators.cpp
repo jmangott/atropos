@@ -180,6 +180,9 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
     /////////////////////////////////////////////
 
     get_time::start("sstep");
+    get_time::start("kstep_coeff");
+    CalculateCoefficientsKL<1>(c_coeff1, d_coeff1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
+    get_time::stop("kstep_coeff");
     get_time::start("sstep_coeff");
     CalculateCoefficientsS(e_coeff, f_coeff, c_coeff1, d_coeff1, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("sstep_coeff");
@@ -195,9 +198,6 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
     /////////////////////////////////////////////
 
     get_time::start("kstep");
-    get_time::start("kstep_coeff");
-    CalculateCoefficientsKL<1>(c_coeff1, d_coeff1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
-    get_time::stop("kstep_coeff");
     tmp_x1_0 = lr_sol.X;
     blas.matmul(tmp_x1_0, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
     for (Index i = 0; i < n_substeps; i++)
