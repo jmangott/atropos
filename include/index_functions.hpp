@@ -92,6 +92,7 @@ inline void IncrVecIndex(std::vector<Index> &vec_index, const multi_array<Index,
     if (dim > 0) vec_index[dim - 1]++;
 }
 
+// TODO: this works not for too large OMP_NUM_THREADS
 #ifdef __OPENMP__
 inline void SetVecIndexStart(multi_array<Index, 1> &vec_index_start, const multi_array<Index, 1> &interval, Index dx)
 {
@@ -183,36 +184,53 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
 
     // NOTE: Ensign stores matrices in column-major order
 
-    multi_array<Index, 1> vec_index({grid_alt->m1});
+    vector<Index> vec_index(grid_alt->m1);
+    multi_array<Index, 1> vec_index_start({grid_alt->m1});
+    std::fill(vec_index.begin(), vec_index.end(), 0);
+    std::fill(vec_index_start.begin(), vec_index_start.end(), 0);
+
     for (Index j = 0; j < n_cols; j++)
     {
 #ifdef __OPENMP__
-#pragma omp parallel for firstprivate(vec_index) private(k_inc)
+#pragma omp parallel firstprivate(vec_index_start, vec_index) private(k_inc)
 #endif
-        for (Index i = 0; i < n_rows; i++)
         {
-            if ((shift < 0 && i - shift < n_rows) || (shift >= 0 && i - shift >= 0))
-            {
-                output_array(i, j) = input_array(i - shift, j);
-            }
-            else
-            {
-                output_array(i, j) = 0.0;
-                continue;
-            }
+#ifdef __OPENMP__
+            SetVecIndexStart(vec_index_start, grid_alt->n1, grid_alt->dx1);
+#endif
+            std::copy(vec_index_start.begin(), vec_index_start.end(), vec_index.begin());
 
-            CombIndexToVecIndex(vec_index, i, grid_alt->n1);
-            for (int k = 0; k < grid_alt->m1; k++)
+#ifdef __OPENMP__
+#pragma omp for schedule(static)
+#endif
+            for (Index i = 0; i < n_rows; i++)
             {
-                k_inc = k + inc;
-                if (((nu[k_inc] > 0) &&
-                    (vec_index(k) - nu[k_inc] < 0)) ||
-                    ((nu[k_inc] < 0) &&
-                    (vec_index(k) - nu[k_inc] >= grid_alt->n1(k))))
+                if ((shift < 0 && i - shift < n_rows) || (shift >= 0 && i - shift >= 0))
+                {
+                    output_array(i, j) = input_array(i - shift, j);
+                }
+                else
                 {
                     output_array(i, j) = 0.0;
-                    break;
+                    IncrVecIndex(vec_index, grid_alt->n1, grid_alt->m1);
+                    continue;
                 }
+
+                // CombIndexToVecIndex(vec_index, i, grid_alt->n1);
+                for (int k = 0; k < grid_alt->m1; k++)
+                {
+                    k_inc = k + inc;
+                    if (((nu[k_inc] > 0) &&
+                        (vec_index[k] - nu[k_inc] < 0)) ||
+                        ((nu[k_inc] < 0) &&
+                        (vec_index[k] - nu[k_inc] >= grid_alt->n1(k))))
+                    {
+                        output_array(i, j) = 0.0;
+                        break;
+                    }
+                }
+
+                IncrVecIndex(vec_index, grid_alt->n1, grid_alt->m1);
             }
         }
     }
