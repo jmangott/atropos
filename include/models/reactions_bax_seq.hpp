@@ -29,98 +29,98 @@ constexpr double kA18 = 10.0;
 mysys mysystem(kNN);
 
 myreact myreact0(
-    {-2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0}, [](std::vector<double> y)
-    { return kA0 * y[0] * (y[0] - 1.0) / 2.0; },
+    {0, 0, 0, 0, 0, 0, 0, -2, 1, 0, 0}, {7}, [](std::vector<double> y)
+    { return kA0 * y[7] * (y[7] - 1.0) / 2.0; },
     mysystem);
 
 myreact myreact1(
-    {2, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {1}, [](std::vector<double> y)
-    { return kA1 * y[1]; },
+    {0, 0, 0, 0, 0, 0, 0, 2, -1, 0, 0}, {8}, [](std::vector<double> y)
+    { return kA1 * y[8]; },
     mysystem);
 
 myreact myreact2(
-    {-1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 1}, [](std::vector<double> y)
-    { return kA2 * y[0] * y[1]; },
+    {0, 0, 0, 0, 0, 0, 0, -1, -1, 1, 0}, {7, 8}, [](std::vector<double> y)
+    { return kA2 * y[7] * y[8]; },
     mysystem);
 
 myreact myreact3(
-    {1, 1, -1, 0, 0, 0, 0, 0, 0, 0, 0}, {2}, [](std::vector<double> y)
-    { return kA3 * y[2]; },
+    {0, 0, 0, 0, 0, 0, 0, 1, 1, -1, 0}, {9}, [](std::vector<double> y)
+    { return kA3 * y[9]; },
     mysystem);
 
 myreact myreact4(
-    {-1, 0, -1, 1, 0, 0, 0, 0, 0, 0, 0}, {0, 2}, [](std::vector<double> y)
-    { return kA4 * y[0] * y[2]; },
+    {0, 0, 0, 0, 0, 0, 0, -1, 0, -1, 1}, {7, 9}, [](std::vector<double> y)
+    { return kA4 * y[7] * y[9]; },
     mysystem);
 
 myreact myreact5(
-    {1, 0, 1, -1, 0, 0, 0, 0, 0, 0, 0}, {3}, [](std::vector<double> y)
-    { return kA5 * y[3]; },
+    {0, 0, 0, 0, 0, 0, 0, 1, 0, 1, -1}, {10}, [](std::vector<double> y)
+    { return kA5 * y[10]; },
     mysystem);
 
 myreact myreact6(
-    {-1, 0, 0, -1, 1, 0, 0, 0, 0, 0, 0}, {0, 3}, [](std::vector<double> y)
-    { return kA6 * y[0] * y[3]; },
+    {1, 0, 0, 0, 0, 0, 0, -1, 0, 0, -1}, {7, 10}, [](std::vector<double> y)
+    { return kA6 * y[7] * y[10]; },
     mysystem);
 
 myreact myreact7(
-    {1, 0, 0, 1, -1, 0, 0, 0, 0, 0, 0}, {4}, [](std::vector<double> y)
-    { return kA7 * y[4]; },
+    {-1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1}, {0}, [](std::vector<double> y)
+    { return kA7 * y[0]; },
     mysystem);
 
 myreact myreact8(
-    {-1, 0, 0, 0, -1, 1, 0, 0, 0, 0, 0}, {0, 4}, [](std::vector<double> y)
-    { return kA8 * y[0] * y[4]; },
+    {-1, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0}, {7, 0}, [](std::vector<double> y)
+    { return kA8 * y[7] * y[0]; },
     mysystem);
 
 myreact myreact9(
-    {1, 0, 0, 0, 1, -1, 0, 0, 0, 0, 0}, {5}, [](std::vector<double> y)
-    { return kA9 * y[5]; },
+    {1, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0}, {1}, [](std::vector<double> y)
+    { return kA9 * y[1]; },
     mysystem);
 
 myreact myreact10(
-    {0, 0, 0, -1, 0, 0, 1, 0, 0, -1, 0}, {3, 9}, [](std::vector<double> y)
-    { return kA10 * y[3] * y[9]; },
+    {0, 0, 1, 0, 0, -1, 0, 0, 0, 0, -1}, {10, 5}, [](std::vector<double> y)
+    { return kA10 * y[10] * y[5]; },
     mysystem);
 
 myreact myreact11(
-    {0, 0, 0, 1, 0, 0, -1, 0, 0, 1, 0}, {6}, [](std::vector<double> y)
-    { return kA11 * y[6]; },
+    {0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 1}, {2}, [](std::vector<double> y)
+    { return kA11 * y[2]; },
     mysystem);
 
 myreact myreact12(
-    {0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 1}, {6}, [](std::vector<double> y)
-    { return kA12 * y[6]; },
+    {0, 0, -1, 0, 0, 0, 1, 0, 0, 0, 1}, {2}, [](std::vector<double> y)
+    { return kA12 * y[2]; },
     mysystem);
 
 myreact myreact13(
-    {0, 0, 0, 0, -1, 0, 0, 1, 0, -1, 0}, {4, 9}, [](std::vector<double> y)
-    { return kA13 * y[4] * y[9]; },
+    {-1, 0, 0, 1, 0, -1, 0, 0, 0, 0, 0}, {0, 5}, [](std::vector<double> y)
+    { return kA13 * y[0] * y[5]; },
     mysystem);
 
 myreact myreact14(
-    {0, 0, 0, 0, 1, 0, 0, -1, 0, 1, 0}, {7}, [](std::vector<double> y)
-    { return kA14 * y[7]; },
+    {1, 0, 0, -1, 0, 1, 0, 0, 0, 0, 0}, {3}, [](std::vector<double> y)
+    { return kA14 * y[3]; },
     mysystem);
 
 myreact myreact15(
-    {0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 1}, {7}, [](std::vector<double> y)
-    { return kA15 * y[7]; },
+    {1, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0}, {3}, [](std::vector<double> y)
+    { return kA15 * y[3]; },
     mysystem);
 
 myreact myreact16(
-    {0, 0, 0, 0, 0, -1, 0, 0, 1, -1, 0}, {5, 9}, [](std::vector<double> y)
-    { return kA16 * y[5] * y[9]; },
+    {0, -1, 0, 0, 1, -1, 0, 0, 0, 0, 0}, {1, 5}, [](std::vector<double> y)
+    { return kA16 * y[1] * y[5]; },
     mysystem);
 
 myreact myreact17(
-    {0, 0, 0, 0, 0, 1, 0, 0, -1, 1, 0}, {8}, [](std::vector<double> y)
-    { return kA17 * y[8]; },
+    {0, 1, 0, 0, -1, 1, 0, 0, 0, 0, 0}, {4}, [](std::vector<double> y)
+    { return kA17 * y[4]; },
     mysystem);
 
 myreact myreact18(
-    {0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 1}, {8}, [](std::vector<double> y)
-    { return kA18 * y[8]; },
+    {0, 1, 0, 0, -1, 0, 1, 0, 0, 0, 0}, {4}, [](std::vector<double> y)
+    { return kA18 * y[4]; },
     mysystem);
 
 #endif
