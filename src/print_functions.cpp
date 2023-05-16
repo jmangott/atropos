@@ -17,15 +17,15 @@ void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::t
     auto duration(std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time));
     // time_per_step = duration.count() / (ts + 1.0);
     auto time_per_step = duration / (ts + 1.0);
-    auto time_left = time_per_step * (kNsteps - 1 - ts);
+    auto time_left = time_per_step * (kNsteps - 1.0 - ts);
     double time_per_step_count;
 
     if (time_per_step.count() < 0.01)
     {
         time_unit = "ms";
-        time_per_step_count = std::chrono::duration_cast<std::chrono::milliseconds>(time_per_step).count();
+        time_per_step_count = time_per_step.count() * 1000.0;
     }
-    else if (time_per_step.count() < 60)
+    else if (time_per_step.count() < 60.0)
     {
         time_unit = "s";
         time_per_step_count = time_per_step.count();
@@ -33,12 +33,8 @@ void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::t
     else
     {
         time_unit = "min";
-        time_per_step_count = std::chrono::duration_cast<std::chrono::minutes>(time_per_step).count();
+        time_per_step_count = time_per_step.count() / 60.0;
     }
-
-    // hours = (int) (time_left / 3600);
-    // minutes = (int) (std::fmod(time_left, 3600.0) / 60);
-    // seconds = (int) std::fmod(time_left, 60.0);
 
     auto hours = std::chrono::duration_cast<std::chrono::hours>(time_left);
     auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_left - hours);
