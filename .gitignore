@@ -10,5 +10,6 @@ __init__.py
 /input/*.nc
 /output/*
 /reference_solution/*
+/profiling/*
 CMakeFiles
 /trial_run_classes/
