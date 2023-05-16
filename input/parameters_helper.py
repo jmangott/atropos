@@ -247,8 +247,8 @@ class ParametersParser(argparse.ArgumentParser):
     def add_secondorder(self):
         self.add_argument(
             '--so',
-            type=bool,
-            metavar="kSecondOrder",
+            action='store_true',
+            default=False,
             dest="kSecondOrder",
             help="Flag for activating the second order method."
         )
