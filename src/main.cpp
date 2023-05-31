@@ -34,7 +34,7 @@ using std::vector;
 
 int main()
 {
-    get_time::start("main");
+    // get_time::start("main");
     /////////////////////////////////////////////
     /////////////////// SETUP ///////////////////
     /////////////////////////////////////////////
@@ -157,13 +157,14 @@ int main()
             fname << "../output/" << kFilename << "/output_t" << ts + 1 << ".nc";
             WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
         }
+        // get_time::stop("main");
+        cout << endl << endl; 
+        cout << "TIMER RESULTS" << endl;
+        cout << "-------------" << endl;
+        cout << get_time::sorted_output();
+        get_time::reset();
+        cout << endl;
     }
-
-    get_time::stop("main");
-    cout << endl << endl; 
-    cout << "TIMER RESULTS" << endl;
-    cout << "-------------" << endl;
-    cout << get_time::sorted_output();
 
     return 0;
 }

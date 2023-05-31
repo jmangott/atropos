@@ -51,10 +51,10 @@ void IntegrateFirstOrder(lr2<double> &lr_sol, const vector<multi_array<double, 2
     ////////////////// K-STEP ///////////////////
     /////////////////////////////////////////////
 
-    get_time::start("kstep");
     get_time::start("kstep_coeff");
     CalculateCoefficientsKL<1>(c_coeff1, d_coeff1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("kstep_coeff");
+    get_time::start("kstep");
     tmp_x1 = lr_sol.X;
     blas.matmul(tmp_x1, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
     PerformKLStep<1>(tmp_x1, lr_sol.X, c_coeff1, d_coeff1, sigma1, blas, mysystem, grid, partition1, w_x_dep, tau);
@@ -68,10 +68,10 @@ void IntegrateFirstOrder(lr2<double> &lr_sol, const vector<multi_array<double, 2
     ////////////////// S-STEP ///////////////////
     /////////////////////////////////////////////
 
-    get_time::start("sstep");
     get_time::start("sstep_coeff");
     CalculateCoefficientsS(e_coeff, f_coeff, c_coeff1, d_coeff1, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("sstep_coeff");
+    get_time::start("sstep");
     PerformSStep(tmp_s, lr_sol.S, e_coeff, f_coeff, sigma1, sigma2, blas, mysystem, grid, partition1, partition2, w_x_dep, tau);
     lr_sol.S -= tmp_s;
     get_time::stop("sstep");
@@ -80,10 +80,10 @@ void IntegrateFirstOrder(lr2<double> &lr_sol, const vector<multi_array<double, 2
     ////////////////// L-STEP ///////////////////
     /////////////////////////////////////////////
 
-    get_time::start("lstep");
     get_time::start("lstep_coeff");
     CalculateCoefficientsKL<2>(c_coeff2, d_coeff2, sigma1, lr_sol, blas, mysystem, grid, partition2, partition1, w_x_dep);
     get_time::stop("lstep_coeff");
+    get_time::start("lstep");
     tmp_x2 = lr_sol.V;
     blas.matmul_transb(tmp_x2, lr_sol.S, lr_sol.V); // lr_sol.V contains now L
     PerformKLStep<2>(tmp_x2, lr_sol.V, c_coeff2, d_coeff2, sigma2, blas, mysystem, grid, partition2, w_x_dep, tau);
@@ -123,10 +123,10 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
     ///////////////// 1/2 K-STEP ////////////////
     /////////////////////////////////////////////
 
-    get_time::start("kstep");
     get_time::start("kstep_coeff");
     CalculateCoefficientsKL<1>(c_coeff1, d_coeff1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("kstep_coeff");
+    get_time::start("kstep");
     tmp_x1_0 = lr_sol.X;
     blas.matmul(tmp_x1_0, lr_sol.S, lr_sol.X); // lr_sol.X contains now K
     for (Index i = 0; i < n_substeps; i++)
@@ -143,10 +143,10 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
     //////////////// 1/2 S-STEP /////////////////
     /////////////////////////////////////////////
 
-    get_time::start("sstep");
     get_time::start("sstep_coeff");
     CalculateCoefficientsS(e_coeff, f_coeff, c_coeff1, d_coeff1, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("sstep_coeff");
+    get_time::start("sstep");
     for (Index i = 0; i < n_substeps; i++)
     {
         PerformSStep(tmp_s_0, lr_sol.S, e_coeff, f_coeff, sigma1, sigma2, blas, mysystem, grid, partition1, partition2, w_x_dep, 0.5 * tau * tau_sub);
@@ -158,10 +158,10 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
     ////////////////// L-STEP ///////////////////
     /////////////////////////////////////////////
 
-    get_time::start("lstep");
     get_time::start("lstep_coeff");
     CalculateCoefficientsKL<2>(c_coeff2, d_coeff2, sigma1, lr_sol, blas, mysystem, grid, partition2, partition1, w_x_dep);
     get_time::stop("lstep_coeff");
+    get_time::start("lstep");
     tmp_x2_0 = lr_sol.V;
     blas.matmul_transb(tmp_x2_0, lr_sol.S, lr_sol.V); // lr_sol.V contains now L
     for (Index i = 0; i < n_substeps; i++)
@@ -179,13 +179,13 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
     //////////////// 1/2 S-STEP /////////////////
     /////////////////////////////////////////////
 
-    get_time::start("sstep");
     get_time::start("kstep_coeff");
     CalculateCoefficientsKL<1>(c_coeff1, d_coeff1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("kstep_coeff");
     get_time::start("sstep_coeff");
     CalculateCoefficientsS(e_coeff, f_coeff, c_coeff1, d_coeff1, sigma1, sigma2, lr_sol, blas, mysystem, grid, partition1, partition2, w_x_dep);
     get_time::stop("sstep_coeff");
+    get_time::start("sstep");
     for (Index i = 0; i < n_substeps; i++)
     {
         PerformSStep(tmp_s_0, lr_sol.S, e_coeff, f_coeff, sigma1, sigma2, blas, mysystem, grid, partition1, partition2, w_x_dep, 0.5 * tau * tau_sub);
