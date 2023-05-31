@@ -3,7 +3,7 @@
 
 #include "../reaction_class.hpp"
 
-const std::vector<std::string> kNN = {"Bax1", "Bax2", "Bax3", "Bax4", "Bax5", "Bax6", "Bax4mSmac", "Bax5mSmac", "Bax6mSmac", "mSmac", "cSmac"};
+const std::vector<std::string> kNN = {"Bax5", "Bax6", "Bax4mSmac", "Bax5mSmac", "Bax6mSmac", "mSmac", "cSmac", "Bax1", "Bax2", "Bax3", "Bax4"};
 
 constexpr double kA0 = 0.0002;
 constexpr double kA1 = 0.001;
