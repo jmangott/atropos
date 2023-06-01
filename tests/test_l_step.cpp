@@ -27,7 +27,6 @@ TEST_CASE("l_step", "[l_step]")
     InitializeTest(lr_sol, grid, ip_xx1, ip_xx2, blas, w_x_dep);
 
     multi_array<double, 2> l_comparison({2, 2});
-    double norm = 1.0 / std::sqrt(2);
     double norm_2e = std::sqrt(2.0 / std::exp(1.0));
 
     l_comparison(0, 0) = norm_2e;

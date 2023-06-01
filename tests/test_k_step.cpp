@@ -36,7 +36,6 @@ TEST_CASE("k_step", "[k_step]")
     // }
 
     multi_array<double, 2> k_comparison({2, 2});
-    double norm = 1.0 / std::sqrt(2);
     double norm_2e = std::sqrt(2.0 / std::exp(1.0));
 
     k_comparison(0, 0) = norm_2e;
