@@ -7,6 +7,8 @@
 #include "grid_class.hpp"
 #include "index_functions.hpp"
 
+// TODO: Write test for IncrVecIndex
+
 TEST_CASE("index_functions", "[index_functions]")
 {
     vector<string> test_names = {"S1, S2, S3"};
@@ -73,13 +75,13 @@ TEST_CASE("index_functions", "[index_functions]")
 
     SECTION("VecIndexToCombIndex")
     {
-        multi_array<Index, 1> vec_index({10});
+        vector<Index> vec_index(10);
         multi_array<Index, 1> interval({10});
         Index comb_index;
         Index comparison_index = 592088944020;
         for (Index i = 0; i < 10; i++)
         {
-            vec_index(i) = i;
+            vec_index[i] = i;
             interval(i) = 20 - i;
         }
         comb_index = VecIndexToCombIndex(vec_index, interval);
@@ -90,12 +92,12 @@ TEST_CASE("index_functions", "[index_functions]")
     {
         Index comb_index = 23084307895;
         multi_array<Index, 1> interval({10});
-        multi_array<Index, 1> vec_index({10});
-        multi_array<Index, 1> comparison_vec({10});
+        vector<Index> vec_index(10);
+        vector<Index> comparison_vec(10);
         for (Index i = 0; i < 10; i++)
         {
             interval(i) = 11;
-            comparison_vec(i) = i;
+            comparison_vec[i] = i;
         }
         CombIndexToVecIndex(vec_index, comb_index, interval);
         REQUIRE(bool(vec_index == comparison_vec));
