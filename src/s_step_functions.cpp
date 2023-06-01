@@ -12,8 +12,6 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
 
     vector<Index> vec_index(grid.m1);
     multi_array<Index, 1> vec_index_start({grid.m1});
-    std::fill(vec_index.begin(), vec_index.end(), 0);
-    std::fill(vec_index_start.begin(), vec_index_start.end(), 0);
 
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
@@ -24,15 +22,16 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
         {
             for (Index l = 0; l < grid.r; l++)
             {
+                std::fill(vec_index.begin(), vec_index.end(), 0);
+                
 #ifdef __OPENMP__
-#pragma omp parallel firstprivate(vec_index_start, vec_index)
+#pragma omp parallel firstprivate(vec_index)
 #endif
                 {
                     Index alpha1_dep;
 #ifdef __OPENMP__
-                    SetVecIndexStart(vec_index_start, grid.n1, grid.dx1);
+                    SetVecIndex(vec_index, grid.n1, grid.dx1);
 #endif
-                    std::copy(vec_index_start.begin(), vec_index_start.end(), vec_index.begin());
 
 #ifdef __OPENMP__
 #pragma omp for schedule(static)

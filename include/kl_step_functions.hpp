@@ -32,13 +32,9 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
     (id == 1) ? (tmp_xx = lr_sol.V) : (tmp_xx = lr_sol.X);
     multi_array<double, 1> weight({weight_dim});
     vector<Index> vec_index;
-    multi_array<Index, 1> vec_index_start;
 
     (id == 1) ? vec_index.resize(grid.m2) : vec_index.resize(grid.m1);
-    (id == 1) ? vec_index_start.resize({grid.m2}) : vec_index_start.resize({grid.m1});
-    std::fill(vec_index.begin(), vec_index.end(), 0);
-    // TODO: Remove superfluous `vec_index_start`
-    std::fill(vec_index_start.begin(), vec_index_start.end(), 0);
+    // TODO: Change alpha1 and alpha2_dep loops
 
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
@@ -48,17 +44,16 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
 
         for (Index alpha2_dep = 0; alpha2_dep < partition.dx_dep(mu); alpha2_dep++)
         {
-
+            std::fill(vec_index.begin(), vec_index.end(), 0);
             // get_time::start("weight_kl");
 #ifdef __OPENMP__
-#pragma omp parallel firstprivate(vec_index_start, vec_index)
+#pragma omp parallel firstprivate(vec_index)
 #endif
             {
                 Index alpha1_dep;
 #ifdef __OPENMP__
-                (id == 1) ? SetVecIndexStart(vec_index_start, grid.n2, grid.dx2) : SetVecIndexStart(vec_index_start, grid.n1, grid.dx1);
+                (id == 1) ? SetVecIndex(vec_index, grid.n2, grid.dx2) : SetVecIndex(vec_index, grid.n1, grid.dx1);
 #endif
-                std::copy(vec_index_start.begin(), vec_index_start.end(), vec_index.begin());
 
                 if constexpr (id == 1)
                 {
@@ -130,28 +125,23 @@ void PerformKLStep(multi_array<double, 2> &kl_dot, const multi_array<double, 2> 
     (id == 1) ? n = grid.n1 : n = grid.n2;
 
     vector<Index> vec_index;
-    multi_array<Index, 1> vec_index_start;
 
     (id == 1) ? vec_index.resize(grid.m1) : vec_index.resize(grid.m2);
-    (id == 1) ? vec_index_start.resize({grid.m1}) : vec_index_start.resize({grid.m2});
-    std::fill(vec_index.begin(), vec_index.end(), 0);
-    // TODO: Remove superfluous `vec_index_start`
-    std::fill(vec_index_start.begin(), vec_index_start.end(), 0);
 
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
         set_zero(prod_klc);
         set_zero(prod_kld);
+        std::fill(vec_index.begin(), vec_index.end(), 0);
 
 #ifdef __OPENMP__
-#pragma omp parallel firstprivate(vec_index_start, vec_index)
+#pragma omp parallel firstprivate(vec_index)
 #endif
         {
             Index alpha;
 #ifdef __OPENMP__
-            (id == 1) ? SetVecIndexStart(vec_index_start, grid.n1, grid.dx1) : SetVecIndexStart(vec_index_start, grid.n2, grid.dx2);
+            (id == 1) ? SetVecIndex(vec_index, grid.n1, grid.dx1) : SetVecIndex(vec_index, grid.n2, grid.dx2);
 #endif
-            std::copy(vec_index_start.begin(), vec_index_start.end(), vec_index.begin());
 
 #ifdef __OPENMP__
 #pragma omp for schedule(static)
