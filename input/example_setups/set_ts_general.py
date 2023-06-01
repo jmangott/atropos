@@ -30,12 +30,12 @@ params.kModel = "reactions_ts"
 r = params.kR = 5
 m1 = params.kM1 = 1
 m2 = params.kM2 = 1
-n1 = params.kN1 = (51)
-n2 = params.kN2 = (51)
-bin1 = params.kBinsize1 = (1)
-bin2 = params.kBinsize2 = (1)
-liml1 = params.kLiml1 = (0)
-liml2 = params.kLiml2 = (0)
+n1 = params.kN1 = (51,)
+n2 = params.kN2 = (51,)
+bin1 = params.kBinsize1 = (1,)
+bin2 = params.kBinsize2 = (1,)
+liml1 = params.kLiml1 = (0,)
+liml2 = params.kLiml2 = (0,)
 
 def eval_p0(x):
     C = 0.5 * np.array([[75, -15], [-15, 75]])
