@@ -3,19 +3,6 @@
 
 using std::vector;
 
-
-Index VecIndexToCombIndex(multi_array<Index, 1> vec_index, multi_array<Index, 1> interval)
-{
-    Index comb_index = 0;
-    Index stride = 1;
-    for (Index i = 0; i < interval.shape()[0]; i++)
-    {
-        comb_index += vec_index(i) * stride;
-        stride *= interval(i);
-    }
-    return comb_index;
-}
-
 Index VecIndexToCombIndex(vector<Index> vec_index, multi_array<Index, 1> interval)
 {
     Index comb_index = 0;
@@ -24,19 +11,6 @@ Index VecIndexToCombIndex(vector<Index> vec_index, multi_array<Index, 1> interva
     {
         comb_index += vec_index[i] * stride;
         stride *= interval(i);
-    }
-    return comb_index;
-}
-
-
-Index VecIndexToCombIndex(vector<Index> vec_index, vector<Index> interval)
-{
-    Index comb_index = 0;
-    Index stride = 1;
-    for (vector<Index>::size_type i = 0; i < interval.size(); i++)
-    {
-        comb_index += vec_index[i] * stride;
-        stride *= interval[i];
     }
     return comb_index;
 }
@@ -52,20 +26,6 @@ Index DepCombIndexToCombIndex(Index comb_index_dep, vector<Index> n_dep, multi_a
     for (vector<Index>::size_type i = 0; i < dep_vec.size(); i++)
         vec_index[dep_vec[i]] = vec_index_dep[i];
     comb_index = VecIndexToCombIndex(vec_index, n);
-    return comb_index;
-}
-
-
-Index DepVecIndexRemCombIndexToCombIndex(vector<Index> vec_index_dep, Index comb_index_rem, vector<Index> n_rem, multi_array<Index, 1> n, vector<Index> dep_vec)
-{
-    vector<Index> vec_index_rem(n_rem.size());
-    Index comb_index;
-    CombIndexToVecIndex(vec_index_rem, comb_index_rem, n_rem);
-
-    // vec_index_c_rem contains now the real population number
-    for (vector<Index>::size_type i = 0; i < dep_vec.size(); i++)
-        vec_index_rem[dep_vec[i]] = vec_index_dep[i];
-    comb_index = VecIndexToCombIndex(vec_index_rem, n);
     return comb_index;
 }
 
