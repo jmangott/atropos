@@ -72,8 +72,9 @@ void PerformSStep(multi_array<double, 2> &s_dot, const multi_array<double, 2> &s
 
     for (Index mu = 0; mu < reaction_system.mu(); mu++)
     {
+// TODO: This works on the workstation only for OMP_NUM_THREADS=6 (or 5) if collapse(<3). Why!?
 #ifdef __OPENMP__
-#pragma omp parallel for collapse(4)
+#pragma omp parallel for collapse(2)
 #endif
         for (Index i = 0; i < grid.r; i++)
         {
