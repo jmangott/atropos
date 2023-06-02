@@ -70,19 +70,16 @@ inline void IncrVecIndex(std::vector<Index> &vec_index, const multi_array<Index,
 }
 
 
-// TODO: this works not for too large OMP_NUM_THREADS
 #ifdef __OPENMP__
-inline void SetVecIndex(std::vector<Index> &vec_index, const multi_array<Index, 1> &interval, Index dx)
+inline Index SetVecIndex(std::vector<Index> &vec_index, const multi_array<Index, 1> &interval, Index dx)
 {
-    Index chunk_size, start_index, rem;
+    Index chunk_size, start_index;
     int num_threads = omp_get_num_threads();
     int thread_num = omp_get_thread_num();
     chunk_size = (Index) std::ceil((double) dx / num_threads);
-    rem = (Index) dx % num_threads;
     start_index = thread_num * chunk_size;
-    if (thread_num > num_threads - rem)
-        start_index -= (thread_num - (num_threads - rem));
     CombIndexToVecIndex(vec_index, start_index, interval);
+    return chunk_size
 }
 #endif
 
@@ -153,11 +150,11 @@ void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array
 #endif
         {
 #ifdef __OPENMP__
-            SetVecIndex(vec_index, grid_alt->n1, grid_alt->dx1);
+            Index chunk_size = SetVecIndex(vec_index, grid_alt->n1, grid_alt->dx1);
 #endif
 
 #ifdef __OPENMP__
-#pragma omp for schedule(static)
+#pragma omp for schedule(static, chunk_size)
 #endif
             for (Index i = 0; i < n_rows; i++)
             {

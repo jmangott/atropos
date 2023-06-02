@@ -30,11 +30,11 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
                 {
                     Index alpha1_dep;
 #ifdef __OPENMP__
-                    SetVecIndex(vec_index, grid.n1, grid.dx1);
+                    Index chunk_size = SetVecIndex(vec_index, grid.n1, grid.dx1);
 #endif
 
 #ifdef __OPENMP__
-#pragma omp for schedule(static)
+#pragma omp for schedule(static, chunk_size)
 #endif
                     // Calculate integration weights
                     for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)

@@ -52,13 +52,14 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
             {
                 Index alpha1_dep;
 #ifdef __OPENMP__
-                (id == 1) ? SetVecIndex(vec_index, grid.n2, grid.dx2) : SetVecIndex(vec_index, grid.n1, grid.dx1);
+                Index chunk_size;
+                (id == 1) ? chunk_size = SetVecIndex(vec_index, grid.n2, grid.dx2) : chunk_size = SetVecIndex(vec_index, grid.n1, grid.dx1);
 #endif
 
                 if constexpr (id == 1)
                 {
 #ifdef __OPENMP__
-#pragma omp for schedule(static)
+#pragma omp for schedule(static, chunk_size)
 #endif
                     for (Index alpha1 = 0; alpha1 < grid.dx2; alpha1++)
                     {
@@ -70,7 +71,7 @@ void CalculateCoefficientsKL(std::vector<multi_array<double, 3>> &c_coeff_dep, s
                 else if constexpr (id == 2)
                 {
 #ifdef __OPENMP__
-#pragma omp for schedule(static)
+#pragma omp for schedule(static, chunk_size)
 #endif
                     for (Index alpha1 = 0; alpha1 < grid.dx1; alpha1++)
                     {
@@ -140,11 +141,12 @@ void PerformKLStep(multi_array<double, 2> &kl_dot, const multi_array<double, 2> 
         {
             Index alpha;
 #ifdef __OPENMP__
-            (id == 1) ? SetVecIndex(vec_index, grid.n1, grid.dx1) : SetVecIndex(vec_index, grid.n2, grid.dx2);
+            Index chunk_size;
+            (id == 1) ? chunk_size = SetVecIndex(vec_index, grid.n1, grid.dx1) : chunk_size = SetVecIndex(vec_index, grid.n2, grid.dx2);
 #endif
 
 #ifdef __OPENMP__
-#pragma omp for schedule(static)
+#pragma omp for schedule(static, chunk_size)
 #endif
             for (Index i = 0; i < dx1; i++)
             {
