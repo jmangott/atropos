@@ -79,7 +79,7 @@ inline Index SetVecIndex(std::vector<Index> &vec_index, const multi_array<Index,
     chunk_size = (Index) std::ceil((double) dx / num_threads);
     start_index = thread_num * chunk_size;
     CombIndexToVecIndex(vec_index, start_index, interval);
-    return chunk_size
+    return chunk_size;
 }
 #endif
 
