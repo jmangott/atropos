@@ -6,7 +6,6 @@ Call in `input` folder with: `python3 set_input_template.py --flags` (use --h fo
 
 import numpy as np
 from scipy.special import factorial
-import os
 
 from input_helper import *
 from parameters_helper import ParametersParser

@@ -1,7 +1,7 @@
 import netCDF4 as nc
 import numpy as np
 
-from index_functions import *
+from scripts.index_functions import CombIndexToState
 
 class grid_info:
     """Class for storing grid parameters."""
@@ -31,7 +31,7 @@ def WriteNC(x1: np.ndarray, x2: np.ndarray, s: np.ndarray) -> None:
     as Ensign works with column-major order arrays.
     """
 
-    ds = nc.Dataset("input.nc", mode="w", format="NETCDF4")
+    ds = nc.Dataset("input/input.nc", mode="w", format="NETCDF4")
     ds.createDimension("r", np.shape(s)[0])
     ds.createDimension("n_basisfunctions", np.shape(x1)[0])
     ds.createDimension("dx1", np.shape(x1)[1])

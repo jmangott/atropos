@@ -109,10 +109,10 @@ class ParametersParser(argparse.ArgumentParser):
         self.add_argument(
             '-o',
             '--output',
-            default="../include",
+            default="include",
             type=str,
             metavar="path/to/input",
-            help="Path to folder for saving generated files. `parameters.hpp` has to be located in `project_root/include`, therefore the default value is set to `../include`. This has to be adjusted if the script is located in a directory other than `project_root/input`.",
+            help="Path to folder for saving generated files. `parameters.hpp` has to be located in `project_root/include`, therefore the default value is set to `include`. This has to be adjusted if the script is located in a directory other than `project_root/input`.",
             dest="OUTPUT")
 
     def parse_args(self, args=None, namespace: Parameters = None) -> Parameters:
