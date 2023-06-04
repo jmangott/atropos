@@ -14,3 +14,6 @@ __init__.py
 /profiling/*
 CMakeFiles
 /trial_run_classes/
+include/models/reactions_tyson.hpp
+include/models/reactions_tgfb6.hpp
+scripts/input/example_setups/set_tyson.py
