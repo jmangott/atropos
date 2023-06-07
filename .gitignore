@@ -8,6 +8,7 @@ __init__.py
 *.out
 /build/*
 /bin/*
+/plots/
 /input/*.nc
 /output/*
 /reference_solution/*
@@ -17,3 +18,5 @@ CMakeFiles
 include/models/reactions_tyson.hpp
 include/models/reactions_tgfb6.hpp
 scripts/input/example_setups/set_tyson.py
+scripts/input/example_setups/set_lp_general.py
+scripts/reference_solutions/pysb_model_ts.py
