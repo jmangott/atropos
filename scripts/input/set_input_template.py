@@ -1,21 +1,21 @@
 """
 Template for setting parameters (`parameters.hpp`) and initial conditions (`input.nc`).
 Modify code marked with TODO according to your needs.
-Call in `input` folder with: `python3 set_input_template.py --flags` (use --h for help)
+Call in project root with: `python3 scripts/input/set_input_template.py --flags` (use --h for help)
 """
 
 import numpy as np
 from scipy.special import factorial
 
-from input_helper import *
-from parameters_helper import ParametersParser
+from scripts.input.input_helper import *
+from scripts.input.parameters_helper import ParametersParser
 
 parser = ParametersParser(
     description="Configure parameters."
 )
 
 # Add arguments for setting parameters with `ParametersParser``
-# TODO: add or remove flags according to your set up
+# TODO: add or remove flags according to your setup
 parser.add_tstar()
 parser.add_tau()
 parser.add_snapshot()
@@ -25,7 +25,7 @@ parser.add_filename()
 params = parser.parse_args()
 
 # Set in-script parameters
-# TODO: adjust parameters according to model
+# TODO: adjust parameters according to your model
 params.kModel = "reactions_lp"
 r = params.kR = 4
 m1 = params.kM1 = 2
