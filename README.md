@@ -11,6 +11,7 @@
     - [Integrators](#integrators)
       - [First-order method](#first-order-method)
       - [Second-order method](#second-order-method)
+    - [Binning](#binning)
     - [Writing a model file](#writing-a-model-file)
     - [Preparing input data](#preparing-input-data)
   - [Output](#output)
@@ -24,10 +25,16 @@
 ```
 with the projector-splitting based dynamical low-rank (DLR) approximation.[^fn1]
 
-<!-- The CME describes the time evolution of the probability distribution `$P(t,\,x)$` in a chemical reaction network 
+$`P(t,\,x)\,\mathrm{d}t`$ is the probability of finding a population number of $`x = (x_1, \dots, x_N)`$ molecules of species $`S_1, \dots, S_N`$ in the time interval $`[t, t + \mathrm{d}t]`$.
+The CME describes the time evolution of this probability distribution $`P(t,\,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x)`$ can be interpreted as transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
 
-It makes use of the low-rank framework `Ensign`.[^fn2] -->
+In our DLR approach, the reaction network has to be separated into two parts, such that $`x=(x_{(1)},\,x_{(2)})`$. The probability distribution is then approximated by
+```math
+P \approx \sum_{i,j=1}^r X_i^1(t,\,x_{(1)})\,S_{ij}(t)\,X_i^2(t,\,x_{(2)})
+```
+with rank $`r`$, low-rank factors $`X_i^1(t,\,x_{(1)})`$ and $`X_i^2(t,\,x_{(2)})`$ and coupling coefficients $`S_{ij}(t)`$. The rank is usually a small number.
 
+It `kinetic-cme` makes use of the low-rank framework `Ensign`.[^fn2]
 
 ## Requirements
 - CMake (3.22.1 or later)
@@ -90,7 +97,7 @@ to ensure that OpenMP and `kinetic-cme` work correctly.
 MacOS: Note that XCode compilers do not support OpenMP. For using OpenMP on macOS, a manual installation (e.g. of `gcc11`) is required and the `CXX`, `CC` and `FC` environment variables have to be set accordingly.
 
 ### Python environment
-To use the Python programs included in `scripts`, a Python environment with the packages specified in `pip-requirements.txt` needs to be configured and enabled.
+To use the Python notebooks and programs included in `scripts`, a Python environment with the packages specified in `pip-requirements.txt` needs to be configured and enabled.
 For Python venv:
 ```shell
 python -m venv path/to/my_venv
@@ -157,6 +164,9 @@ When setting `kSecondOrder = false`, Lie-Trotter splitting and an explicit Euler
 #### Second-order method
 When setting `kSecondOrder = true`, Strang splitting and an explicit Euler method with substeps will be used for integration. `kNSubsteps` determines the number of substeps.
 
+### Binning
+Tbd
+
 ### Writing a model file
 The model file contains all reactions $`R_\mu`$ ($`\mu=1,\dots,M`$) of the specific problem and has to be stored as a `.hpp` file in `include/models` in order to work with the input scripts. Reactions are passed to the instance `mysystem` of the  `mysys` class by constructing an instance of the `myreact` class with
 ```c++
@@ -169,19 +179,58 @@ The `mysystem` class keeps track of all associated reactions, an instance can be
 mysys(vector<string> species_names)
 ```
 where `species_names` constains the names of all species in the system.
+
+Note that when writing the model file and implementing the propensity functions one has to keep in mind the following partition convention of `kinetic-cme`, i.e. species with indices from `0` to `kM1`-1 belong to partition 1, the remainders to partition 2.
+
 It is recommended to use the exisiting model files for the example problems as a template for your own model.
 
 ### Preparing input data
 A template Python script called `set_input_template.py` is provided in `scripts/input` in order to facilitate the generation of the parameters (`parameters.hpp`) and the inital condition (`input.nc`). Code marked with `TODO` has to be modified according to the specific needs.
-There are two different types of 
+There are currently two different methods for generating the initial condition implemented:
+1. `SetInputKD`: $`P(t=0,\,x) = \delta_{x,x_0}`$, where $` x_0`$ has to be specified. In this implementation the low-rank structure is exploited.
+2. `SetInputGeneral`: $P(t=0,\,x) = P_0(x)$, where $`P_0(x)`$ has to be specified. In this implementation no low-rank structure is exploited, therefore it should be used only for small problems.
 
 ## Output
 `kinetic-cme` automatically creates a folder in `output/` named `kFilename`, which is set in the `parameter.hpp` file.
-The low-rank factors and coupling coefficients as well as the chosen model parameters are stored in theis folder as `output_t<ts>.nc` (`<ts>` denotes the time step) in intervals according to the parameter `kSnapshot`.
+The low-rank factors and coupling coefficients as well as the chosen model parameters are stored in this folder as `output_t<ts>.nc` (`<ts>` denotes the time step) in intervals according to the parameter `kSnapshot`.
+
+The structure of the `output_t<ts>.nc` files is as follows:
+
+|Variable name|Dimension|Description|
+| --- | --- | --- |
+|`X`|`(n_basisfunctions, dx1)`|Low-rank factors $`X_i^1`$|
+|`S`|`(r, r)`|Coupling coefficients $`S_{ij}`$|
+|`V`|`(n_basisfunctions, dx2)`|Low-rank factors $`X_j^2`$|
+|`names`|`(n_basisfunctions, dx2)`|Species names|
+|`n1`|`(n_basisfunctions, dx2)`|Population numbers in partition 1|
+|`n2`|`(n_basisfunctions, dx2)`|Population numbers in partition 2|
+|`binsize`|`(d)`|Concatenation of `binsize1` and `binsize2`|
+|`liml`|`(d)`|Concatenation of `liml1` and `liml2`|
+|`t`|`0`|Time point|
+|`dt`|`0`|Time step size `kTau`|
 
 ## Example problems
 Input generation scripts for the example problems (toggle switch, lambda phage and BAX pore aggregation) are provided in `scripts/input/example_setups`, model files can be found in `include/models`.
 
+Interactive Python notebooks for comparison of the DLR results with reference solutions for the example problems can be found in `scripts/output`.
+
+Before executing the notebooks, one has to generate the output files with `kinetic-cme` and the solvers for the reference solutions.
+
+For toggle switch:
+```shell
+python3 scripts/reference_solutions/ode_ts.py
+python3 scripts/input/example_setups/set_ts.py --tstar 500 --tau 0.01 --snapshot 100 --fname ts
+cmake --build build
+./bin/kinetic-cme
+```
+For lambda phage:
+```shell
+python3 scripts/reference_solutions/pysb_stochkit.py
+python3 scripts/input/example_setups/set_lp.py --tstar 10 --tau 0.01 --so --substeps 10 --snapshot 100 --fname lp
+cmake --build build
+./bin/kinetic-cme
+```
+
 ## References
-- [^fn1]: Lubich. C., Oseledets, I.: "A projector-splitting integrator for dynamical low-rank approximation", BIT Numerical Mathematics **54** (2014)
-- [^fn2]: Cassini, F., Einkemmer, L.: "Efficient 6D Vlasov simulation using the dynamical low-rank framework Ensign", Computer Physics Communications **280** (2022)
+[^fn1]: Lubich. C., Oseledets, I.: "A projector-splitting integrator for dynamical low-rank approximation", BIT Numerical Mathematics **54** (2014)
+[^fn2]: Cassini, F., Einkemmer, L.: "Efficient 6D Vlasov simulation using the dynamical low-rank framework Ensign", Computer Physics Communications **280** (2022)
