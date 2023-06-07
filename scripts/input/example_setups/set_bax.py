@@ -1,6 +1,6 @@
 """
 Script for setting parameters (`parameters.hpp`) and initial conditions (`input.nc`) 
-for the BAX pore assembly model.
+for the BAX pore aggregation model.
 Call in project root with: `python3 scripts/input/example_setups/set_bax.py --flags`
 """
 
