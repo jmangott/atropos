@@ -55,18 +55,19 @@ for i in range(t_eval.size):
     P_full[i, :, :] = sol.y[:, i].reshape((n1, n2))
 
 # Calculate marginal distributions
-P_marginal = [np.zeros((n_el, t_eval.size), dtype="float64") for n_el in (n1, n2)]
+# P_marginal = np.zeros((2, ))# [np.zeros((n_el, t_eval.size), dtype="float64") for n_el in (n1, n2)]
+P_marginal = [[np.zeros(n_el) for n_el in (n1, n2)] for _ in t_eval]
 for i in range(sol.y.shape[1]):
     Pref = sol.y[:, i].reshape((n1, n2))
-    P_marginal[0][:, i] = np.sum(Pref, axis=1)
-    P_marginal[1][:, i] = np.sum(Pref, axis=0)
+    P_marginal[i][0] = np.sum(Pref, axis=1)
+    P_marginal[i][1] = np.sum(Pref, axis=0)
 
 # Calculate sliced distributions
-P_sliced = [np.zeros((n_el, t_eval.size), dtype="float64") for n_el in (n1, n2)]
+P_sliced = [[np.zeros(n_el) for n_el in (n1, n2)] for _ in t_eval]
 for i in range(sol.y.shape[1]):
     Pref = sol.y[:, i].reshape((n1, n2))
-    P_sliced[0][:, i] = Pref[:, 0]
-    P_sliced[1][:, i] = Pref[0, :]
+    P_sliced[i][0] = Pref[:, 0]
+    P_sliced[i][1] = Pref[0, :]
 
 # Calculate best approximation
 P_best_approximation = np.zeros((t_eval.size, n1, n2))
@@ -81,7 +82,7 @@ for i in range(t_eval.size):
     X2h = vh[:r, :]
     P_best_approximation[i, :, :] = (X1 * S) @ X2h
 
-with open("scripts/reference_solutions/ts_ode_result.npy", "wb") as f:
+with open("scripts/reference_solutions/ts_ode_ref.npy", "wb") as f:
     np.save(f, P_full)
     np.save(f, P_marginal)
     np.save(f, P_sliced)
