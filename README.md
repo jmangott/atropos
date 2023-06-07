@@ -115,6 +115,7 @@ In order to generate reference solutions for the example problems, the PySB pack
 ```shell
 conda install -c alubbock pysb
 ```
+All scripts and notebooks have to be executed from the project root. When using a IDE, make sure to adjust the settings accordingly. In Microsoft Visual Studio Code one has to set "Notebook File Root" to `{workspaceFolder}` to run the notebooks.
 
 ## Input
 `kinetic-cme` reads the parameters from `parameters.hpp` (located in `include/`) and the initial condition for the low-rank factors and the coupling coefficients from `input.nc` (located in `input/`).
@@ -180,15 +181,15 @@ mysys(vector<string> species_names)
 ```
 where `species_names` constains the names of all species in the system.
 
-Note that when writing the model file and implementing the propensity functions one has to keep in mind the following partition convention of `kinetic-cme`, i.e. species with indices from `0` to `kM1`-1 belong to partition 1, the remainders to partition 2.
+Note that when writing the model file and implementing the propensity functions one has to keep in mind the following partition convention of `kinetic-cme`, i.e. species with indices from `0` to `kM1`-1 belong to partition 1, species with indices from `kM1` to `kM1`+`kM2`-1 to partition 2.
 
 It is recommended to use the exisiting model files for the example problems as a template for your own model.
 
 ### Preparing input data
 A template Python script called `set_input_template.py` is provided in `scripts/input` in order to facilitate the generation of the parameters (`parameters.hpp`) and the inital condition (`input.nc`). Code marked with `TODO` has to be modified according to the specific needs.
 There are currently two different methods for generating the initial condition implemented:
-1. `SetInputKD`: $`P(t=0,\,x) = \delta_{x,x_0}`$, where $` x_0`$ has to be specified. In this implementation the low-rank structure is exploited.
-2. `SetInputGeneral`: $P(t=0,\,x) = P_0(x)$, where $`P_0(x)`$ has to be specified. In this implementation no low-rank structure is exploited, therefore it should be used only for small problems.
+1. `SetInputKD`: $`P(t=0,\,x) = \delta_{x,x_0}`$, where $`x_0`$ has to be specified. In this implementation the low-rank structure is exploited.
+2. `SetInputGeneral`: $`P(t=0,\,x) = P_0(x)`$, where $`P_0(x)`$ has to be specified. In this implementation no low-rank structure is exploited, therefore it should be used only for small problems.
 
 ## Output
 `kinetic-cme` automatically creates a folder in `output/` named `kFilename`, which is set in the `parameter.hpp` file.
@@ -233,4 +234,5 @@ cmake --build build
 
 ## References
 [^fn1]: Lubich. C., Oseledets, I.: "A projector-splitting integrator for dynamical low-rank approximation", BIT Numerical Mathematics **54** (2014)
+
 [^fn2]: Cassini, F., Einkemmer, L.: "Efficient 6D Vlasov simulation using the dynamical low-rank framework Ensign", Computer Physics Communications **280** (2022)
