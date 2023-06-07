@@ -1,5 +1,4 @@
 import numpy as np
-# import pysb_model_ts as pysb_model
 import pysb_model_lp as pysb_model
 # import pysb_model_bax_seq as pysb_model
 from pysb.simulator import StochKitSimulator
@@ -8,8 +7,8 @@ from scripts.index_functions import VecIndexToCombIndex
 
 n_time = 100 + 1
 n_runs = 100000
-tspan = np.linspace(0.0, 100.0, n_time)
-fname = "bax_stochkit_result"
+tspan = np.linspace(0.0, 10.0, n_time)
+fname = "lp_ssa_ref"
 
 d = len(pysb_model.model.observables)
 slice_vec = [int(pysb_model.model.initials[i].value.value) for i in range(d)]
@@ -30,17 +29,16 @@ for i_runs in range(n_runs):
 # Calculate lower and upper population bounds
 n_max = np.zeros(d, dtype="int64")
 n_min = np.zeros(d, dtype="int64")
-n = np.zeros(d, dtype="int64")
 for i in range(d):
     n_max[i] = np.amax(result[:, :, i])
     n_min[i] = np.amin(result[:, :, i])
 n = n_max - n_min + 1
 dx_tot = np.prod(n[0:2])
 
-P_marginal = [np.zeros((n_el, n_time), dtype="float64") for n_el in n]
-P_marginal2D = [np.zeros(dx_tot, dtype="float64") for t in range(n_time)]
-P_marginal2D_mat = [np.zeros((n[0], n[1]), dtype="float64") for t in range(n_time)]
-P_sliced = [np.zeros((n_el, n_time), dtype="float64") for n_el in n]
+P_marginal = [[np.zeros(n_el, dtype="float64") for n_el in n] for _ in range(n_time)]
+P_marginal2D = [np.zeros(dx_tot, dtype="float64") for _ in range(n_time)]
+P_marginal2D_mat = [np.zeros((n[0], n[1]), dtype="float64") for _ in range(n_time)]
+P_sliced = [[np.zeros(n_el, dtype="float64") for n_el in n] for _ in range(n_time)]
 
 # Calculate marginal probability distributions
 for k in range(d):
@@ -88,7 +86,7 @@ for i in range(d):
 with open("scripts/reference_solutions/" + fname + ".npy", "wb") as f:
     np.save(f, P_marginal)
     np.save(f, P_sliced)
-    # np.save(f, P_marginal2D_mat)
+    np.save(f, P_marginal2D_mat)
     np.save(f, n)
     np.save(f, n_min)
     np.save(f, n_max)
