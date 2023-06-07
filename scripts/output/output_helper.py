@@ -1,18 +1,22 @@
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
+import os
+
+if not os.path.exists("plots"):
+    os.makedirs("plots")
 
 from scripts.index_functions import IncrVecIndex, VecIndexToCombIndex
 
 # Update Matplotlib settings
 plt.rcParams.update({
-    # `False` uses matplotlib’s built-in LaTeX engine
-    "text.usetex": False,
+    "text.usetex": True,
     "figure.figsize": (10, 5),
     "scatter.marker": "2",
     "lines.marker": "2",
     "lines.linestyle": "none",
 })
+
 
 class grid_info:
     """Class for storing DLR parameters."""
@@ -30,6 +34,7 @@ class grid_info:
         self.liml = ds["liml"][:]
         self.t = ds["t"][0]
         self.dt = ds["dt"][0]
+
 
 def marginalDistributions(ds: nc._netCDF4.Dataset, grid: grid_info) -> list[np.ndarray]:
     """Calculates marginal distributions."""
@@ -152,3 +157,22 @@ def plotP2D(P: np.ndarray, P_ref: np.ndarray, mesh: tuple, mesh_ref: tuple, titl
     ax[0].set_title(title[0])
     ax[1].set_title(title[1])
     return fig, ax
+
+
+def plotP1D(ax, P: np.ndarray, P_ref: np.ndarray, mesh: tuple, mesh_ref: tuple, label: list, **kwargs) -> tuple[plt.Figure, np.ndarray]:
+    plt.setp(ax, **kwargs)
+    ax.plot(mesh, P, 'ro', label=label[0])
+    ax.plot(mesh_ref, P_ref, 'bx', label=label[1])
+    return ax
+
+
+def plotP1Dmult(axs, P: np.ndarray, P_ref: np.ndarray, grid: any, grid_ref: any, label: list) -> tuple[plt.Figure, np.ndarray]:
+    for i, ax in enumerate(axs.flatten()):
+        if i < grid.n.size and P_ref.size:
+            xlabel = "$x_{{" + str(i + 1) + "}}$"
+            ylabel = "$P_{{\mathrm{{MD}}}}(x_" + str(i) + ")$"
+            mesh = grid.bin[i] * range(grid.n[i]) + grid.liml[i]
+            mesh_ref = range(grid_ref[i])
+            plotP1D(ax, P[i], P_ref[i], mesh, mesh_ref, label, xlabel=xlabel, ylabel=ylabel)
+    axs.flat[0].legend()
+    return axs
