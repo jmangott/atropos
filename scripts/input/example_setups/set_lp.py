@@ -1,16 +1,11 @@
 """
 Script for setting parameters (`parameters.hpp`) and initial conditions (`input.nc`) 
 for the lambda phage model with initial conditions of Kronecker delta form.
-Call in `input` folder with: `python3 example_setups/set_lp_kd.py --flags`
+Call in project root with: `python3 scripts/input/example_setups/set_lp_kd.py --flags`
 """
 
-import numpy as np
-import sys
-
-sys.path.append('../input')
-
-from input_helper import *
-from parameters_helper import ParametersParser
+from scripts.input.input_helper import *
+from scripts.input.parameters_helper import ParametersParser
 
 parser = ParametersParser(
     description="Configure parameters."

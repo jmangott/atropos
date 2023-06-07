@@ -1,16 +1,11 @@
 """
 Script for setting parameters (`parameters.hpp`) and initial conditions (`input.nc`) 
-for the bax sequential model.
-Call in `input` folder with: `python3 example_setups/set_bax_seq.py --flags`
+for the BAX pore assembly model.
+Call in project root with: `python3 scripts/input/example_setups/set_bax.py --flags`
 """
 
-import numpy as np
-import sys
-
-sys.path.append('../input')
-
-from input_helper import *
-from parameters_helper import ParametersParser
+from scripts.input.input_helper import *
+from scripts.input.parameters_helper import ParametersParser
 
 parser = ParametersParser(
     description="Configure parameters."
