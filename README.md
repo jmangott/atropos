@@ -11,7 +11,6 @@
     - [Integrators](#integrators)
       - [First-order method](#first-order-method)
       - [Second-order method](#second-order-method)
-    - [Binning](#binning)
     - [Writing a model file](#writing-a-model-file)
     - [Preparing input data](#preparing-input-data)
   - [Output](#output)
@@ -34,7 +33,7 @@ P \approx \sum_{i,j=1}^r X_i^1(t,\,x_{(1)})\,S_{ij}(t)\,X_i^2(t,\,x_{(2)})
 ```
 with rank $`r`$, low-rank factors $`X_i^1(t,\,x_{(1)})`$ and $`X_i^2(t,\,x_{(2)})`$ and coupling coefficients $`S_{ij}(t)`$. The rank is usually a small number.
 
-It `kinetic-cme` makes use of the low-rank framework `Ensign`.[^fn2]
+`kinetic-cme` makes use of the low-rank framework `Ensign`.[^fn2]
 
 ## Requirements
 - CMake (3.22.1 or later)
@@ -165,8 +164,7 @@ When setting `kSecondOrder = false`, Lie-Trotter splitting and an explicit Euler
 #### Second-order method
 When setting `kSecondOrder = true`, Strang splitting and an explicit Euler method with substeps will be used for integration. `kNSubsteps` determines the number of substeps.
 
-### Binning
-Tbd
+<!-- TODO: ### Binning -->
 
 ### Writing a model file
 The model file contains all reactions $`R_\mu`$ ($`\mu=1,\dots,M`$) of the specific problem and has to be stored as a `.hpp` file in `include/models` in order to work with the input scripts. Reactions are passed to the instance `mysystem` of the  `mysys` class by constructing an instance of the `myreact` class with
@@ -184,6 +182,8 @@ where `species_names` constains the names of all species in the system.
 Note that when writing the model file and implementing the propensity functions one has to keep in mind the following partition convention of `kinetic-cme`, i.e. species with indices from `0` to `kM1`-1 belong to partition 1, species with indices from `kM1` to `kM1`+`kM2`-1 to partition 2.
 
 It is recommended to use the exisiting model files for the example problems as a template for your own model.
+
+`kinetic-cme` has to be recompiled if the model file is changed.
 
 ### Preparing input data
 A template Python script called `set_input_template.py` is provided in `scripts/input` in order to facilitate the generation of the parameters (`parameters.hpp`) and the inital condition (`input.nc`). Code marked with `TODO` has to be modified according to the specific needs.
