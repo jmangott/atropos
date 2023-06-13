@@ -1,3 +1,4 @@
+# TODO: add descriptions, generalize `marginalDistribution2D`
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
@@ -153,7 +154,7 @@ def plotP2D(P: np.ndarray, P_ref: np.ndarray, mesh: tuple, mesh_ref: tuple, titl
     levels = np.linspace(np.amin([np.amin(P), np.amin(P_ref)]), np.amax(
         [np.amax(P), np.amax(P_ref)]), 9)
     c1 = ax[0].contour(mesh[0], mesh[1], P, levels=levels)
-    ax[1].contour(mesh_ref[0], mesh[1], P_ref, levels=levels)
+    ax[1].contour(mesh_ref[0], mesh_ref[1], P_ref, levels=levels)
     ax[0].set_title(title[0])
     ax[1].set_title(title[1])
     return fig, ax
@@ -166,13 +167,13 @@ def plotP1D(ax, P: np.ndarray, P_ref: np.ndarray, mesh: tuple, mesh_ref: tuple, 
     return ax
 
 
-def plotP1Dmult(axs, P: np.ndarray, P_ref: np.ndarray, grid: any, grid_ref: any, label: list) -> tuple[plt.Figure, np.ndarray]:
+def plotP1Dmult(axs, P: np.ndarray, P_ref: np.ndarray, grid: any, mesh_ref: any, label: list, idx: list) -> tuple[plt.Figure, np.ndarray]:
     for i, ax in enumerate(axs.flatten()):
         if i < grid.n.size and P_ref.size:
-            xlabel = "$x_{{" + str(i + 1) + "}}$"
-            ylabel = "$P_{{\mathrm{{MD}}}}(x_" + str(i) + ")$"
-            mesh = grid.bin[i] * range(grid.n[i]) + grid.liml[i]
-            mesh_ref = range(grid_ref[i])
-            plotP1D(ax, P[i], P_ref[i], mesh, mesh_ref, label, xlabel=xlabel, ylabel=ylabel)
+            j = idx[i]
+            xlabel = "$x_{{" + str(j + 1) + "}}$"
+            ylabel = "$P_{{\mathrm{{MD}}}}(x_" + str(j + 1) + ")$"
+            mesh = grid.bin[j] * range(grid.n[j]) + grid.liml[j]
+            plotP1D(ax, P[j], P_ref[j], mesh, mesh_ref[j], label, xlabel=xlabel, ylabel=ylabel)
     axs.flat[0].legend()
     return axs
