@@ -1,5 +1,6 @@
 import netCDF4 as nc
 import numpy as np
+import os
 
 from scripts.index_functions import CombIndexToState
 
@@ -30,6 +31,9 @@ def WriteNC(x1: np.ndarray, x2: np.ndarray, s: np.ndarray) -> None:
     NOTE: `x1` and `x2` have to be transposed (i.e. shape=(r, dx1/2)),
     as Ensign works with column-major order arrays.
     """
+
+    if not os.path.exists("input"):
+        os.makedirs("input")
 
     ds = nc.Dataset("input/input.nc", mode="w", format="NETCDF4")
     ds.createDimension("r", np.shape(s)[0])
