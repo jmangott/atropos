@@ -26,14 +26,14 @@ r = params.kR = 4
 m1 = params.kM1 = 2
 m2 = params.kM2 = 3
 n1 = params.kN1 = (16, 41)
-n2 = params.kN2 = (6, 11, 21)
+n2 = params.kN2 = (11, 11, 11)
 bin1 = params.kBinsize1 = (1, 1)
 bin2 = params.kBinsize2 = (1, 1, 1)
-liml1 = params.kLiml1 = (0, 70)
+liml1 = params.kLiml1 = (0, 0)
 liml2 = params.kLiml2 = (0, 0, 0)
 
-x10 = (0, 85)
-x20 = (0, 5, 10)
+x10 = (0, 0)
+x20 = (0, 0, 0)
 
 # Change `parameters.hpp`
 params.configure()

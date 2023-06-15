@@ -1,3 +1,4 @@
+# TODO: write description
 import matplotlib.pyplot as plt
 import numpy as np
 from pysb import *
@@ -59,10 +60,10 @@ Rule('rule9', S4() >> None, alpha9)
 Rule('rule10', S5() >> None, alpha10)
 
 Parameter('x1_0', 0.0)
-Parameter('x2_0', 85.0)
+Parameter('x2_0', 0.0)
 Parameter('x3_0', 0.0)
-Parameter('x4_0', 5.0)
-Parameter('x5_0', 10.0)
+Parameter('x4_0', 0.0)
+Parameter('x5_0', 0.0)
 
 Initial(S1(), x1_0)
 Initial(S2(), x2_0)
