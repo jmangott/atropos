@@ -58,7 +58,7 @@ git clone https://git.uibk.ac.at/c7021158/kinetic-cme
 and build the program by executing
 ```shell
 cd kinetic-cme
-cmake -B build -DCMAKE_BUILD_TYPE=Release ..
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
@@ -73,7 +73,7 @@ ctest --test-dir build
 If you prefer to use Intel MKL as the BLAS and LAPACK backend instead of OpenBLAS set 
 ```shell
 export MKLROOT=/path/to/intel/mkl
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DMKL_ENABLED=ON ..
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DMKL_ENABLED=ON
 cmake --build build
 ```
 and make sure to add the MKL libraries to your `LD_LIBRARY_PATH`, i.e.
@@ -85,7 +85,7 @@ before running the executable.
 ### OpenMP
 OpenMP can be activated via
 ```shell
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DOPENMP=ON ..
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DOPENMP=ON
 ```
 Make sure that the `OMP_NUM_THREADS` environment variable is in accordance with your hardware specification and run the unit tests folder via 
 ```shell
@@ -221,10 +221,13 @@ Before executing the notebooks, one has to generate the output files with `kinet
 For toggle switch:
 ```shell
 python3 scripts/reference_solutions/ode_ts.py
-python3 scripts/input/example_setups/set_ts.py --tstar 500 --tau 0.01 --snapshot 100 --fname ts
+python3 scripts/input/example_setups/set_ts.py --tstar 500 --tau 0.01 --so --substeps 10 --snapshot 100 --fname ts
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DOPENMP=OFF
 cmake --build build
 ./bin/kinetic-cme
 ```
+Note that it is more efficient to disable OpenMP for this small problem, as the time for calculating a single step is of the same magnitude as the overhead for calling OpenMP.
+
 For lambda phage:
 ```shell
 python3 scripts/reference_solutions/pysb_stochkit.py
