@@ -1,4 +1,6 @@
 # TODO: add descriptions, generalize `marginalDistribution2D`
+import matplotlib as mpl
+mpl.use('pgf')
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
@@ -11,8 +13,11 @@ from scripts.index_functions import IncrVecIndex, VecIndexToCombIndex
 
 # Update Matplotlib settings
 plt.rcParams.update({
-    "text.usetex": True,
-    "figure.figsize": (10, 5),
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+    "figure.figsize": (6, 4),
     "scatter.marker": "2",
     "lines.marker": "2",
     "lines.linestyle": "none",
@@ -167,13 +172,18 @@ def plotP1D(ax, P: np.ndarray, P_ref: np.ndarray, mesh: tuple, mesh_ref: tuple, 
     return ax
 
 
-def plotP1Dmult(axs, P: np.ndarray, P_ref: np.ndarray, grid: any, mesh_ref: any, label: list, idx: list) -> tuple[plt.Figure, np.ndarray]:
+def plotP1Dmult(axs, P: np.ndarray, P_ref: np.ndarray, grid: any, mesh_ref: any, label: list, idx: list, Plabel: str) -> tuple[plt.Figure, np.ndarray]:
     for i, ax in enumerate(axs.flatten()):
-        if i < grid.n.size and P_ref.size:
+        if i < len(idx):
             j = idx[i]
             xlabel = "$x_{{" + str(j + 1) + "}}$"
-            ylabel = "$P_{{\mathrm{{MD}}}}(x_" + str(j + 1) + ")$"
+            ylabel = "$P_{{\mathrm{{" + Plabel + "}}}}(x_{{" + str(j + 1) + "}})$"
             mesh = grid.bin[j] * range(grid.n[j]) + grid.liml[j]
+            # min_ref = np.min(mesh_ref[j])
+            # max_ref = np.max(mesh_ref[j])
+            # left_common_point = mesh
+            # right_common_point = 1
+            # max_error = np.max(np.abs(P[j]) - np.abs(P_ref[j]))
             plotP1D(ax, P[j], P_ref[j], mesh, mesh_ref[j], label, xlabel=xlabel, ylabel=ylabel)
-    axs.flat[0].legend()
+            # ax.annotate("max. difference = " + str(max_error), xy=(1, 2))
     return axs
