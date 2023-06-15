@@ -74,7 +74,7 @@ int main()
     Index n_basisfunctions;
 
     // Read initial values and store them in `xx1` and `xx2`
-    ReadNC("../input/input.nc", xx1, xx2, ss, n_basisfunctions);
+    ReadNC("input/input.nc", xx1, xx2, ss, n_basisfunctions);
 
     // Objects for setting up X1 and X2 for t = 0
     double *it1 = xx1.begin();
@@ -105,7 +105,7 @@ int main()
     // TODO: this lines are actually superfluous, provided Ensign works correctly
     if (n_basisfunctions == kR)
     {
-        ReadNC("../input/input.nc", xx1, xx2, ss, n_basisfunctions);
+        ReadNC("input/input.nc", xx1, xx2, ss, n_basisfunctions);
         lr_sol.S = ss;
     }
 
@@ -114,12 +114,12 @@ int main()
 
     // Check if folder in ../output/ exists, otherwise create folder
     std::stringstream fname;
-    fname << "../output/" << kFilename;
+    fname << "output/" << kFilename;
     std::filesystem::create_directory(fname.str());
 
     // Store initial values
     fname.str("");
-    fname << "../output/" << kFilename << "/output_t0.nc";
+    fname << "output/" << kFilename << "/output_t0.nc";
     double t = 0.0;
     WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
 
@@ -154,17 +154,17 @@ int main()
         if ((ts + 1) % kSnapshot == 0 || (ts + 1) == kNsteps)
         {
             fname.str("");
-            fname << "../output/" << kFilename << "/output_t" << ts + 1 << ".nc";
+            fname << "output/" << kFilename << "/output_t" << ts + 1 << ".nc";
             WriteNC(fname.str(), lr_sol, mysystem.species_names, grid, &t, &kTau);
         }
         // get_time::stop("main");
+    }
         cout << endl << endl; 
         cout << "TIMER RESULTS" << endl;
         cout << "-------------" << endl;
         cout << get_time::sorted_output();
-        get_time::reset();
-        cout << endl;
-    }
+        // get_time::reset();
+        // cout << endl;
 
     return 0;
 }
