@@ -1,3 +1,4 @@
+# TODO: generate parameters.hpp from scratch
 """Helper module for configuring parameters. Adapted from Kayran Schmidt."""
 from __future__ import annotations
 
@@ -257,9 +258,10 @@ class ParametersParser(argparse.ArgumentParser):
         self.add_argument(
             '--substeps',
             type=int,
+            default=1,
             metavar="kNSubsteps",
             dest="kNSubsteps",
-            help="Number of substeps for second order method."
+            help="Number of substeps for second order method (default value 1)."
         )
 
     def add_filename(self):
