@@ -1,6 +1,7 @@
+# TODO: write description, use argparser and refactor post-processing code in a separate file
 import numpy as np
 import pysb_model_lp as pysb_model
-# import pysb_model_bax_seq as pysb_model
+# import pysb_model_bax as pysb_model
 from pysb.simulator import StochKitSimulator
 import time
 from scripts.index_functions import VecIndexToCombIndex
@@ -35,23 +36,23 @@ for i in range(d):
 n = n_max - n_min + 1
 dx_tot = np.prod(n[0:2])
 
-P_marginal = [[np.zeros(n_el, dtype="float64") for n_el in n] for _ in range(n_time)]
+P_marginal = [[np.zeros(n_el) for n_el in n] for _ in range(n_time)]
 P_marginal2D = [np.zeros(dx_tot, dtype="float64") for _ in range(n_time)]
 P_marginal2D_mat = [np.zeros((n[0], n[1]), dtype="float64") for _ in range(n_time)]
-P_sliced = [[np.zeros(n_el, dtype="float64") for n_el in n] for _ in range(n_time)]
+P_sliced = [[np.zeros(n_el) for n_el in n] for _ in range(n_time)]
 
 # Calculate marginal probability distributions
-for k in range(d):
-    for j in range(n_time):
+for j in range(n_time):
+    for k in range(d):
         lin_dset = np.zeros((n_runs), dtype="int64")
         for i in range(n_runs):
             lin_dset[i] = result[i, j, k] - n_min[k]
-        P_marginal[k][:, j] = np.bincount(lin_dset, minlength=n[k])
+        P_marginal[j][k] = np.bincount(lin_dset, minlength=n[k], weights=np.ones(n_runs, dtype="float64"))
 
 # Normalize P_marginal for all sampling times
-for i in range(d):
-    for j in range(n_time):
-        P_marginal[i][:, j] /= np.sum(P_marginal[i][:, j])
+for j in range(n_time):
+    for i in range(d):
+        P_marginal[j][i] /= np.sum(P_marginal[j][i])
 
 for j in range(n_time):
     # Linearize the population numbers (i.e. a unique number is assigned to every configuration),
@@ -64,7 +65,7 @@ for j in range(n_time):
 # Normalize P for all sampling times
 for i in range(n_time):
     P_marginal2D[i] /= np.sum(P_marginal2D[i])
-    P_marginal2D_mat[i] = np.reshape(P_marginal2D[i], n[0:2], order='F').T
+    P_marginal2D_mat[i] = np.reshape(P_marginal2D[i], n[0:2], order='F')
 
 # Calculate sliced probability distributions
 for j in range(n_time):
@@ -76,11 +77,12 @@ for j in range(n_time):
         for l in range(n[k]):
             comp_vec[k] = l
             comp_index = VecIndexToCombIndex(comp_vec, n)
-            P_sliced[k][l, j] = np.sum(np.equal(lin_dset, comp_index))
+            P_sliced[j][k][l] = np.sum(np.equal(lin_dset, comp_index), dtype="float64")
 
 # Normalize P_sliced
-for i in range(d):
-    P_sliced[i] /= n_runs
+for j in range(n_time):
+    for i in range(d):
+        P_sliced[j][i] /= n_runs
 
 # Save result
 with open("scripts/reference_solutions/" + fname + ".npy", "wb") as f:
