@@ -20,18 +20,18 @@
 ## Objective
 `kinetic-cme` solves the chemical master equation (CME),
 ```math
-\partial_t{P}(t,\,x) = \sum_{\mu = 1}^{M}\left(a_\mu(x-\nu_\mu)\,P(t,\,x-\nu_\mu) - a_\mu(x)\,P(t,\,x)\right)
+\partial_t{P}(t,x) = \sum_{\mu = 1}^{M}\left(a_\mu(x-\nu_\mu)\,P(t,x-\nu_\mu) - a_\mu(x)\,P(t,x)\right)
 ```
 with the projector-splitting based dynamical low-rank (DLR) approximation.[^fn1]
 
-$`P(t,\,x)\,\mathrm{d}t`$ is the probability of finding a population number of $`x = (x_1, \dots, x_N)`$ molecules of species $`S_1, \dots, S_N`$ in the time interval $`[t, t + \mathrm{d}t]`$.
-The CME describes the time evolution of this probability distribution $`P(t,\,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x)`$ can be interpreted as transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
+$`P(t,\,x)\,\mathrm{d}t`$ is the probability of finding a population number of $`x = (x_1, \dots, x_N)`$ molecules of species $`S_1, \dots, S_N`$ in the time interval $`[t,\,t + \mathrm{d}t]`$.
+The CME describes the time evolution of this probability distribution $`P(t,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x)`$ can be interpreted as transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
 
 In our DLR approach, the reaction network has to be separated into two parts, such that $`x=(x_{(1)},\,x_{(2)})`$. The probability distribution is then approximated by
 ```math
-P \approx \sum_{i,j=1}^r X_i^1(t,\,x_{(1)})\,S_{ij}(t)\,X_i^2(t,\,x_{(2)})
+P(t,x) \approx \sum_{i,j=1}^r X_i^1(t,x_{(1)})\,S_{ij}(t)\,X_i^2(t,x_{(2)})
 ```
-with rank $`r`$, low-rank factors $`X_i^1(t,\,x_{(1)})`$ and $`X_i^2(t,\,x_{(2)})`$ and coupling coefficients $`S_{ij}(t)`$. The rank is usually a small number.
+with rank $`r`$, low-rank factors $`X_i^1(t,x_{(1)})`$ and $`X_i^2(t,x_{(2)})`$ and coupling coefficients $`S_{ij}(t)`$. The rank is usually a small number.
 
 `kinetic-cme` makes use of the low-rank framework `Ensign`.[^fn2]
 
