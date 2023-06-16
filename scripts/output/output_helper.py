@@ -21,6 +21,7 @@ plt.rcParams.update({
     "scatter.marker": "2",
     "lines.marker": "2",
     "lines.linestyle": "none",
+    "axes.titlesize": "medium" 
 })
 
 
@@ -153,22 +154,22 @@ def marginalDistribution2D(ds: nc._netCDF4.Dataset, grid: grid_info) -> np.ndarr
     return Pmat
 
 
-def plotP2D(P: np.ndarray, P_ref: np.ndarray, mesh: tuple, mesh_ref: tuple, title: list[str]) -> tuple[plt.Figure, np.ndarray]:
+def plotP2D(P: np.ndarray, P_ref: np.ndarray, mesh: tuple, title: list[str]) -> tuple[plt.Figure, np.ndarray]:
     fig, ax = plt.subplots(1, 2)
     plt.setp(ax.flat, xlabel='$x_1$', ylabel='$x_2$')
     levels = np.linspace(np.amin([np.amin(P), np.amin(P_ref)]), np.amax(
         [np.amax(P), np.amax(P_ref)]), 9)
     c1 = ax[0].contour(mesh[0], mesh[1], P, levels=levels)
-    ax[1].contour(mesh_ref[0], mesh_ref[1], P_ref, levels=levels)
+    ax[1].contour(mesh[0], mesh[1], P_ref, levels=levels)
     ax[0].set_title(title[0])
     ax[1].set_title(title[1])
     return fig, ax
 
 
-def plotP1D(ax, P: np.ndarray, P_ref: np.ndarray, mesh: tuple, mesh_ref: tuple, label: list, **kwargs) -> tuple[plt.Figure, np.ndarray]:
+def plotP1D(ax, P: np.ndarray, P_ref: np.ndarray, mesh: tuple, label: list, **kwargs) -> tuple[plt.Figure, np.ndarray]:
     plt.setp(ax, **kwargs)
     ax.plot(mesh, P, 'ro', label=label[0])
-    ax.plot(mesh_ref, P_ref, 'bx', label=label[1])
+    ax.plot(mesh, P_ref, 'bx', label=label[1])
     return ax
 
 
@@ -179,11 +180,21 @@ def plotP1Dmult(axs, P: np.ndarray, P_ref: np.ndarray, grid: any, mesh_ref: any,
             xlabel = "$x_{{" + str(j + 1) + "}}$"
             ylabel = "$P_{{\mathrm{{" + Plabel + "}}}}(x_{{" + str(j + 1) + "}})$"
             mesh = grid.bin[j] * range(grid.n[j]) + grid.liml[j]
-            # min_ref = np.min(mesh_ref[j])
-            # max_ref = np.max(mesh_ref[j])
-            # left_common_point = mesh
-            # right_common_point = 1
-            # max_error = np.max(np.abs(P[j]) - np.abs(P_ref[j]))
-            plotP1D(ax, P[j], P_ref[j], mesh, mesh_ref[j], label, xlabel=xlabel, ylabel=ylabel)
-            # ax.annotate("max. difference = " + str(max_error), xy=(1, 2))
+
+            # extend mesh_ref so that mesh and mesh_ref cover the same interval
+            if mesh[0] < mesh_ref[j][0]:
+                np.insert(mesh_ref[j], 0, mesh[0])
+            if mesh_ref[j][-1] < mesh[-1]:
+                np.append(mesh_ref[j], mesh[-1])
+
+            # extend P_ref so that P and P_ref are evaluated on the same mesh
+            P_ref_inter = np.interp(mesh, mesh_ref[j], P_ref[j])
+
+            plotP1D(ax, P[j], P_ref_inter, mesh, label, xlabel=xlabel, ylabel=ylabel)
+
+            # calculate max. difference and print it in title
+            max_error = np.max(np.abs(P[j]) - np.abs(P_ref_inter))
+            error_str_split = "{:.2e}".format(max_error).split('e')
+            error_str = "{} \\times 10^{{{}}}".format(error_str_split[0], int(error_str_split[1]))
+            ax.set_title("max. difference = ${}$".format(error_str))
     return axs
