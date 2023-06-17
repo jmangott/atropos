@@ -25,7 +25,7 @@
 with the projector-splitting based dynamical low-rank (DLR) approximation.[^fn1]
 
 $`P(t,\,x)\,\mathrm{d}t`$ is the probability of finding a population number of $`x = (x_1, \dots, x_N)`$ molecules of species $`S_1, \dots, S_N`$ in the time interval $`[t,\,t + \mathrm{d}t]`$.
-The CME describes the time evolution of this probability distribution $`P(t,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x)`$ can be interpreted as transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
+The CME describes the time evolution of this probability distribution $`P(t,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x-\nu_\mu)`$ can be interpreted as transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
 
 In our DLR approach, the reaction network has to be separated into two parts, such that $`x=(x_{(1)},\,x_{(2)})`$. The probability distribution is then approximated by
 ```math
@@ -87,7 +87,7 @@ OpenMP can be activated via
 ```shell
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DOPENMP=ON
 ```
-Make sure that the `OMP_NUM_THREADS` environment variable is in accordance with your hardware specification and run the unit tests folder via 
+Make sure that the `OMP_NUM_THREADS` environment variable is in accordance with your hardware specification and run the unit tests via 
 ```shell
 ctest --test-dir build
 ```
