@@ -193,7 +193,7 @@ def plotP1Dmult(axs, P: np.ndarray, P_ref: np.ndarray, grid: any, mesh_ref: any,
             plotP1D(ax, P[j], P_ref_inter, mesh, label, xlabel=xlabel, ylabel=ylabel)
 
             # calculate max. difference and print it in title
-            max_error = np.max(np.abs(P[j]) - np.abs(P_ref_inter))
+            max_error = np.max(np.abs(P[j] - P_ref_inter))
             error_str_split = "{:.2e}".format(max_error).split('e')
             error_str = "{} \\times 10^{{{}}}".format(error_str_split[0], int(error_str_split[1]))
             ax.set_title("max. difference = ${}$".format(error_str))
