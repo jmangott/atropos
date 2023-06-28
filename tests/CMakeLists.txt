@@ -1,6 +1,6 @@
-###################
-# Test for K-Step #
-###################
+####################
+# Set up the tests #
+####################
 
 add_executable(test_index_functions test_index_functions.cpp ${SRC_FILES} ${ENSIGN_FILES})
 add_dependencies(test_index_functions Ensign)

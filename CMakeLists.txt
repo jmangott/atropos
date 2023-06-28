@@ -145,3 +145,9 @@ set(HEADER_FILES ${INC}
 add_subdirectory(${SRC} ${BIN})
 add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
+
+##############################
+# Define the exectuable name #
+##############################
+
+set(EXENAME kinetic-cme)
