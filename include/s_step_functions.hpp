@@ -15,9 +15,9 @@
 #include "timer_class.hpp"
 
 // Calculate the coefficients E and F (depending on `mu`)
-void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<double, 5> &f_coeff_tot, const std::vector<multi_array<double, 3>> &c_coeff_dep, const std::vector<multi_array<double, 3>> &d_coeff_dep, std::vector<Index> sigma1, std::vector<Index> sigma2, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep);
+void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const std::vector<multi_array<double, 3>> &c_coeff_dep, const std::vector<multi_array<double, 3>> &d_coeff_dep, std::vector<Index> sigma1, std::vector<Index> sigma2, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep);
 
 // Perform S-Step with time step size `tau`
-void PerformSStep(multi_array<double, 2> &s_dot, const multi_array<double, 2> &s, const multi_array<double, 5> &e_coeff, const multi_array<double, 5> &f_coeff, std::vector<Index> sigma1, std::vector<Index> sigma2, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep, double tau);
+void PerformSStep(multi_array<double, 2> &s_dot, const multi_array<double, 2> &s, const multi_array<double, 4> &e_coeff, const multi_array<double, 4> &f_coeff, std::vector<Index> sigma1, std::vector<Index> sigma2, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep, double tau);
 
 #endif

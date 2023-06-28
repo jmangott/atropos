@@ -30,183 +30,183 @@ TEST_CASE("s_step", "[s_step]")
 
     // SECTION(CalculateCoefficientsS)
     // {
-        multi_array<double, 5> e_coeff({test_system.mu(), grid.r, grid.r, grid.r, grid.r});
-        multi_array<double, 5> f_coeff({test_system.mu(), grid.r, grid.r, grid.r, grid.r});
+        multi_array<double, 4> e_coeff({grid.r, grid.r, grid.r, grid.r});
+        multi_array<double, 4> f_coeff({grid.r, grid.r, grid.r, grid.r});
 
         CalculateCoefficientsKL<1>(c_coeff1, d_coeff1, sigma2, lr_sol, blas, test_system, grid, partition1, partition2, w_x_dep);
 
         CalculateCoefficientsS(e_coeff, f_coeff, c_coeff1, d_coeff1, sigma1, sigma2, lr_sol, blas, test_system, grid, partition1, partition2, w_x_dep);
 
-        multi_array<double, 5> e_coeff_comparison({test_system.mu(), grid.r, grid.r, grid.r, grid.r});
-        multi_array<double, 5> f_coeff_comparison({test_system.mu(), grid.r, grid.r, grid.r, grid.r});
+        multi_array<double, 4> e_coeff_comparison({grid.r, grid.r, grid.r, grid.r});
+        multi_array<double, 4> f_coeff_comparison({grid.r, grid.r, grid.r, grid.r});
 
         // e_coeff_comparison, mu = 0
-        e_coeff_comparison(0, 0, 0, 0, 0) = 0.5;
-        e_coeff_comparison(0, 0, 0, 1, 0) =-0.5;
-        e_coeff_comparison(0, 1, 0, 0, 0) = 0.5;
-        e_coeff_comparison(0, 1, 0, 1, 0) =-0.5;
+        e_coeff_comparison(0, 0, 0, 0) = 0.5;
+        e_coeff_comparison(0, 0, 1, 0) =-0.5;
+        e_coeff_comparison(1, 0, 0, 0) = 0.5;
+        e_coeff_comparison(1, 0, 1, 0) =-0.5;
 
-        e_coeff_comparison(0, 0, 0, 0, 1) = 0.0;
-        e_coeff_comparison(0, 0, 0, 1, 1) = 0.0;
-        e_coeff_comparison(0, 1, 0, 0, 1) = 0.0;
-        e_coeff_comparison(0, 1, 0, 1, 1) = 0.0;
+        e_coeff_comparison(0, 0, 0, 1) = 0.0;
+        e_coeff_comparison(0, 0, 1, 1) = 0.0;
+        e_coeff_comparison(1, 0, 0, 1) = 0.0;
+        e_coeff_comparison(1, 0, 1, 1) = 0.0;
 
-        e_coeff_comparison(0, 0, 1, 0, 0) = e_coeff_comparison(0, 0, 0, 0, 1);
-        e_coeff_comparison(0, 0, 1, 1, 0) = e_coeff_comparison(0, 0, 0, 1, 1);
-        e_coeff_comparison(0, 1, 1, 0, 0) = e_coeff_comparison(0, 1, 0, 0, 1);
-        e_coeff_comparison(0, 1, 1, 1, 0) = e_coeff_comparison(0, 1, 0, 1, 1);
+        e_coeff_comparison(0, 1, 0, 0) = 0.0;
+        e_coeff_comparison(0, 1, 1, 0) = 0.0;
+        e_coeff_comparison(1, 1, 0, 0) = 0.0;
+        e_coeff_comparison(1, 1, 1, 0) = 0.0;
 
-        e_coeff_comparison(0, 0, 1, 0, 1) = e_coeff_comparison(0, 0, 0, 0, 0);
-        e_coeff_comparison(0, 0, 1, 1, 1) = e_coeff_comparison(0, 0, 0, 1, 0);
-        e_coeff_comparison(0, 1, 1, 0, 1) = e_coeff_comparison(0, 1, 0, 0, 0);
-        e_coeff_comparison(0, 1, 1, 1, 1) = e_coeff_comparison(0, 1, 0, 1, 0);
+        e_coeff_comparison(0, 1, 0, 1) = 0.5;
+        e_coeff_comparison(0, 1, 1, 1) =-0.5;
+        e_coeff_comparison(1, 1, 0, 1) = 0.5;
+        e_coeff_comparison(1, 1, 1, 1) =-0.5;
 
         // f_coeff_comparison, mu = 0
-        f_coeff_comparison(0, 0, 0, 0, 0) = 0.5;
-        f_coeff_comparison(0, 0, 0, 1, 0) =-0.5;
-        f_coeff_comparison(0, 1, 0, 0, 0) =-0.5;
-        f_coeff_comparison(0, 1, 0, 1, 0) = 0.5;
+        f_coeff_comparison(0, 0, 0, 0) = 0.5;
+        f_coeff_comparison(0, 0, 1, 0) =-0.5;
+        f_coeff_comparison(1, 0, 0, 0) =-0.5;
+        f_coeff_comparison(1, 0, 1, 0) = 0.5;
 
-        f_coeff_comparison(0, 0, 0, 0, 1) = 0.0;
-        f_coeff_comparison(0, 0, 0, 1, 1) = 0.0;
-        f_coeff_comparison(0, 1, 0, 0, 1) = 0.0;
-        f_coeff_comparison(0, 1, 0, 1, 1) = 0.0;
+        f_coeff_comparison(0, 0, 0, 1) = 0.0;
+        f_coeff_comparison(0, 0, 1, 1) = 0.0;
+        f_coeff_comparison(1, 0, 0, 1) = 0.0;
+        f_coeff_comparison(1, 0, 1, 1) = 0.0;
 
-        f_coeff_comparison(0, 0, 1, 0, 0) = f_coeff_comparison(0, 0, 0, 0, 1);
-        f_coeff_comparison(0, 0, 1, 1, 0) = f_coeff_comparison(0, 0, 0, 1, 1);
-        f_coeff_comparison(0, 1, 1, 0, 0) = f_coeff_comparison(0, 1, 0, 0, 1);
-        f_coeff_comparison(0, 1, 1, 1, 0) = f_coeff_comparison(0, 1, 0, 1, 1);
+        f_coeff_comparison(0, 1, 0, 0) = 0.0;
+        f_coeff_comparison(0, 1, 1, 0) = 0.0;
+        f_coeff_comparison(1, 1, 0, 0) = 0.0;
+        f_coeff_comparison(1, 1, 1, 0) = 0.0;
 
-        f_coeff_comparison(0, 0, 1, 0, 1) = f_coeff_comparison(0, 0, 0, 0, 0);
-        f_coeff_comparison(0, 0, 1, 1, 1) = f_coeff_comparison(0, 0, 0, 1, 0);
-        f_coeff_comparison(0, 1, 1, 0, 1) = f_coeff_comparison(0, 1, 0, 0, 0);
-        f_coeff_comparison(0, 1, 1, 1, 1) = f_coeff_comparison(0, 1, 0, 1, 0);
+        f_coeff_comparison(0, 1, 0, 1) = 0.5;
+        f_coeff_comparison(0, 1, 1, 1) =-0.5;
+        f_coeff_comparison(1, 1, 0, 1) =-0.5;
+        f_coeff_comparison(1, 1, 1, 1) = 0.5;
 
         // e_coeff_comparison, mu = 1
-        e_coeff_comparison(1, 0, 0, 0, 0) = 0.5;
-        e_coeff_comparison(1, 0, 0, 1, 0) = 0.0;
-        e_coeff_comparison(1, 1, 0, 0, 0) = 0.0;
-        e_coeff_comparison(1, 1, 0, 1, 0) = 0.5;
+        e_coeff_comparison(0, 0, 0, 0) += 0.5;
+        e_coeff_comparison(0, 0, 1, 0) += 0.0;
+        e_coeff_comparison(1, 0, 0, 0) += 0.0;
+        e_coeff_comparison(1, 0, 1, 0) += 0.5;
 
-        e_coeff_comparison(1, 0, 0, 0, 1) = -e_coeff_comparison(1, 0, 0, 0, 0);
-        e_coeff_comparison(1, 0, 0, 1, 1) = -e_coeff_comparison(1, 0, 0, 1, 0);
-        e_coeff_comparison(1, 1, 0, 0, 1) = -e_coeff_comparison(1, 1, 0, 0, 0);
-        e_coeff_comparison(1, 1, 0, 1, 1) = -e_coeff_comparison(1, 1, 0, 1, 0);
+        e_coeff_comparison(0, 0, 0, 1) += -0.5;
+        e_coeff_comparison(0, 0, 1, 1) += -0.0;
+        e_coeff_comparison(1, 0, 0, 1) += -0.0;
+        e_coeff_comparison(1, 0, 1, 1) += -0.5;
 
-        e_coeff_comparison(1, 0, 1, 0, 0) = e_coeff_comparison(1, 0, 0, 0, 0);
-        e_coeff_comparison(1, 0, 1, 1, 0) = e_coeff_comparison(1, 0, 0, 1, 0);
-        e_coeff_comparison(1, 1, 1, 0, 0) = e_coeff_comparison(1, 1, 0, 0, 0);
-        e_coeff_comparison(1, 1, 1, 1, 0) = e_coeff_comparison(1, 1, 0, 1, 0);
+        e_coeff_comparison(0, 1, 0, 0) += 0.5;
+        e_coeff_comparison(0, 1, 1, 0) += 0.0;
+        e_coeff_comparison(1, 1, 0, 0) += 0.0;
+        e_coeff_comparison(1, 1, 1, 0) += 0.5;
 
-        e_coeff_comparison(1, 0, 1, 0, 1) = -e_coeff_comparison(1, 0, 0, 0, 0);
-        e_coeff_comparison(1, 0, 1, 1, 1) = -e_coeff_comparison(1, 0, 0, 1, 0);
-        e_coeff_comparison(1, 1, 1, 0, 1) = -e_coeff_comparison(1, 1, 0, 0, 0);
-        e_coeff_comparison(1, 1, 1, 1, 1) = -e_coeff_comparison(1, 1, 0, 1, 0);
+        e_coeff_comparison(0, 1, 0, 1) += -0.5;
+        e_coeff_comparison(0, 1, 1, 1) += -0.0;
+        e_coeff_comparison(1, 1, 0, 1) += -0.0;
+        e_coeff_comparison(1, 1, 1, 1) += -0.5;
 
         // f_coeff_comparison, mu = 1
-        f_coeff_comparison(1, 0, 0, 0, 0) = 0.5;
-        f_coeff_comparison(1, 0, 0, 1, 0) = 0.0;
-        f_coeff_comparison(1, 1, 0, 0, 0) = 0.0;
-        f_coeff_comparison(1, 1, 0, 1, 0) = 0.5;
+        f_coeff_comparison(0, 0, 0, 0) += 0.5;
+        f_coeff_comparison(0, 0, 1, 0) += 0.0;
+        f_coeff_comparison(1, 0, 0, 0) += 0.0;
+        f_coeff_comparison(1, 0, 1, 0) += 0.5;
 
-        f_coeff_comparison(1, 0, 0, 0, 1) = -f_coeff_comparison(1, 0, 0, 0, 0);
-        f_coeff_comparison(1, 0, 0, 1, 1) = -f_coeff_comparison(1, 0, 0, 1, 0);
-        f_coeff_comparison(1, 1, 0, 0, 1) = -f_coeff_comparison(1, 1, 0, 0, 0);
-        f_coeff_comparison(1, 1, 0, 1, 1) = -f_coeff_comparison(1, 1, 0, 1, 0);
+        f_coeff_comparison(0, 0, 0, 1) += -0.5;
+        f_coeff_comparison(0, 0, 1, 1) += -0.0;
+        f_coeff_comparison(1, 0, 0, 1) += -0.0;
+        f_coeff_comparison(1, 0, 1, 1) += -0.5;
 
-        f_coeff_comparison(1, 0, 1, 0, 0) = -f_coeff_comparison(1, 0, 0, 0, 0);
-        f_coeff_comparison(1, 0, 1, 1, 0) = -f_coeff_comparison(1, 0, 0, 1, 0);
-        f_coeff_comparison(1, 1, 1, 0, 0) = -f_coeff_comparison(1, 1, 0, 0, 0);
-        f_coeff_comparison(1, 1, 1, 1, 0) = -f_coeff_comparison(1, 1, 0, 1, 0);
+        f_coeff_comparison(0, 1, 0, 0) += -0.5;
+        f_coeff_comparison(0, 1, 1, 0) += -0.0;
+        f_coeff_comparison(1, 1, 0, 0) += -0.0;
+        f_coeff_comparison(1, 1, 1, 0) += -0.5;
 
-        f_coeff_comparison(1, 0, 1, 0, 1) = f_coeff_comparison(1, 0, 0, 0, 0);
-        f_coeff_comparison(1, 0, 1, 1, 1) = f_coeff_comparison(1, 0, 0, 1, 0);
-        f_coeff_comparison(1, 1, 1, 0, 1) = f_coeff_comparison(1, 1, 0, 0, 0);
-        f_coeff_comparison(1, 1, 1, 1, 1) = f_coeff_comparison(1, 1, 0, 1, 0);
+        f_coeff_comparison(0, 1, 0, 1) += 0.5;
+        f_coeff_comparison(0, 1, 1, 1) += 0.0;
+        f_coeff_comparison(1, 1, 0, 1) += 0.0;
+        f_coeff_comparison(1, 1, 1, 1) += 0.5;
 
         // e_coeff_comparison, mu = 2
-        e_coeff_comparison(2, 0, 0, 0, 0) = 0.375;
-        e_coeff_comparison(2, 0, 0, 1, 0) = 0.375;
-        e_coeff_comparison(2, 1, 0, 0, 0) =-0.375;
-        e_coeff_comparison(2, 1, 0, 1, 0) =-0.375;
+        e_coeff_comparison(0, 0, 0, 0) += 0.375;
+        e_coeff_comparison(0, 0, 1, 0) += 0.375;
+        e_coeff_comparison(1, 0, 0, 0) +=-0.375;
+        e_coeff_comparison(1, 0, 1, 0) +=-0.375;
 
-        e_coeff_comparison(2, 0, 0, 0, 1) = 0.125;
-        e_coeff_comparison(2, 0, 0, 1, 1) = 0.125;
-        e_coeff_comparison(2, 1, 0, 0, 1) =-0.125;
-        e_coeff_comparison(2, 1, 0, 1, 1) =-0.125;
+        e_coeff_comparison(0, 0, 0, 1) += 0.125;
+        e_coeff_comparison(0, 0, 1, 1) += 0.125;
+        e_coeff_comparison(1, 0, 0, 1) +=-0.125;
+        e_coeff_comparison(1, 0, 1, 1) +=-0.125;
 
-        e_coeff_comparison(2, 0, 1, 0, 0) = e_coeff_comparison(2, 0, 0, 0, 1);
-        e_coeff_comparison(2, 0, 1, 1, 0) = e_coeff_comparison(2, 0, 0, 1, 1);
-        e_coeff_comparison(2, 1, 1, 0, 0) = e_coeff_comparison(2, 1, 0, 0, 1);
-        e_coeff_comparison(2, 1, 1, 1, 0) = e_coeff_comparison(2, 1, 0, 1, 1);
+        e_coeff_comparison(0, 1, 0, 0) += 0.125;
+        e_coeff_comparison(0, 1, 1, 0) += 0.125;
+        e_coeff_comparison(1, 1, 0, 0) +=-0.125;
+        e_coeff_comparison(1, 1, 1, 0) +=-0.125;
 
-        e_coeff_comparison(2, 0, 1, 0, 1) = e_coeff_comparison(2, 0, 0, 0, 0);
-        e_coeff_comparison(2, 0, 1, 1, 1) = e_coeff_comparison(2, 0, 0, 1, 0);
-        e_coeff_comparison(2, 1, 1, 0, 1) = e_coeff_comparison(2, 1, 0, 0, 0);
-        e_coeff_comparison(2, 1, 1, 1, 1) = e_coeff_comparison(2, 1, 0, 1, 0);
+        e_coeff_comparison(0, 1, 0, 1) += 0.375;
+        e_coeff_comparison(0, 1, 1, 1) += 0.375;
+        e_coeff_comparison(1, 1, 0, 1) +=-0.375;
+        e_coeff_comparison(1, 1, 1, 1) +=-0.375;
 
         // f_coeff_comparison, mu = 2
-        f_coeff_comparison(2, 0, 0, 0, 0) = 0.75;
-        f_coeff_comparison(2, 0, 0, 1, 0) = 0.0;
-        f_coeff_comparison(2, 1, 0, 0, 0) = 0.0;
-        f_coeff_comparison(2, 1, 0, 1, 0) = 0.75;
+        f_coeff_comparison(0, 0, 0, 0) += 0.75;
+        f_coeff_comparison(0, 0, 1, 0) += 0.0;
+        f_coeff_comparison(1, 0, 0, 0) += 0.0;
+        f_coeff_comparison(1, 0, 1, 0) += 0.75;
 
-        f_coeff_comparison(2, 0, 0, 0, 1) = 0.25;
-        f_coeff_comparison(2, 0, 0, 1, 1) = 0.0;
-        f_coeff_comparison(2, 1, 0, 0, 1) = 0.0;
-        f_coeff_comparison(2, 1, 0, 1, 1) = 0.25;
+        f_coeff_comparison(0, 0, 0, 1) += 0.25;
+        f_coeff_comparison(0, 0, 1, 1) += 0.0;
+        f_coeff_comparison(1, 0, 0, 1) += 0.0;
+        f_coeff_comparison(1, 0, 1, 1) += 0.25;
 
-        f_coeff_comparison(2, 0, 1, 0, 0) = f_coeff_comparison(2, 0, 0, 0, 1);
-        f_coeff_comparison(2, 0, 1, 1, 0) = f_coeff_comparison(2, 0, 0, 1, 1);
-        f_coeff_comparison(2, 1, 1, 0, 0) = f_coeff_comparison(2, 1, 0, 0, 1);
-        f_coeff_comparison(2, 1, 1, 1, 0) = f_coeff_comparison(2, 1, 0, 1, 1);
+        f_coeff_comparison(0, 1, 0, 0) += 0.25;
+        f_coeff_comparison(0, 1, 1, 0) += 0.0;
+        f_coeff_comparison(1, 1, 0, 0) += 0.0;
+        f_coeff_comparison(1, 1, 1, 0) += 0.25;
 
-        f_coeff_comparison(2, 0, 1, 0, 1) = f_coeff_comparison(2, 0, 0, 0, 0);
-        f_coeff_comparison(2, 0, 1, 1, 1) = f_coeff_comparison(2, 0, 0, 1, 0);
-        f_coeff_comparison(2, 1, 1, 0, 1) = f_coeff_comparison(2, 1, 0, 0, 0);
-        f_coeff_comparison(2, 1, 1, 1, 1) = f_coeff_comparison(2, 1, 0, 1, 0);
+        f_coeff_comparison(0, 1, 0, 1) += 0.75;
+        f_coeff_comparison(0, 1, 1, 1) += 0.0;
+        f_coeff_comparison(1, 1, 0, 1) += 0.0;
+        f_coeff_comparison(1, 1, 1, 1) += 0.75;
 
         // e_coeff_comparison, mu = 3
-        e_coeff_comparison(3, 0, 0, 0, 0) = 0.375;
-        e_coeff_comparison(3, 0, 0, 1, 0) = 0.125;
-        e_coeff_comparison(3, 1, 0, 0, 0) = 0.125;
-        e_coeff_comparison(3, 1, 0, 1, 0) = 0.375;
+        e_coeff_comparison(0, 0, 0, 0) += 0.375;
+        e_coeff_comparison(0, 0, 1, 0) += 0.125;
+        e_coeff_comparison(1, 0, 0, 0) += 0.125;
+        e_coeff_comparison(1, 0, 1, 0) += 0.375;
 
-        e_coeff_comparison(3, 0, 0, 0, 1) = e_coeff_comparison(3, 0, 0, 0, 0);
-        e_coeff_comparison(3, 0, 0, 1, 1) = e_coeff_comparison(3, 0, 0, 1, 0);
-        e_coeff_comparison(3, 1, 0, 0, 1) = e_coeff_comparison(3, 1, 0, 0, 0);
-        e_coeff_comparison(3, 1, 0, 1, 1) = e_coeff_comparison(3, 1, 0, 1, 0);
+        e_coeff_comparison(0, 0, 0, 1) += 0.375;
+        e_coeff_comparison(0, 0, 1, 1) += 0.125;
+        e_coeff_comparison(1, 0, 0, 1) += 0.125;
+        e_coeff_comparison(1, 0, 1, 1) += 0.375;
 
-        e_coeff_comparison(3, 0, 1, 0, 1) = -e_coeff_comparison(3, 0, 0, 0, 0);
-        e_coeff_comparison(3, 0, 1, 1, 1) = -e_coeff_comparison(3, 0, 0, 1, 0);
-        e_coeff_comparison(3, 1, 1, 0, 1) = -e_coeff_comparison(3, 1, 0, 0, 0);
-        e_coeff_comparison(3, 1, 1, 1, 1) = -e_coeff_comparison(3, 1, 0, 1, 0);
+        e_coeff_comparison(0, 1, 0, 1) += -0.375;
+        e_coeff_comparison(0, 1, 1, 1) += -0.125;
+        e_coeff_comparison(1, 1, 0, 1) += -0.125;
+        e_coeff_comparison(1, 1, 1, 1) += -0.375;
 
-        e_coeff_comparison(3, 0, 1, 0, 0) = -e_coeff_comparison(3, 0, 0, 0, 0);
-        e_coeff_comparison(3, 0, 1, 1, 0) = -e_coeff_comparison(3, 0, 0, 1, 0);
-        e_coeff_comparison(3, 1, 1, 0, 0) = -e_coeff_comparison(3, 1, 0, 0, 0);
-        e_coeff_comparison(3, 1, 1, 1, 0) = -e_coeff_comparison(3, 1, 0, 1, 0);
+        e_coeff_comparison(0, 1, 0, 0) += -0.375;
+        e_coeff_comparison(0, 1, 1, 0) += -0.125;
+        e_coeff_comparison(1, 1, 0, 0) += -0.125;
+        e_coeff_comparison(1, 1, 1, 0) += -0.375;
 
         // f_coeff_comparison, mu = 3
-        f_coeff_comparison(3, 0, 0, 0, 0) = 0.75;
-        f_coeff_comparison(3, 0, 0, 1, 0) = 0.25;
-        f_coeff_comparison(3, 1, 0, 0, 0) = 0.25;
-        f_coeff_comparison(3, 1, 0, 1, 0) = 0.75;
+        f_coeff_comparison(0, 0, 0, 0) += 0.75;
+        f_coeff_comparison(0, 0, 1, 0) += 0.25;
+        f_coeff_comparison(1, 0, 0, 0) += 0.25;
+        f_coeff_comparison(1, 0, 1, 0) += 0.75;
 
-        f_coeff_comparison(3, 0, 0, 0, 1) = 0.0;
-        f_coeff_comparison(3, 0, 0, 1, 1) = 0.0;
-        f_coeff_comparison(3, 1, 0, 0, 1) = 0.0;
-        f_coeff_comparison(3, 1, 0, 1, 1) = 0.0;
+        f_coeff_comparison(0, 0, 0, 1) += 0.0;
+        f_coeff_comparison(0, 0, 1, 1) += 0.0;
+        f_coeff_comparison(1, 0, 0, 1) += 0.0;
+        f_coeff_comparison(1, 0, 1, 1) += 0.0;
 
-        f_coeff_comparison(3, 0, 1, 0, 0) = f_coeff_comparison(3, 0, 0, 0, 1);
-        f_coeff_comparison(3, 0, 1, 1, 0) = f_coeff_comparison(3, 0, 0, 1, 1);
-        f_coeff_comparison(3, 1, 1, 0, 0) = f_coeff_comparison(3, 1, 0, 0, 1);
-        f_coeff_comparison(3, 1, 1, 1, 0) = f_coeff_comparison(3, 1, 0, 1, 1);
+        f_coeff_comparison(0, 1, 0, 0) += 0.0;
+        f_coeff_comparison(0, 1, 1, 0) += 0.0;
+        f_coeff_comparison(1, 1, 0, 0) += 0.0;
+        f_coeff_comparison(1, 1, 1, 0) += 0.0;
 
-        f_coeff_comparison(3, 0, 1, 0, 1) = f_coeff_comparison(3, 0, 0, 0, 0);
-        f_coeff_comparison(3, 0, 1, 1, 1) = f_coeff_comparison(3, 0, 0, 1, 0);
-        f_coeff_comparison(3, 1, 1, 0, 1) = f_coeff_comparison(3, 1, 0, 0, 0);
-        f_coeff_comparison(3, 1, 1, 1, 1) = f_coeff_comparison(3, 1, 0, 1, 0);
+        f_coeff_comparison(0, 1, 0, 1) += 0.75;
+        f_coeff_comparison(0, 1, 1, 1) += 0.25;
+        f_coeff_comparison(1, 1, 0, 1) += 0.25;
+        f_coeff_comparison(1, 1, 1, 1) += 0.75;
 
         REQUIRE(bool(e_coeff == e_coeff_comparison));
         REQUIRE(bool(f_coeff == f_coeff_comparison));

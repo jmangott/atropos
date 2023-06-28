@@ -2,13 +2,16 @@
 
 using std::vector;
 
-void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<double, 5> &f_coeff_tot, const vector<multi_array<double, 3>> &c_coeff_dep, const vector<multi_array<double, 3>> &d_coeff_dep, vector<Index> sigma1, vector<Index> sigma2, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep)
+void CalculateCoefficientsS(multi_array<double, 4> &e_coeff_tot, multi_array<double, 4> &f_coeff_tot, const vector<multi_array<double, 3>> &c_coeff_dep, const vector<multi_array<double, 3>> &d_coeff_dep, vector<Index> sigma1, vector<Index> sigma2, const lr2<double> &lr_sol, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep)
 {
     multi_array<double, 2> e_coeff({grid.r, grid.r});
     multi_array<double, 2> f_coeff({grid.r, grid.r});
     multi_array<double, 1> w_x1({grid.dx1});
     multi_array<double, 1> w_x1_shift({grid.dx1});
     multi_array<double, 2> xx1_shift(lr_sol.X.shape());
+
+    std::fill(e_coeff_tot.begin(), e_coeff_tot.end(), 0.0);
+    std::fill(f_coeff_tot.begin(), f_coeff_tot.end(), 0.0);
 
     vector<Index> vec_index(grid.m1);
     multi_array<Index, 1> vec_index_start({grid.m1});
@@ -55,8 +58,8 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
                 {
                     for (Index k = 0; k < grid.r; k++)
                     {
-                        e_coeff_tot(mu, i, j, k, l) = e_coeff(i, k);
-                        f_coeff_tot(mu, i, j, k, l) = f_coeff(i, k);
+                        e_coeff_tot(i, j, k, l) += e_coeff(i, k);
+                        f_coeff_tot(i, j, k, l) += f_coeff(i, k);
                     }
                 }
             }
@@ -66,27 +69,24 @@ void CalculateCoefficientsS(multi_array<double, 5> &e_coeff_tot, multi_array<dou
 
 
 // Perform S-Step with time step size `tau`
-void PerformSStep(multi_array<double, 2> &s_dot, const multi_array<double, 2> &s, const multi_array<double, 5> &e_coeff, const multi_array<double, 5> &f_coeff, vector<Index> sigma1, std::vector<Index> sigma2, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep, double tau)
+void PerformSStep(multi_array<double, 2> &s_dot, const multi_array<double, 2> &s, const multi_array<double, 4> &e_coeff, const multi_array<double, 4> &f_coeff, vector<Index> sigma1, std::vector<Index> sigma2, blas_ops blas, mysys reaction_system, grid_info grid, partition_info<1> partition1, partition_info<2> partition2, const vector<multi_array<double, 2>> &w_x_dep, double tau)
 {
     set_zero(s_dot);
 
-    for (Index mu = 0; mu < reaction_system.mu(); mu++)
-    {
 // TODO: This works on the workstation only for OMP_NUM_THREADS=6 (or 5) if collapse(<3). Why!?
 #ifdef __OPENMP__
 #pragma omp parallel for collapse(2)
 #endif
-        for (Index i = 0; i < grid.r; i++)
+    for (Index i = 0; i < grid.r; i++)
+    {
+        for (Index j = 0; j < grid.r; j++)
         {
-            for (Index j = 0; j < grid.r; j++)
+            for (Index k = 0; k < grid.r; k++)
             {
-                for (Index k = 0; k < grid.r; k++)
+                for (Index l = 0; l < grid.r; l++)
                 {
-                    for (Index l = 0; l < grid.r; l++)
-                    {
-                        s_dot(i, j) += tau * s(k, l) * e_coeff(mu, i, j, k, l);
-                        s_dot(i, j) -= tau * s(k, l) * f_coeff(mu, i, j, k, l);
-                    }
+                    s_dot(i, j) += tau * s(k, l) * e_coeff(i, j, k, l);
+                    s_dot(i, j) -= tau * s(k, l) * f_coeff(i, j, k, l);
                 }
             }
         }

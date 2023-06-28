@@ -66,7 +66,7 @@ std::vector<multi_array<double, 2>> w_x_dep(test_system.mu());
 // Coefficients
 vector<multi_array<double, 3>> c_coeff1(test_system.mu()), d_coeff1(test_system.mu());
 vector<multi_array<double, 3>> c_coeff2(test_system.mu()), d_coeff2(test_system.mu());
-multi_array<double, 5> e_coeff({test_system.mu(), grid.r, grid.r, grid.r, grid.r}), f_coeff({test_system.mu(), grid.r, grid.r, grid.r, grid.r});
+multi_array<double, 4> e_coeff({grid.r, grid.r, grid.r, grid.r}), f_coeff({grid.r, grid.r, grid.r, grid.r});
 
 // Perform partition of the network
 partition_info<1> partition1(grid, test_system);

@@ -51,7 +51,7 @@ int main()
     // Coefficients
     vector<multi_array<double, 3>> c_coeff1(mysystem.mu()), d_coeff1(mysystem.mu());
     vector<multi_array<double, 3>> c_coeff2(mysystem.mu()), d_coeff2(mysystem.mu());
-    multi_array<double, 5> e_coeff({mysystem.mu(), grid.r, grid.r, grid.r, grid.r}), f_coeff({mysystem.mu(), grid.r, grid.r, grid.r, grid.r});
+    multi_array<double, 4> e_coeff({grid.r, grid.r, grid.r, grid.r}), f_coeff({grid.r, grid.r, grid.r, grid.r});
 
     // Allocate memory
     for (Index mu = 0; mu < mysystem.mu(); mu++)
