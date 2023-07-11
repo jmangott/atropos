@@ -16,6 +16,7 @@ def CalculateShift(nu: np.ndarray, interval: np.ndarray) -> float:
         stride *= interval[i]
     return shift
 
+
 @njit
 def ShiftArray(input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray) -> np.ndarray:
     """Calculate the shifted probability distribution in the CME for a given stoichiometric vector `nu`."""
@@ -38,6 +39,7 @@ def ShiftArray(input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray) ->
         IncrVecIndex(vec_index, interval, m)
     return output_array
 
+
 @njit
 def EvaluateProp(prop_fun: callable, nu: np.ndarray, interval: np.ndarray) -> np.ndarray:
     """Evaluate a given propensity function `prop_fun`."""
@@ -50,6 +52,7 @@ def EvaluateProp(prop_fun: callable, nu: np.ndarray, interval: np.ndarray) -> np
         IncrVecIndex(vec_index, interval, m)
     return output_array
 
+
 def ConstructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
     """Set up the initial probability distribution according to a given function `eval_P0`."""
     dx = np.prod(interval)
@@ -61,25 +64,29 @@ def ConstructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
         IncrVecIndex(vec_index, interval, m)
     return P0 / np.sum(P0)
 
+
 # @njit
-def CalculateObservables(y: np.ndarray, interval: np.ndarray, r: int, i2D: np.ndarray, m1: int):
+def CalculateObservables(y: np.ndarray, interval: np.ndarray, r: int, i2D: np.ndarray, m1: int, slice_vec: np.ndarray):
     """Calculate marginal and sliced distributions and the best approximation."""
     dx = np.prod(interval)
     m = interval.size
 
+    P_full = y
     P_marginal = [[np.zeros(n_el) for n_el in interval] for _ in range(y.shape[0])]
     P_marginal2D = [np.zeros((interval[0], interval[1])) for _ in range(y.shape[0])]
-    P_sliced = [[np.zeros(n_el) for n_el in interval]
-                for _ in range(y.shape[0])]
-    P_sliced2D = [np.zeros((interval[0], interval[1]))
-                  for _ in range(y.shape[0])]
-    P_best_approximation = np.zeros(
-        (y.shape[0], np.prod(interval[m1:]), np.prod(interval[:m1])))
-    
-    vec_index_c = np.zeros(m - 2)
-    vec_index_k = np.zeros(m - 1)
+    P_sliced = [[np.zeros(n_el) for n_el in interval] for _ in range(y.shape[0])]
+    P_sliced2D = [np.zeros((interval[0], interval[1])) for _ in range(y.shape[0])]
+    P_best_approximation = np.zeros(y.shape)
 
-    
+    vec_index_c = np.zeros(m - 2, dtype="int64")
+    vec_index_k = np.zeros(m - 1, dtype="int64")
+    slice_vec_c = np.zeros(m - 2, dtype="int64")
+    slice_vec_k = np.zeros(m - 1, dtype="int64")
+
+    slice_vec_c[:i2D[0]] = slice_vec[:i2D[0]]
+    slice_vec_c[i2D[0]:i2D[1]-1] = slice_vec[i2D[0]+1:i2D[1]]
+    slice_vec_c[i2D[1]-1:] = slice_vec[i2D[1]+1:]
+
     for i in range(y.shape[0]):
         vec_index = np.zeros(m, dtype="int64")
         for j in range(dx):
@@ -88,25 +95,25 @@ def CalculateObservables(y: np.ndarray, interval: np.ndarray, r: int, i2D: np.nd
             vec_index_c[i2D[0]:i2D[1]-1] = vec_index[i2D[0]+1:i2D[1]]
             vec_index_c[i2D[1]-1:] = vec_index[i2D[1]+1:]
 
-            if np.all(vec_index_c == np.zeros(m-1)):
+            if np.all(vec_index_c == slice_vec_c):
                 P_sliced2D[i][vec_index[i2D[0]], vec_index[i2D[1]]] = y[i, j]
             for k in range(m):
                 P_marginal[i][k][vec_index[k]] += y[i, j]
                 vec_index_k[:k] = vec_index[:k]
                 vec_index_k[k:] = vec_index[k+1:]
-                if np.all(vec_index_k == np.zeros(m-1)):
+                slice_vec_k[:k] = slice_vec[:k]
+                slice_vec_k[k:] = slice_vec[k+1:]
+                if np.all(vec_index_k == slice_vec_k):
                     P_sliced[i][k][vec_index[k]] = y[i, j]
 
             IncrVecIndex(vec_index, interval, m)
 
-        P = y[i, :].reshape(np.prod(interval[:m1]), np.prod(interval[m1:]))
+        P = y[i, :].reshape((np.prod(interval[m1:]), np.prod(interval[:m1])))
         u, s, vh = np.linalg.svd(P, full_matrices=False)
-
         # Use only the first `r` singular values
         X1 = u[:, :r]
         S = s[:r]
-        X2h = np.ascontiguousarray(vh[:r, :])
-        P_best_approximation[i, :, :] = np.transpose((X1 * S) @ X2h) 
-        # `np.transpose`, because we calculated the full P in row-major order
+        X2h = vh[:r, :]
+        P_best_approximation[i, :] = ((X1 * S) @ X2h).flatten()
 
-    return P_marginal, P_marginal2D, P_sliced, P_sliced2D, P_best_approximation
+    return P_full, P_marginal, P_marginal2D, P_sliced, P_sliced2D, P_best_approximation
