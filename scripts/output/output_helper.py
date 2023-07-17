@@ -20,11 +20,11 @@ plt.rcParams.update({
     'text.usetex': True,
     'pgf.rcfonts': False,
     "figure.figsize": (6, 4),
-    "scatter.marker": "2",
-    "lines.marker": "2",
+    "lines.linewidth": "1",
+    "lines.markersize": "4.5",
     "lines.linestyle": "none",
     "axes.titlesize": "medium",
-    "axes.prop_cycle": mpl.cycler(color=["r", "b", "k"], marker=["o", "x", "+"])
+    "axes.prop_cycle": mpl.cycler(color=["r", "b", "k"], marker=["o", "x", "."])
 })
 
 
@@ -161,8 +161,9 @@ def plotP2D(axs, P: list[np.ndarray], mesh: tuple, title: list[str]) -> tuple[pl
     """Plots multiple datasets stored in `P` on a common `mesh` as 2D contour plots."""
     levels = np.linspace(np.amin([np.amin(P_el) for P_el in P]), np.amax([np.amax(P_el) for P_el in P]), 9)
     for i, ax in enumerate(axs.flatten()):
-        ax.contour(mesh[0], mesh[1], P[i], levels=levels)
-        ax.set_title(title[i])
+        if i < len(P):
+            ax.contour(mesh[0], mesh[1], P[i], levels=levels)
+            ax.set_title(title[i])
 
 
 def plotP1D(ax, P: list, mesh: tuple, label: list, **kwargs) -> tuple[plt.Figure, np.ndarray]:
@@ -172,9 +173,9 @@ def plotP1D(ax, P: list, mesh: tuple, label: list, **kwargs) -> tuple[plt.Figure
         ax.plot(mesh, P_el, label=label[i])
 
 
-def plotP1Dmult(axs, P: list[np.ndarray], mesh: list, label: list, idx: list, Plabel: str) -> tuple[plt.Figure, np.ndarray]:
+def plotP1Dmult(axs, P: list[np.ndarray], mesh: list, label: list, idx: list, Plabel: str, *, stats: bool = False) -> tuple[plt.Figure, np.ndarray]:
     """
-    Plots a subset given by `idx` of all datasets stored in `P` on a common `mesh`. If a dataset is defined on a larger mesh, then the outlying points will be truncated. If the dataset is defined on a smaller mesh, all additional points will be set to 0. The last dataset `P[-1]` is treated as a reference solution, therefore the maximal error for every other dataset will be calculated with respect to `P[-1]`.
+    Plots a subset given by `idx` of all datasets stored in `P` on a common `mesh`. If a dataset is defined on a larger mesh, then the outlying points will be truncated. If the dataset is defined on a smaller mesh, all additional points will be set to 0. When `stats` is set to `True`, then the last dataset `P[-1]` is treated as a reference solution and the maximal error for every other dataset will be calculated with respect to `P[-1]`.
     """
     for i, ax in enumerate(axs.flatten()):
         if i < len(idx):
@@ -195,13 +196,14 @@ def plotP1Dmult(axs, P: list[np.ndarray], mesh: list, label: list, idx: list, Pl
             plotP1D(ax, P_new, mesh[0][j], label, xlabel=xlabel, ylabel=ylabel)
 
             # Calculate maximal difference and print it in title
-            title = ""
-            for k in range(len(mesh) - 1):
-                max_error = np.max(np.abs(P[k][j] - P[-1][j]))
-                if np.isnan(max_error):
-                    title += "$\mathrm{{max}}(|\mathrm{{{}}}-\mathrm{{{}}}|)$ = NaN\n".format(label[k], label[-1])
-                else:
-                    error_str_split = "{:.2e}".format(max_error).split('e')
-                    error_str = "{} \\times 10^{{{}}}".format(error_str_split[0], int(error_str_split[1]))
-                    title += "$\mathrm{{max}}(|\mathrm{{{}}}-\mathrm{{{}}}|)$ = ${}$\n".format(label[k], label[-1], error_str)
-            ax.set_title(title)
+            if stats == True:
+                title = ""
+                for k in range(len(mesh) - 1):
+                    max_error = np.max(np.abs(P[k][j] - P[-1][j]))
+                    if np.isnan(max_error):
+                        title += "$\mathrm{{max}}(|\\textrm{{{}}}-\\textrm{{{}}}|)$ = NaN\n".format(label[k], label[-1])
+                    else:
+                        error_str_split = "{:.2e}".format(max_error).split('e')
+                        error_str = "{} \\cdot 10^{{{}}}".format(error_str_split[0], int(error_str_split[1]))
+                        title += "$\mathrm{{max}}(|\\textrm{{{}}}-\\textrm{{{}}}|)$ = ${}$\n".format(label[k], label[-1], error_str)
+                ax.set_title(title)

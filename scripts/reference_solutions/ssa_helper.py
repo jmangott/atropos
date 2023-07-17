@@ -7,10 +7,7 @@ from pysb.simulator import StochKitSimulator
 from scripts.index_functions import VecIndexToCombIndex, IncrVecIndex
 
 def CalculateObservables(ssa_result: np.ndarray, m: int, n_time: int, n_runs: int, slice_vec: np.ndarray):
-    """
-    Calculate marginal and sliced distributions.
-    """
-
+    """Calculate marginal and sliced distributions."""
     # Calculate lower and upper population bounds
     n_max = np.zeros(m, dtype="int64")
     n_min = np.zeros(m, dtype="int64")
@@ -66,8 +63,8 @@ def CalculateObservables(ssa_result: np.ndarray, m: int, n_time: int, n_runs: in
             IncrVecIndex(vec_index2D, n[0:2], 2)
 
         # Calculate the full probability distribution
-        P_full = np.bincount(lin_dset_sliced, minlength=dx_tot, weights=np.ones(n_runs, dtype="float64"))
-        P_full /= n_runs
+        P_full[j] = np.bincount(lin_dset_sliced, minlength=dx_tot, weights=np.ones(n_runs, dtype="float64"))
+        P_full[j] /= n_runs
 
         # For a given time, `P_marginal2D` is stored as a vector (in the row-major convention)
         P_marginal2D[j] = np.bincount(
@@ -98,7 +95,8 @@ def RunSSAWithP0(eval_P0: callable, sweeps: int, n_time: int, tspan: np.ndarray,
         IncrVecIndex(vec_index, interval, m)
 
     err = np.linalg.norm(n_runs / n_runs_tot - P_lin)
-    print('n_runs_tot: ', n_runs_tot, '\n', 'error: ', err, end="")
+    print("n_runs_tot:", n_runs_tot)
+    print("error:", err)
 
     n_runs_tot = np.sum(n_runs)
     vec_index = np.zeros(m)
