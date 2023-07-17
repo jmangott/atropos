@@ -5,7 +5,7 @@ import os
 
 from scripts.index_functions import CombIndexToState
 
-class grid_info:
+class GridInfo:
     """Class for storing grid parameters."""
 
     def __init__(self, _r: int, _m1: int, _m2: int, _n1: tuple, _n2: tuple, _binsize1: tuple, _binsize2: tuple, _liml1: tuple, _liml2: tuple):
@@ -50,7 +50,7 @@ def WriteNC(x1: np.ndarray, x2: np.ndarray, s: np.ndarray) -> None:
     ds.close()
 
 
-def SetInputKD(x10: tuple, x20: tuple, grid: grid_info) -> None:
+def SetInputKD(x10: tuple, x20: tuple, grid: GridInfo) -> None:
     """
     Creates a netCDF file containing X1, X2 and S
     for an initial distribution of Kronecker delta form.
@@ -82,7 +82,7 @@ def SetInputKD(x10: tuple, x20: tuple, grid: grid_info) -> None:
     WriteNC(x1, x2, s)
 
 
-def SetInputGeneral(eval_p0: callable, grid: grid_info) -> None:
+def SetInputGeneral(eval_p0: callable, grid: GridInfo) -> None:
     """
     Creates a .netCDF file containing X1, X2 and S for a general initial distribution.
     NOTE: This function creates the full P matrix,

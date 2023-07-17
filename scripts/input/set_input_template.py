@@ -53,8 +53,8 @@ def eval_p0(x):
 # Change `parameters.hpp`
 params.configure()
 
-# Set up `grid_info`
-grid = grid_info(r, m1, m2, n1, n2, bin1, bin2, liml1, liml2)
+# Set up `GridInfo`
+grid = GridInfo(r, m1, m2, n1, n2, bin1, bin2, liml1, liml2)
 
 # Set input/initial conditions
 # TODO: choose either `SetInputKD` or `SetInputGeneral`
