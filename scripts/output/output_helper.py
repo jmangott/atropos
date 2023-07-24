@@ -1,17 +1,17 @@
 """Helper module for postprocessing the DLR results."""
-# TODO: for large netCDF files, this is VERY slow, 
-# maybe precompute the 1D marginal and sliced distributions?
 import matplotlib as mpl
 mpl.use('pgf')
 import matplotlib.pyplot as plt
-import netCDF4 as nc
+# import netCDF4 as nc
+from numba import njit
 import numpy as np
 import os
+import xarray as xr
 
 if not os.path.exists("plots"):
     os.makedirs("plots")
 
-from scripts.index_functions import IncrVecIndex, VecIndexToCombIndex
+from scripts.index_functions import incrVecIndex, vecIndexToCombIndex
 
 # Update Matplotlib settings
 plt.rcParams.update({
@@ -30,36 +30,65 @@ plt.rcParams.update({
 
 class GridInfo:
     """Class for storing DLR parameters."""
-    def __init__(self, ds: nc._netCDF4.Dataset):
-        self.n1 = ds["n1"][:]
-        self.n2 = ds["n2"][:]
+    def __init__(self, _ds: xr.core.dataset.Dataset):
+        self.n1 = _ds["n1"].values.astype(int)
+        self.n2 = _ds["n2"].values.astype(int)
         self.dx1 = np.prod(self.n1)
         self.dx2 = np.prod(self.n2)
         self.n = np.concatenate((self.n1, self.n2))
-        self.m1 = ds.dimensions["m1"].size
-        self.m2 = ds.dimensions["m2"].size
-        self.r = ds.dimensions["r"].size
+        self.m1 = _ds.dims["m1"]
+        self.m2 = _ds.dims["m2"]
+        self.r = _ds.dims["r"]
         self.d = self.m1 + self.m2
-        self.bin = ds["binsize"][:]
-        self.liml = np.asarray(ds["liml"][:], dtype="int64")
-        self.t = ds["t"][0]
-        self.dt = ds["dt"][0]
+        self.bin = _ds["binsize"].values
+        self.liml = _ds["liml"].values.astype(int)
+        self.t = _ds["t"]
+        self.dt = _ds["dt"]
 
 
-class Observables:
-    def __init__(self, _ds: nc._netCDF4.Dataset, _grid: GridInfo):
+@njit
+def calculateXSum(input_array: np.ndarray, n: np.ndarray) -> list[np.ndarray]:
+    """Integrates `input_array` (X1 or X2) for each species over all the remaining species."""
+    r = input_array.shape[0]
+    m = n.size
+    dx = np.prod(n)
+    vec_index = np.zeros(m, dtype=np.int64)
+    output_array = [np.zeros((n_el, r), dtype="float64") for n_el in n]
+    for i in range(dx):
+        for k_vec, vec_el in enumerate(vec_index):
+            output_array[k_vec][vec_el, :] += input_array[:, i]
+        incrVecIndex(vec_index, n, m)
+    return output_array
+
+
+@njit
+def calculateXSlice(input_array: np.ndarray, n: np.ndarray, slice_vec: np.ndarray) -> list[np.ndarray]:
+    """Evaluates `input_array` (X1 or X2) for each species at `slice_vec` for all the remaining species."""
+    r = input_array.shape[0]
+    output_array = [np.zeros((n_el, r), dtype="float64") for n_el in n]
+    for k, n_el in enumerate(n):
+        vec_index = slice_vec.copy()
+        for i in range(n_el):
+            vec_index[k] = i
+            comb_index = vecIndexToCombIndex(vec_index, n)
+            output_array[k][i, :] = input_array[:, comb_index]
+    return output_array
+
+
+class LRSol:
+    def __init__(self, _ds: xr.core.dataset.Dataset, _grid: GridInfo):
         """
         Helper class for calculating marginal and sliced distributions and the full probability distribution.
         """
-        self.X1 = _ds['X']
-        self.S = _ds['S']
-        self.X2 = _ds['V']
         self.grid = _grid
+        self.X1 = _ds['X'].values
+        self.S = _ds['S'].values
+        self.X2 = _ds['V'].values
 
 
     def fullDistribution(self) -> np.ndarray:
         """
-        Calculates full probability distribution.
+        Calculates the full probability distribution.
         NOTE: This function should be used only for small systems.
         """
         P_full = np.matmul(np.transpose(self.X1), np.matmul(self.S, self.X2))
@@ -69,24 +98,13 @@ class Observables:
 
     def marginalDistributions(self) -> list[np.ndarray]:
         """Calculates marginal distributions."""
-        X1_sum = [np.zeros((n_el, self.grid.r), dtype="float64") for n_el in self.grid.n1]
-        X2_sum = [np.zeros((n_el, self.grid.r), dtype="float64") for n_el in self.grid.n2]
         P_marginal = [np.zeros(n_el) for n_el in self.grid.n]
 
-        vec_index = np.zeros(self.grid.m1, dtype="int64")
-        for i in range(self.grid.dx1):
-            for k_vec, vec_el in enumerate(vec_index):
-                X1_sum[k_vec][vec_el, :] += self.X1[:, i]
-            IncrVecIndex(vec_index, self.grid.n1, self.grid.m1)
+        X1_sum_tot = np.sum(self.X1, axis=1)
+        X2_sum_tot = np.sum(self.X2, axis=1)
 
-        vec_index = np.zeros(self.grid.m2, dtype="int64")
-        for i in range(self.grid.dx2):
-            for k_vec, vec_el in enumerate(vec_index):
-                X2_sum[k_vec][vec_el, :] += self.X2[:, i]
-            IncrVecIndex(vec_index, self.grid.n2, self.grid.m2)
-
-        X1_sum_tot = np.sum(X1_sum[0], axis=0)
-        X2_sum_tot = np.sum(X2_sum[0], axis=0)
+        X1_sum = calculateXSum(self.X1, self.grid.n1)
+        X2_sum = calculateXSum(self.X2, self.grid.n2)
 
         for i in range(self.grid.m1):
             P_marginal[i] = np.matmul(X1_sum[i], np.matmul(self.S, np.transpose(X2_sum_tot)))
@@ -111,25 +129,11 @@ class Observables:
 
     def slicedDistributions(self, slice_vec: np.ndarray) -> list[np.ndarray]:
         """Calculates sliced distributions for a given `slice_vec`."""
-        X1_slice = [np.zeros((n_el, self.grid.r), dtype="float64") for n_el in self.grid.n1]
-        X2_slice = [np.zeros((n_el, self.grid.r), dtype="float64") for n_el in self.grid.n2]
         P_sliced = [np.zeros(n_el) for n_el in self.grid.n]
 
         slice_vec_index = ((np.asarray(slice_vec, dtype="int64") - self.grid.liml) / self.grid.bin).astype(int)
-
-        for k, n_el in enumerate(self.grid.n1):
-            vec_index = slice_vec_index[:self.grid.m1].copy()
-            for i in range(n_el):
-                vec_index[k] = i
-                comb_index = VecIndexToCombIndex(vec_index, self.grid.n1)
-                X1_slice[k][i, :] = self.X1[:, comb_index]
-
-        for k, n_el in enumerate(self.grid.n2):
-            vec_index = slice_vec_index[self.grid.m1:].copy()
-            for i in range(n_el):
-                vec_index[k] = i
-                comb_index = VecIndexToCombIndex(vec_index, self.grid.n2)
-                X2_slice[k][i, :] = self.X2[:, comb_index]
+        X1_slice = calculateXSlice(self.X1, self.grid.n1, slice_vec_index[:self.grid.m1])
+        X2_slice = calculateXSlice(self.X2, self.grid.n2, slice_vec_index[self.grid.m1:])
 
         X1_slice_tot = X1_slice[0][slice_vec_index[0], :]
         X2_slice_tot = X2_slice[0][slice_vec_index[self.grid.m1], :]
@@ -149,7 +153,7 @@ class Observables:
         NOTE: This is 'hard-coded' for the first partition and assumes that only two species lie in that partition.
         """
         slice_vec_index = ((np.asarray(slice_vec, dtype="int64") - self.grid.liml) / self.grid.bin).astype(int)
-        comb_index = VecIndexToCombIndex(slice_vec_index[self.grid.m1:], self.grid.n2)
+        comb_index = vecIndexToCombIndex(slice_vec_index[self.grid.m1:], self.grid.n2)
         X2_slice_tot = self.X2[:, comb_index]
 
         P_sliced2D_vec = np.matmul(np.transpose(self.X1), np.matmul(self.S, X2_slice_tot))
@@ -157,7 +161,7 @@ class Observables:
         return P_sliced2D
 
 
-def plotP2D(axs, P: list[np.ndarray], mesh: tuple, title: list[str]) -> tuple[plt.Figure, np.ndarray]:
+def plotP2D(axs, P: list[np.ndarray], mesh: tuple, title: list[str]):
     """Plots multiple datasets stored in `P` on a common `mesh` as 2D contour plots."""
     levels = np.linspace(np.amin([np.amin(P_el) for P_el in P]), np.amax([np.amax(P_el) for P_el in P]), 9)
     for i, ax in enumerate(axs.flatten()):
@@ -173,7 +177,7 @@ def plotP1D(ax, P: list, mesh: tuple, label: list, **kwargs) -> tuple[plt.Figure
         ax.plot(mesh, P_el, label=label[i])
 
 
-def plotP1Dmult(axs, P: list[np.ndarray], mesh: list, label: list, idx: list, Plabel: str, *, stats: bool = False) -> tuple[plt.Figure, np.ndarray]:
+def plotP1Dmult(axs, P: list[np.ndarray], mesh: list, label: list, idx: list, Plabel: str, *, stats: bool = False):
     """
     Plots a subset given by `idx` of all datasets stored in `P` on a common `mesh`. If a dataset is defined on a larger mesh, then the outlying points will be truncated. If the dataset is defined on a smaller mesh, all additional points will be set to 0. When `stats` is set to `True`, then the last dataset `P[-1]` is treated as a reference solution and the maximal error for every other dataset will be calculated with respect to `P[-1]`.
     """
@@ -191,8 +195,7 @@ def plotP1Dmult(axs, P: list[np.ndarray], mesh: list, label: list, idx: list, Pl
                     np.append(mesh[k][j], mesh[0][j][-1])
 
                 # Extend P_ssa so that P and P_ssa are evaluated on the same mesh
-                P[k][j] = np.interp(mesh[0][j], mesh[k][j], P[k][j])
-            P_new = [P[k][j] for k in range(len(mesh))]
+            P_new = [np.interp(mesh[0][j], mesh[k][j], P[k][j]) for k in range(len(mesh))]
             plotP1D(ax, P_new, mesh[0][j], label, xlabel=xlabel, ylabel=ylabel)
 
             # Calculate maximal difference and print it in title
