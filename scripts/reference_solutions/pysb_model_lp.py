@@ -1,4 +1,4 @@
-# TODO: write description
+"""PySB model for the lambda phage example."""
 import matplotlib.pyplot as plt
 import numpy as np
 from pysb import *
