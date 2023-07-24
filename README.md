@@ -53,7 +53,7 @@ Optionally:
 ## Installation
 Clone the repository via
 ```shell
-git clone https://git.uibk.ac.at/c7021158/kinetic-cme
+git clone https://git.uibk.ac.at/c7021158/kinetic-cme.git
 ```
 and build the program by executing
 ```shell
