@@ -23,18 +23,18 @@ params = parser.parse_args()
 # Set in-script parameters
 params.kModel = "reactions_bax_seq"
 r = params.kR = 4
-m1 = params.kM1 = 6
-m2 = params.kM2 = 5
-n1 = params.kN1 = (16, 6, 6, 6, 106, 106)
-n2 = params.kN2 = (86, 21, 21, 21, 21)
-bin1 = params.kBinsize1 = (1, 1, 1, 1, 1, 1)
-bin2 = params.kBinsize2 = (1, 1, 1, 1, 1)
-liml1 = params.kLiml1 = (0, 0, 0, 0, 0, 0)
-liml2 = params.kLiml2 = (0, 0, 0, 0, 0)
+m1 = params.kM1 = 5
+m2 = params.kM2 = 6
+n1 = params.kN1 = (46, 16, 16, 11, 11)
+n2 = params.kN2 = (11, 4, 4, 4, 56, 56)
+bin1 = params.kBinsize1 = (1, 1, 1, 1, 1)
+bin2 = params.kBinsize2 = (1, 1, 1, 1, 1, 1)
+liml1 = params.kLiml1 = (0, 0, 0, 0, 0)
+liml2 = params.kLiml2 = (0, 0, 0, 0, 0, 0)
 
 C = 0.2
 Cinv = 1 / C
-mu = np.array([0, 0, 0, 0, 100, 0, 80, 0, 0, 0, 0])
+mu = np.array([40, 0, 0, 0, 0, 0, 0, 0, 0, 50, 0])
 
 def eval_x(x: np.ndarray, mu: np.ndarray) -> float:
     return np.exp(-0.5 * Cinv * np.dot(np.transpose(x - mu), (x - mu)))
