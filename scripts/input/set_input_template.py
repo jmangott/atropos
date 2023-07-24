@@ -37,11 +37,11 @@ bin2 = params.kBinsize2 = (1, 1, 1)
 liml1 = params.kLiml1 = (0, 70)
 liml2 = params.kLiml2 = (0, 0, 0)
 
-# TODO: set/modify `x10` and `x20`` when using `SetInputKD(x10, x20, grid)`
+# TODO: set/modify `x10` and `x20` when using `SetInputKD(x10, x20, grid)`
 x10 = (0, 85)
 x20 = (0, 5, 10)
 
-#TODO: set/modify `eval_p0(x)`` when using `SetInputGeneral(eval_p0, grid)`
+#TODO: set/modify `eval_p0(x)` when using `SetInputGeneral(eval_p0, grid)`
 def eval_p0(x):
     abs_x = np.sum(x)
     if (abs_x <= 3):
@@ -50,6 +50,20 @@ def eval_p0(x):
         p0 = 0.0
     return p0
 
+# TODO: set/modify `eval_x10(x)`, `eval_x20(x)` and `s`
+# when using `SetInputGeneral(eval_x10, eval_x20, s, grid)`
+C = 0.2
+Cinv = 1 / C
+mu = np.array([0, 0, 0, 0, 0, 100, 0, 80, 0, 0, 0])
+
+def eval_x10(x: np.ndarray) -> float:
+    return np.exp(-0.5 * np.dot(np.transpose(x - mu[:m1]), np.dot(Cinv, (x - mu[:m1]))))
+
+def eval_x20(x: np.ndarray) -> float:
+    return np.exp(-0.5 * np.dot(np.transpose(x - mu[m1:]), np.dot(Cinv, (x - mu[m1:]))))
+
+s = [1]
+
 # Change `parameters.hpp`
 params.configure()
 
@@ -57,6 +71,7 @@ params.configure()
 grid = GridInfo(r, m1, m2, n1, n2, bin1, bin2, liml1, liml2)
 
 # Set input/initial conditions
-# TODO: choose either `SetInputKD` or `SetInputGeneral`
-SetInputKD(x10, x20, grid)
-# SetInputGeneral(eval_p0, grid)
+# TODO: choose either `SetInputKD`, `SetInputFunc` or `SetInputGeneral`
+setInputKD(x10, x20, grid)
+# setInputFunc([eval_x10], [eval_x20], s, grid)
+# setInputGeneral(eval_p0, grid)
