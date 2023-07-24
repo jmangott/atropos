@@ -3,10 +3,11 @@ from numba import njit
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scripts.index_functions import IncrVecIndex
+from scripts.index_functions import incrVecIndex
+
 
 @njit
-def CalculateShift(nu: np.ndarray, interval: np.ndarray) -> float:
+def calculateShift(nu: np.ndarray, interval: np.ndarray) -> float:
     """Calculate linearized shift for a given stoichiometric vector `nu`."""
     shift = 0
     stride = 1
@@ -18,10 +19,10 @@ def CalculateShift(nu: np.ndarray, interval: np.ndarray) -> float:
 
 
 @njit
-def ShiftArray(input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray) -> np.ndarray:
+def shiftArray(input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray) -> np.ndarray:
     """Calculate the shifted probability distribution in the CME for a given stoichiometric vector `nu`."""
     output_array = np.copy(input_array)
-    shift = CalculateShift(nu, interval)
+    shift = calculateShift(nu, interval)
     n_rows = output_array.size
     m = interval.size
     vec_index = np.zeros(m, dtype="int64")
@@ -30,18 +31,18 @@ def ShiftArray(input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray) ->
             output_array[i] = input_array[i - shift]
         else:
             output_array[i] = 0.0
-            IncrVecIndex(vec_index, interval, m)
+            incrVecIndex(vec_index, interval, m)
             continue
         for k in range(m):
             if (nu[k] > 0 and vec_index[k] - nu[k] < 0) or (nu[k] < 0 and vec_index[k] - nu[k] >= interval[k]):
                 output_array[i] = 0.0
                 break
-        IncrVecIndex(vec_index, interval, m)
+        incrVecIndex(vec_index, interval, m)
     return output_array
 
 
 @njit
-def EvaluateProp(prop_fun: callable, nu: np.ndarray, interval: np.ndarray) -> np.ndarray:
+def evaluateProp(prop_fun: callable, nu: np.ndarray, interval: np.ndarray) -> np.ndarray:
     """Evaluate a given propensity function `prop_fun`."""
     dx = np.prod(interval)
     output_array = np.zeros(dx)
@@ -49,11 +50,11 @@ def EvaluateProp(prop_fun: callable, nu: np.ndarray, interval: np.ndarray) -> np
     vec_index = np.zeros(m, dtype="int64")
     for i in range(dx):
         output_array[i] = prop_fun(vec_index - nu)
-        IncrVecIndex(vec_index, interval, m)
+        incrVecIndex(vec_index, interval, m)
     return output_array
 
 
-def ConstructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
+def constructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
     """Set up the initial probability distribution according to a given function `eval_P0`."""
     dx = np.prod(interval)
     m = interval.size
@@ -61,12 +62,12 @@ def ConstructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
     vec_index = np.zeros(m)
     for i in range(dx):
         P0[i] = eval_P0(vec_index)
-        IncrVecIndex(vec_index, interval, m)
+        incrVecIndex(vec_index, interval, m)
     return P0 / np.sum(P0)
 
 
-# @njit
-def CalculateObservables(y: np.ndarray, interval: np.ndarray, r: int, i2D: np.ndarray, m1: int, slice_vec: np.ndarray):
+@njit
+def calculateObservables(y: np.ndarray, interval: np.ndarray, r: int, i2D: np.ndarray, m1: int, slice_vec: np.ndarray):
     """Calculate marginal and sliced distributions and the best approximation."""
     dx = np.prod(interval)
     m = interval.size
@@ -106,14 +107,14 @@ def CalculateObservables(y: np.ndarray, interval: np.ndarray, r: int, i2D: np.nd
                 if np.all(vec_index_k == slice_vec_k):
                     P_sliced[i][k][vec_index[k]] = y[i, j]
 
-            IncrVecIndex(vec_index, interval, m)
+            incrVecIndex(vec_index, interval, m)
 
         P = y[i, :].reshape((np.prod(interval[m1:]), np.prod(interval[:m1])))
         u, s, vh = np.linalg.svd(P, full_matrices=False)
         # Use only the first `r` singular values
         X1 = u[:, :r]
         S = s[:r]
-        X2h = vh[:r, :]
+        X2h = np.ascontiguousarray(vh[:r, :])
         P_best_approximation[i, :] = ((X1 * S) @ X2h).flatten()
 
     return P_full, P_marginal, P_marginal2D, P_sliced, P_sliced2D, P_best_approximation

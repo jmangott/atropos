@@ -42,4 +42,4 @@ params.configure()
 grid = GridInfo(r, m1, m2, n1, n2, bin1, bin2, liml1, liml2)
 
 # Set input/initial conditions
-SetInputKD(x10, x20, grid)
+setInputKD(x10, x20, grid)
