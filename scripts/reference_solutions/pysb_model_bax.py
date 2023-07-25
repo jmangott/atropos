@@ -106,20 +106,20 @@ Initial(mSmac(), mSmac_0)
 Initial(cSmac(), cSmac_0)
 
 if __name__ == '__main__':
-    tspan = np.logspace(-3, 5)
+    tspan = np.arange(20000)
     x = odesolve(model, tspan)
 
     # Plot trajectory of each pore
     for i in range(1, max_size + 1):
-        observable = 'oBax%d' % i
+        observable = 'Bax%d' % i
         # Map pore size to the central 50% of the YlOrBr color map
         color = plt.cm.YlOrBr(float(i) / max_size / 2 + 0.25)
         plt.plot(tspan, x[observable], c=color, label=observable)
 
     # Plot BaxmSmac compounds
-    plt.plot(tspan, x['oBax4mSmac'], 'k-', label='mSmac')
-    plt.plot(tspan, x['oBax5mSmac'], 'k--', label='cSmac')
-    plt.plot(tspan, x['oBax6mSmac'], 'k.', label='cSmac')
+    plt.plot(tspan, x['oBax4mSmac'], 'k-', label='Bax4mSmac')
+    plt.plot(tspan, x['oBax5mSmac'], 'k--', label='Bax5mSmac')
+    plt.plot(tspan, x['oBax6mSmac'], 'k.', label='Bax6mSmac')
 
     # Plot Smac species
     plt.plot(tspan, x['omSmac'], c='magenta', label='mSmac')
