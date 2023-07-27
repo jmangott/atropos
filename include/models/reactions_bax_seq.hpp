@@ -61,7 +61,7 @@ myreact myreact3(
     mysystem);
 
 myreact myreact4(
-    {-1, 0, -1, 1, 0, 0, 0, 0, 0, 0, 0, }, {0, 2}, [](std::vector<double> y)
+    {-1, 0, -1, 1, 0, 0, 0, 0, 0, 0, 0}, {0, 2}, [](std::vector<double> y)
     { return kA4 * y[0] * y[2]; },
     mysystem);
 
