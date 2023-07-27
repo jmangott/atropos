@@ -111,10 +111,10 @@ if __name__ == '__main__':
 
     # Plot trajectory of each pore
     for i in range(1, max_size + 1):
-        observable = 'Bax%d' % i
+        observable = 'oBax%d' % i
         # Map pore size to the central 50% of the YlOrBr color map
         color = plt.cm.YlOrBr(float(i) / max_size / 2 + 0.25)
-        plt.plot(tspan, x[observable], c=color, label=observable)
+        plt.plot(tspan, x[observable], c=color, label=observable[1:])
 
     # Plot BaxmSmac compounds
     plt.plot(tspan, x['oBax4mSmac'], 'k-', label='Bax4mSmac')
@@ -125,6 +125,6 @@ if __name__ == '__main__':
     plt.plot(tspan, x['omSmac'], c='magenta', label='mSmac')
     plt.plot(tspan, x['ocSmac'], c='cyan', label='cSmac')
 
-    plt.xscale('log')
+    # plt.xscale('log')
     plt.legend(loc='upper left')
     plt.show()
