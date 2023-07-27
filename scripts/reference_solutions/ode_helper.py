@@ -67,43 +67,37 @@ def constructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
 
 
 @njit
-def calculateObservables(y: np.ndarray, interval: np.ndarray, r: int, i2D: np.ndarray, m1: int, slice_vec: np.ndarray):
+def calculateObservables(y: np.ndarray, interval: np.ndarray, r: int, m1: int, slice_vec: np.ndarray, idx_2D: np.ndarray):
     """Calculate marginal and sliced distributions and the best approximation."""
     dx = np.prod(interval)
     m = interval.size
 
     P_full = y
     P_marginal = [[np.zeros(n_el) for n_el in interval] for _ in range(y.shape[0])]
-    P_marginal2D = [np.zeros((interval[0], interval[1])) for _ in range(y.shape[0])]
+    P_marginal2D = [np.zeros(interval[idx_2D]) for _ in range(y.shape[0])]
     P_sliced = [[np.zeros(n_el) for n_el in interval] for _ in range(y.shape[0])]
-    P_sliced2D = [np.zeros((interval[0], interval[1])) for _ in range(y.shape[0])]
+    P_sliced2D = [np.zeros(interval[idx_2D]) for _ in range(y.shape[0])]
     P_best_approximation = np.zeros(y.shape)
 
     vec_index_c = np.zeros(m - 2, dtype="int64")
     vec_index_k = np.zeros(m - 1, dtype="int64")
     slice_vec_c = np.zeros(m - 2, dtype="int64")
     slice_vec_k = np.zeros(m - 1, dtype="int64")
-
-    slice_vec_c[:i2D[0]] = slice_vec[:i2D[0]]
-    slice_vec_c[i2D[0]:i2D[1]-1] = slice_vec[i2D[0]+1:i2D[1]]
-    slice_vec_c[i2D[1]-1:] = slice_vec[i2D[1]+1:]
+    slice_vec_c = np.delete(slice_vec, idx_2D)
 
     for i in range(y.shape[0]):
         vec_index = np.zeros(m, dtype="int64")
         for j in range(dx):
-            P_marginal2D[i][vec_index[i2D[0]], vec_index[i2D[1]]] += y[i, j]
-            vec_index_c[:i2D[0]] = vec_index[:i2D[0]]
-            vec_index_c[i2D[0]:i2D[1]-1] = vec_index[i2D[0]+1:i2D[1]]
-            vec_index_c[i2D[1]-1:] = vec_index[i2D[1]+1:]
+            P_marginal2D[i][vec_index[idx_2D[0]], vec_index[idx_2D[1]]] += y[i, j]
+
+            vec_index_c = np.delete(vec_index, idx_2D)
 
             if np.all(vec_index_c == slice_vec_c):
-                P_sliced2D[i][vec_index[i2D[0]], vec_index[i2D[1]]] = y[i, j]
+                P_sliced2D[i][vec_index[idx_2D[0]], vec_index[idx_2D[1]]] = y[i, j]
             for k in range(m):
                 P_marginal[i][k][vec_index[k]] += y[i, j]
-                vec_index_k[:k] = vec_index[:k]
-                vec_index_k[k:] = vec_index[k+1:]
-                slice_vec_k[:k] = slice_vec[:k]
-                slice_vec_k[k:] = slice_vec[k+1:]
+                vec_index_k = np.delete(vec_index, k)
+                slice_vec_k = np.delete(slice_vec, k)
                 if np.all(vec_index_k == slice_vec_k):
                     P_sliced[i][k][vec_index[k]] = y[i, j]
 
