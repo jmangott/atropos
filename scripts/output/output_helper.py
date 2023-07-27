@@ -42,8 +42,8 @@ class GridInfo:
         self.d = self.m1 + self.m2
         self.bin = _ds["binsize"].values
         self.liml = _ds["liml"].values.astype(int)
-        self.t = _ds["t"]
-        self.dt = _ds["dt"]
+        self.t = _ds["t"].values
+        self.dt = _ds["dt"].values
 
 
 @njit
@@ -61,17 +61,49 @@ def calculateXSum(input_array: np.ndarray, n: np.ndarray) -> list[np.ndarray]:
     return output_array
 
 
+# @njit
+def calculateXSum2D(input_array: np.ndarray, n: np.ndarray, idx_2D: np.ndarray):
+    """Integrates `input_array` (X1 or X2) for two species (given by `idx_2D`) over all the remaining species."""
+    r = input_array.shape[0]
+    m = n.size
+    dx = np.prod(n)
+    dx2 = np.prod(n[idx_2D])
+    vec_index = np.zeros(m, dtype="int64")
+    output_array = np.zeros((dx2, r))
+    for i in range(dx):
+        comb_index = vecIndexToCombIndex(vec_index[idx_2D], n[idx_2D])
+        output_array[comb_index, :] += input_array[:, i]
+        incrVecIndex(vec_index, n, m)
+    return output_array
+
+
 @njit
 def calculateXSlice(input_array: np.ndarray, n: np.ndarray, slice_vec: np.ndarray) -> list[np.ndarray]:
     """Evaluates `input_array` (X1 or X2) for each species at `slice_vec` for all the remaining species."""
     r = input_array.shape[0]
     output_array = [np.zeros((n_el, r), dtype="float64") for n_el in n]
     for k, n_el in enumerate(n):
-        vec_index = slice_vec.copy()
+        vec_index = np.copy(slice_vec)
         for i in range(n_el):
             vec_index[k] = i
             comb_index = vecIndexToCombIndex(vec_index, n)
             output_array[k][i, :] = input_array[:, comb_index]
+    return output_array
+
+
+# @njit
+def calculateXSlice2D(input_array: np.ndarray, n: np.ndarray, slice_vec: np.ndarray, idx_2D: np.ndarray):
+    """Evaluates `input_array` (X1 or X2) for two species (given by `idx_2D`) at `slice_vec` for all the remaining species."""
+    r = input_array.shape[0]
+    dx2 = np.prod(n[idx_2D])
+    output_array = np.zeros((dx2, r))
+    comp_vec = np.copy(slice_vec)
+    vec_index = np.zeros(2, dtype="int64")
+    for i in range(dx2):
+        comp_vec[idx_2D] = vec_index
+        comb_index = vecIndexToCombIndex(comp_vec, n)
+        output_array[i, :] += input_array[:, comb_index]
+        incrVecIndex(vec_index, n[idx_2D], 2)
     return output_array
 
 
@@ -115,14 +147,22 @@ class LRSol:
         return P_marginal
 
 
-    def marginalDistribution2D(self) -> np.ndarray:
-        """
-        Calculates a 2D marginal distribution. 
-        NOTE: This is 'hard-coded' for the first partition and assumes that only two species lie in that partition.
-        """
-        X2_sum_tot = np.sum(self.X2, axis=1)
-        P_marginal2D_vec = np.matmul(np.transpose(self.X1), np.matmul(self.S, X2_sum_tot))
-        P_marginal2D = np.reshape(P_marginal2D_vec, self.grid.n1, order="F")
+    def marginalDistribution2D(self, idx_2D: np.ndarray) -> np.ndarray:
+        """Calculates a 2D marginal distribution."""
+        if  (idx_2D[0] < self.grid.m1) and (idx_2D[1] < self.grid.m1):
+            X1_sum = calculateXSum2D(self.X1, self.grid.n1, idx_2D)
+            X2_sum= np.sum(self.X2, axis=1)
+
+        elif (idx_2D[0] >= self.grid.m1) and (idx_2D[1] >= self.grid.m1):
+            X1_sum = np.sum(self.X1, axis=1)
+            X2_sum = calculateXSum2D(self.X2, self.grid.n2, idx_2D - self.grid.m1)
+
+        else:
+            X1_sum = calculateXSum(self.X1, self.grid.n1)[idx_2D[0]]
+            X2_sum = calculateXSum(self.X2, self.grid.n2)[idx_2D[1] - self.grid.m1]
+
+        P_marginal2D_vec = np.matmul(X2_sum, np.matmul(self.S, X1_sum))
+        P_marginal2D = np.reshape(P_marginal2D_vec, self.grid.n[idx_2D], order="F")
 
         return P_marginal2D
 
@@ -147,17 +187,29 @@ class LRSol:
         return P_sliced
 
 
-    def slicedDistribution2D(self, slice_vec: np.ndarray) -> np.ndarray:
+    def slicedDistribution2D(self, slice_vec: np.ndarray, idx_2D: np.ndarray) -> np.ndarray:
         """
         Calculates a 2D sliced distribution for a given `slice_vec`.
         NOTE: This is 'hard-coded' for the first partition and assumes that only two species lie in that partition.
         """
         slice_vec_index = ((np.asarray(slice_vec, dtype="int64") - self.grid.liml) / self.grid.bin).astype(int)
-        comb_index = vecIndexToCombIndex(slice_vec_index[self.grid.m1:], self.grid.n2)
-        X2_slice_tot = self.X2[:, comb_index]
 
-        P_sliced2D_vec = np.matmul(np.transpose(self.X1), np.matmul(self.S, X2_slice_tot))
-        P_sliced2D = np.reshape(P_sliced2D_vec, self.grid.n1, order="F")
+        if (idx_2D[0] < self.grid.m1) and (idx_2D[1] < self.grid.m1):
+            X1_slice = calculateXSlice2D(self.X1, self.grid.n1, slice_vec_index[:self.grid.m1], idx_2D)
+            comb_index = vecIndexToCombIndex(slice_vec_index[self.grid.m1:], self.grid.n2)
+            X2_slice = self.X2[:, comb_index]
+
+        elif (idx_2D[0] >= self.grid.m1) and (idx_2D[1] >= self.grid.m1):
+            comb_index = vecIndexToCombIndex(slice_vec_index[:self.grid.m1], self.grid.n1)
+            X1_slice = self.X1[:, comb_index]
+            X2_slice = calculateXSlice2D(self.X2, self.grid.n2, slice_vec_index[self.grid.m1:], idx_2D - self.grid.m1)
+
+        else:
+            X1_slice = calculateXSlice(self.X1, self.grid.n1, slice_vec_index[:self.grid.m1])[idx_2D[0]]
+            X2_slice = calculateXSlice(self.X2, self.grid.n2, slice_vec_index[self.grid.m1:])[idx_2D[1] - self.grid.m1]
+
+        P_sliced2D_vec = np.matmul(X2_slice, np.matmul(self.S, X1_slice))
+        P_sliced2D = np.reshape(P_sliced2D_vec, self.grid.n[idx_2D], order="F")
         return P_sliced2D
 
 
