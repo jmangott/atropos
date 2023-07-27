@@ -104,7 +104,7 @@ class SSASol:
         return _calculateFullDistribution(self.ssa_result, self.n_time, self.n_runs, self.n, self.n_min)
 
 
-def runSSAWithP0(eval_P0: callable, sweeps: int, tspan: np.ndarray, interval: np.ndarray, liml: np.ndarray, model: pysb.core.Model) -> np.ndarray:
+def runSSAWithP0(eval_P0: callable, sweeps: int, tspan: np.ndarray, interval: np.ndarray, liml: np.ndarray, model: pysb.core.Model, observables: list) -> np.ndarray:
     """
     Run the Stochkit SSA implementation with starting values in accordance with the initial distribution described by `eval_P0`. `sweeps` is both an approximation and a control parameter for the total number of SSA sweeps. The actual number of total sweeps is given by `n_runs_tot`. `interval` and `liml` determine the sample space, which should cover most of the initial distribution. 
     """
@@ -131,7 +131,7 @@ def runSSAWithP0(eval_P0: callable, sweeps: int, tspan: np.ndarray, interval: np
 
     n_runs_tot = np.sum(n_runs)
     vec_index = np.zeros(m)
-    result = np.empty((n_runs_tot, n_time, m), dtype="int64")
+    result = np.empty((n_runs_tot, n_time, len(observables)), dtype="int64")
 
     # Loop through the sample space and perform `n_runs[i]` SSA sweeps for state `i`
     for i in range(dx):
@@ -147,8 +147,8 @@ def runSSAWithP0(eval_P0: callable, sweeps: int, tspan: np.ndarray, interval: np
 
             # Convert the result into a numpy array
             for j_runs in range(n_runs[i]):
-                for i_obs, obs in enumerate(model.observables):
-                    result[i_runs + j_runs, :, i_obs] = simulation_result.observables[j_runs][obs.name]
+                for i_obs, obs in enumerate(observables):
+                    result[i_runs + j_runs, :, i_obs] = simulation_result.observables[j_runs][observables]
             
             i_runs += n_runs[i]
         incrVecIndex(vec_index, interval, m)
