@@ -188,9 +188,10 @@ It is recommended to use the exisiting model files for the example problems as a
 ### Preparing input data
 A template Python script called `set_input_template.py` is provided in `scripts/input` in order to facilitate the generation of the parameters (`parameters.hpp`) and the inital condition (`input.nc`). Code marked with `TODO` has to be modified according to the specific needs. The required `input/` directory is created automatically.
 
-There are currently two different methods for generating the initial condition implemented:
-1. `SetInputKD`: $`P(t=0,\,x) = \delta_{x,x_0}`$, where $`x_0`$ has to be specified. In this implementation the low-rank structure is exploited.
-2. `SetInputGeneral`: $`P(t=0,\,x) = P_0(x)`$, where $`P_0(x)`$ has to be specified. In this implementation no low-rank structure is exploited, therefore it should be used only for small problems.
+There are currently three different methods for generating the initial condition implemented:
+1. `SetInputKD`: $`P(t=0,x) = \delta_{x,x_0}`$, where $`x_0`$ has to be specified. In this implementation the low-rank structure is exploited.
+2. `SetInputGeneral`: $`P(t=0,x) = P_0(x)`$, where $`P_0(x)`$ has to be specified. In this implementation no low-rank structure is exploited, therefore it should be used only for small problems.
+3. `SetInputFunc`: $`P(t=0,x_1,x_2) = \sum_{i=1}^r X^1_i(x_1) S_i X^2_i(x_2)`$, where $`X^1_i(x_1)`$, $`S`$ and $`X^1_i(x_1)`$ have to be specified. In this implementation the low-rank structure is exploited.
 
 ## Output
 `kinetic-cme` automatically creates a folder in `output/` named `kFilename`, which is set in the `parameter.hpp` file.
