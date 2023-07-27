@@ -2,6 +2,7 @@
 import netCDF4 as nc
 import numpy as np
 import os
+import xarray as xr
 
 from scripts.index_functions import incrVecIndex, vecIndexToState
 
@@ -35,18 +36,14 @@ def writeNC(x1: np.ndarray, x2: np.ndarray, s: np.ndarray) -> None:
     if not os.path.exists("input"):
         os.makedirs("input")
 
-    ds = nc.Dataset("input/input.nc", mode="w", format="NETCDF4")
-    ds.createDimension("r", np.shape(s)[0])
-    ds.createDimension("n_basisfunctions", np.shape(x1)[0])
-    ds.createDimension("dx1", np.shape(x1)[1])
-    ds.createDimension("dx2", np.shape(x2)[1])
-    xx1 = ds.createVariable("xx1", "f8", ("n_basisfunctions", "dx1"))
-    xx2 = ds.createVariable("xx2", "f8", ("n_basisfunctions", "dx2"))
-    ss = ds.createVariable("ss", "f8", ("r", "r"))
-    xx1[:] = x1
-    xx2[:] = x2
-    ss[:] = s
-    ds.close()
+    ds = xr.Dataset(
+        {
+            "xx1": (["n_basisfunctions", "dx1"], x1),
+            "xx2": (["n_basisfunctions", "dx2"], x2),
+            "ss": (["r", "r"], s)
+        }
+    )
+    ds.to_netcdf("input/input.nc")
 
 
 def setInputKD(x10: tuple, x20: tuple, grid: GridInfo) -> None:
