@@ -161,7 +161,7 @@ class LRSol:
             X1_sum = calculateXSum(self.X1, self.grid.n1)[idx_2D[0]]
             X2_sum = calculateXSum(self.X2, self.grid.n2)[idx_2D[1] - self.grid.m1]
 
-        P_marginal2D_vec = np.matmul(X2_sum, np.matmul(self.S, X1_sum))
+        P_marginal2D_vec = np.matmul(X2_sum, np.matmul(self.S, np.transpose(X1_sum)))
         P_marginal2D = np.reshape(P_marginal2D_vec, self.grid.n[idx_2D], order="F")
 
         return P_marginal2D
@@ -208,7 +208,7 @@ class LRSol:
             X1_slice = calculateXSlice(self.X1, self.grid.n1, slice_vec_index[:self.grid.m1])[idx_2D[0]]
             X2_slice = calculateXSlice(self.X2, self.grid.n2, slice_vec_index[self.grid.m1:])[idx_2D[1] - self.grid.m1]
 
-        P_sliced2D_vec = np.matmul(X2_slice, np.matmul(self.S, X1_slice))
+        P_sliced2D_vec = np.matmul(X2_slice, np.matmul(self.S, np.transpose(X1_slice)))
         P_sliced2D = np.reshape(P_sliced2D_vec, self.grid.n[idx_2D], order="F")
         return P_sliced2D
 
