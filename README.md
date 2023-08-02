@@ -15,6 +15,8 @@
     - [Preparing input data](#preparing-input-data)
   - [Output](#output)
   - [Example problems](#example-problems)
+    - [Toggle switch](#toggle-switch)
+    - [Lambda phage](#lambda-phage)
   - [References](#references)
 
 ## Objective
@@ -219,7 +221,8 @@ Interactive Python notebooks for comparison of the DLR results with reference so
 
 Before executing the notebooks, one has to generate the output files with `kinetic-cme` and the corresponding reference solutions. These can in turn be generated with the notebooks located in `scripts/reference_solutions`.
 
-For toggle switch:
+### Toggle switch
+Generate the solution for the DLR approximation via
 ```shell
 python3 scripts/reference_solutions/ode_ts.py
 python3 scripts/input/example_setups/set_ts.py --tstar 500 --tau 0.01 --so --substeps 10 --snapshot 100 --fname ts
@@ -229,13 +232,18 @@ cmake --build build
 ```
 Note that it is more efficient to disable OpenMP for this small problem, as the time for calculating a single step is of the same magnitude as the overhead for calling OpenMP.
 
-For lambda phage:
+The corresponding exact solution can be generated with the `ode_ts.ipynb` notebook. Afterwards, the output can be visualized with the `output_ts.ipynb` notebook.
+
+### Lambda phage
+Generate the solution for the DLR approximation via
 ```shell
 python3 scripts/reference_solutions/pysb_stochkit.py
 python3 scripts/input/example_setups/set_lp.py --tstar 10 --tau 0.01 --so --substeps 10 --snapshot 100 --fname lp
 cmake --build build
 ./bin/kinetic-cme
 ```
+
+The corresponding SSA solution can be generated with the `ssa_lp.ipynb` notebook. Afterwards, the output can be visualized with the `output_lp.ipynb` notebook.
 
 ## References
 [^fn1]: Lubich. C., Oseledets, I.: "A projector-splitting integrator for dynamical low-rank approximation", BIT Numerical Mathematics **54** (2014)
