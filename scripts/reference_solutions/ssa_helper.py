@@ -11,14 +11,10 @@ from scripts.index_functions import vecIndexToCombIndex, incrVecIndex
 @njit
 def _calculateObservables(ssa_result: np.ndarray, n_time: int, n_runs: int, m: int, n: np.ndarray, n_min: np.ndarray, slice_vec: np.ndarray, idx_2D: np.ndarray):
     dx_tot2 = np.prod(n[idx_2D])
-    P_marginal = [[np.zeros(n_el) for n_el in n] for _ in range(n_time)]
+    P_marginal = [[np.zeros(n_el, dtype="float64") for n_el in n] for _ in range(n_time)]
     P_marginal2D = np.zeros((n_time, dx_tot2), dtype="float64")
-    P_sliced = [[np.zeros(n_el) for n_el in n] for _ in range(n_time)]
+    P_sliced = [[np.zeros(n_el, dtype="float64") for n_el in n] for _ in range(n_time)]
     P_sliced2D = np.zeros((n_time, dx_tot2), dtype="float64")
-
-    # Leave `slice_vec` untouched, store the normalization in `comp_vec`
-    comp_vec2D = np.copy(slice_vec) - n_min
-    comp_vec = np.copy(slice_vec) - n_min
 
     for j in range(n_time):
         lin_dset_marginal2D = np.zeros(n_runs, dtype="int64")
@@ -34,6 +30,9 @@ def _calculateObservables(ssa_result: np.ndarray, n_time: int, n_runs: int, m: i
                 ssa_result[:, j, k] - n_min[k], minlength=n[k], weights=np.ones(n_runs, dtype="float64"))
             P_marginal[j][k] /= np.sum(P_marginal[j][k])
 
+            # Leave `slice_vec` untouched, store the normalization in `comp_vec`
+            comp_vec = np.copy(slice_vec) - n_min
+
             for l in range(n[k]):
                 # Calculate `P_sliced` for species `l`,
                 # modify `comp_vec` for obtaining the correct slice and calculate a combined index
@@ -43,6 +42,7 @@ def _calculateObservables(ssa_result: np.ndarray, n_time: int, n_runs: int, m: i
                     np.equal(lin_dset_sliced, comp_index)) / n_runs
                 # P_sliced has to be divided by the total number of runs (it is not normalized to 1)
 
+        comp_vec2D = np.copy(slice_vec) - n_min
         vec_index2D = np.zeros(2)
         for k in range(dx_tot2):
             comp_vec2D[idx_2D] = vec_index2D
@@ -104,20 +104,18 @@ class SSASol:
         return _calculateFullDistribution(self.ssa_result, self.n_time, self.n_runs, self.n, self.n_min)
 
 
-def runSSAWithP0(eval_P0: callable, sweeps: int, tspan: np.ndarray, interval: np.ndarray, liml: np.ndarray, model: pysb.core.Model, observables: list) -> np.ndarray:
+def calculateNRuns(eval_P0: callable, sweeps: int, interval: np.ndarray, liml: np.ndarray) -> tuple[np.ndarray, int]:
     """
-    Run the Stochkit SSA implementation with starting values in accordance with the initial distribution described by `eval_P0`. `sweeps` is both an approximation and a control parameter for the total number of SSA sweeps. The actual number of total sweeps is given by `n_runs_tot`. `interval` and `liml` determine the sample space, which should cover most of the initial distribution. 
+    Helper function for determining how many runs with a certain initial state have to be performed (`n_runs`) to sample the given initial distribution `eval_P0`.
     """
     dx = np.prod(interval)
     m = interval.size
-    i_runs = 0
-    n_runs_tot = 0
     vec_index = np.zeros(m)
-    n_time = tspan.size
 
-    # Evaluate the probability function for all x in the sample space
     n_runs = np.empty(dx, dtype="int64")
+    n_runs_tot = 0
     P_lin = np.empty(dx)
+    # Evaluate the probability function for all x in the sample space
     for i in range(dx):
         P_lin[i] = eval_P0(vec_index + liml)
         # Multiply the probability by `sweeps` and round it to the nearest integer
@@ -128,10 +126,22 @@ def runSSAWithP0(eval_P0: callable, sweeps: int, tspan: np.ndarray, interval: np
     err = np.linalg.norm(n_runs / n_runs_tot - P_lin)
     print("n_runs_tot:", n_runs_tot)
     print("error:", err)
+    return n_runs, n_runs_tot
 
-    n_runs_tot = np.sum(n_runs)
+
+def runSSA(n_runs: np.ndarray, n_runs_tot: int, tspan: np.ndarray, interval: np.ndarray, liml: np.ndarray, model: pysb.core.Model, observables: list) -> np.ndarray:
+    """
+    Run the Stochkit SSA implementation with starting values in accordance with the initial distribution described by `eval_P0`. `sweeps` is both an approximation and a control parameter for the total number of SSA sweeps. The actual number of total sweeps is given by `n_runs_tot`. `interval` and `liml` determine the sample space, which should cover most of the initial distribution.
+    
+    Output: numpy.ndarray with shape `(n_runs_tot, n_time, interval.size)`, which collects all trajectories.
+    """
+    dx = np.prod(interval)
+    m = interval.size
+    i_runs = 0
+    n_time = tspan.size
+
+    result = np.empty((n_runs_tot, n_time, m), dtype="int64")
     vec_index = np.zeros(m)
-    result = np.empty((n_runs_tot, n_time, len(observables)), dtype="int64")
 
     # Loop through the sample space and perform `n_runs[i]` SSA sweeps for state `i`
     for i in range(dx):
@@ -148,7 +158,7 @@ def runSSAWithP0(eval_P0: callable, sweeps: int, tspan: np.ndarray, interval: np
             # Convert the result into a numpy array
             for j_runs in range(n_runs[i]):
                 for i_obs, obs in enumerate(observables):
-                    result[i_runs + j_runs, :, i_obs] = simulation_result.observables[j_runs][observables]
+                    result[i_runs + j_runs, :, i_obs] = simulation_result.observables[j_runs][obs]
             
             i_runs += n_runs[i]
         incrVecIndex(vec_index, interval, m)
