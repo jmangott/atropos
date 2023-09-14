@@ -219,7 +219,7 @@ Input generation scripts for the example problems (toggle switch, lambda phage a
 
 Interactive Python notebooks for comparison of the DLR results with reference solutions for the example problems can be found in `scripts/output`.
 
-Before executing the notebooks, one has to generate the output files with `kinetic-cme` and the corresponding reference solutions. These can in turn be generated with the notebooks located in `scripts/reference_solutions`.
+Before executing the notebooks, one has to generate the output files with `kinetic-cme` and the corresponding reference solutions. These can in turn be generated with the notebooks located in `scripts/reference_solutions`. Furthermore, a `plots` directory has to be created.
 
 ### Toggle switch
 Generate the solution for the DLR approximation via
