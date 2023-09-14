@@ -4,7 +4,6 @@ Modify code marked with TODO according to your needs.
 Call in project root with: `python3 scripts/input/set_input_template.py --flags` (use --h for help)
 """
 
-import numpy as np
 from scipy.special import factorial
 
 from scripts.input.input_helper import *

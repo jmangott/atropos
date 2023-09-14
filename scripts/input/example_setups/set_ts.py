@@ -4,8 +4,6 @@ for the toggle switch model with initial conditions according to Jahnke & Huisin
 Call in project root with: `python3 scripts/input/example_setups/set_ts.py --flags`
 """
 
-import numpy as np
-
 from scripts.input.input_helper import *
 from scripts.input.parameters_helper import ParametersParser
 

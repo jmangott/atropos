@@ -4,7 +4,6 @@ for the lambda phage model with initial conditions according to Jahnke & Huising
 Call in project root with: `python3 scripts/input/example_setups/set_lp_general.py --flags`
 """
 
-import numpy as np
 from scipy.special import factorial
 
 from scripts.input.input_helper import *
