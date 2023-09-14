@@ -1,5 +1,4 @@
 """Helper moodule for setting the initial conditions."""
-import netCDF4 as nc
 import numpy as np
 import os
 import xarray as xr

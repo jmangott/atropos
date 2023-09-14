@@ -2,7 +2,6 @@
 import matplotlib as mpl
 mpl.use('pgf')
 import matplotlib.pyplot as plt
-# import netCDF4 as nc
 from numba import njit
 import numpy as np
 import os
