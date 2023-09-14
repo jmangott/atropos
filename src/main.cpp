@@ -102,7 +102,7 @@ int main()
     ip_xx2 = inner_product_from_const_weight((double) grid.h2_mult, grid.dx2);
     initialize(lr_sol, x1, x2, ip_xx1, ip_xx2, blas);
 
-    // TODO: this lines are actually superfluous, provided Ensign works correctly
+    // TODO: these lines are actually superfluous, provided Ensign works correctly
     if (n_basisfunctions == kR)
     {
         ReadNC("input/input.nc", xx1, xx2, ss, n_basisfunctions);
