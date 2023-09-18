@@ -42,7 +42,8 @@ set(BIN ${CMAKE_SOURCE_DIR}/bin)
 # Define the exectuable name #
 ##############################
 
-set(EXENAME kinetic-cme)
+set(EXENAME1 kinetic-cme)
+set(EXENAME2 hierarchical-cme)
 
 ############################################
 # Find external packages and set libraries #
@@ -133,6 +134,7 @@ set(SRC_FILES ${SRC}/grid_class.cpp
               ${SRC}/reaction_class.cpp
               ${SRC}/s_step_functions.cpp
               ${SRC}/timer_class.cpp
+              ${SRC}/tree_class.cpp
               ${SRC}/weight_functions.cpp)
 
 ########################
