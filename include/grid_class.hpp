@@ -37,4 +37,18 @@ struct grid_info
 };
 
 
+// struct for storing the grid parameters of one node of the hierarchical problem in a compact form
+
+struct grid_parms
+{
+    Index d;
+    multi_array<Index, 1> n;
+    multi_array<Index, 1> binsize;
+    multi_array<double, 1> liml;
+    Index dx;
+    Index h_mult;
+
+    grid_parms(Index _d, multi_array<Index, 1> _n, multi_array<Index, 1> _binsize, multi_array<double, 1> _liml);
+};
+
 #endif

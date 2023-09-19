@@ -64,3 +64,15 @@ grid_info::grid_info(Index _m1, Index _m2, Index _r, const Index _n1[], const In
 
     grid_common_init();
 }
+
+grid_parms::grid_parms(Index _d, multi_array<Index, 1> _n, multi_array<Index, 1> _binsize, multi_array<double, 1> _liml) : d(_d), n(_n), binsize(_binsize), liml(_liml)
+{
+    dx = 1;
+    h_mult = 1;
+
+    for (Index i = 0; i < d; i++)
+    {
+        dx *= n(i);
+        h_mult *= binsize(i);
+    }
+}
