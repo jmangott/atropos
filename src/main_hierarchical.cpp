@@ -23,7 +23,8 @@ int main()
     root_node.left = &child_node;
     cout << root_node.rank() << " " << child_node.rank() << endl;
     root_node.left->left = &child_child_node;
-    // cout << root_node.left->left->grid.d << endl;
+    cout << dynamic_cast<external_node<coeff>*>(root_node.left->left)->grid.d << endl;
+    cout << dynamic_cast<internal_node<coeff>*>(root_node.left)->rank() << endl;
 
     // cout << child_node.parent->rank() << endl;
     // cout << root_node.left->rank() << endl;
