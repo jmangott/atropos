@@ -1,12 +1,12 @@
 #ifndef TREE_CLASS_HPP
 #define TREE_CLASS_HPP
 
-#include<memory>
 #include <vector>
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
 
+#include "coeff_class.hpp"
 #include "grid_class.hpp"
 
 
@@ -14,41 +14,65 @@
 template<class T>
 struct node
 {
-    std::unique_ptr<node<T>> left;
-    std::unique_ptr<node<T>> right;
+    node<T>* left;
+    node<T>* right;
 };
 
 template<class T>
 struct root : node<T>
 {
-    Index r;
-    multi_array<double, 2> s_matrix;
+    multi_array<double, 2> S;
+
+    root(Index _r) : S({_r, _r}) {};
+
+    Index rank() const
+    {
+        return S.shape()[0];
+    }
 };
 
 template<class T>
 struct internal_node : node<T>
 {
-    Index r;
+    node<T>* parent;
     T internal_coeff;
-    multi_array<double, 2> s_matrix;
-    multi_array<double, 3> q_tensor;
-    multi_array<double, 3> g_tensor;
+    multi_array<double, 3> Q;
+    multi_array<double, 3> G;
+    multi_array<double, 2> S;
+
+    // internal_node(node<T>* _parent, Index _r) : Q({_parent->rank(), _r, _r}), G({_parent->rank(), _r, _r}), S({_r, _r}) {};
+    internal_node(node<T>* _parent, Index _r) : Q({_r, _r, _r}), G({_r, _r, _r}), S({_r, _r}) {};
+
+    Index rank() const
+    {
+        return S.shape()[0];
+    }    
 };
 
 template<class T>
 struct external_node : node<T>
 {
-    std::unique_ptr<node<T>> left = nullptr;
-    std::unique_ptr<node<T>> right = nullptr;
-    grid_info grid;
+    node<T>* parent;
+    node<T>* left = nullptr;
+    node<T>* right = nullptr;
+    grid_parms grid;
     T external_coeff;
-    multi_array<double, 2> s_matrix;
+    multi_array<double, 2> X;
+
+    // external_node<T>(node<T>* _parent, grid_parms _grid) : grid(_grid), X({_parent->rank(), _grid.dx}) {};
+    external_node<T>(node<T>* _parent, grid_parms _grid) : grid(_grid), X({1, _grid.dx}) {};
+
+    Index problem_size() const
+    {
+        return X.shape()[0];
+    }
+
 };
 
 template<class T>
 struct tree
 {
-    std::unique_ptr<root<T>> root_node;
+    root<T>* root_node;
 };
 
 #endif
