@@ -16,6 +16,9 @@ struct node
 {
     node<T>* left;
     node<T>* right;
+
+    public:
+        virtual ~node(){};
 };
 
 template<class T>
@@ -40,8 +43,8 @@ struct internal_node : node<T>
     multi_array<double, 3> G;
     multi_array<double, 2> S;
 
-    // internal_node(node<T>* _parent, Index _r) : Q({_parent->rank(), _r, _r}), G({_parent->rank(), _r, _r}), S({_r, _r}) {};
-    internal_node(node<T>* _parent, Index _r) : Q({_r, _r, _r}), G({_r, _r, _r}), S({_r, _r}) {};
+    internal_node(root<T>* _parent, Index _r) : Q({_parent->rank(), _r, _r}), G({_parent->rank(), _r, _r}), S({_r, _r}) {};
+    internal_node(internal_node<T>* _parent, Index _r) : Q({_parent->rank(), _r, _r}), G({_parent->rank(), _r, _r}), S({_r, _r}) {};
 
     Index rank() const
     {
@@ -59,8 +62,8 @@ struct external_node : node<T>
     T external_coeff;
     multi_array<double, 2> X;
 
-    // external_node<T>(node<T>* _parent, grid_parms _grid) : grid(_grid), X({_parent->rank(), _grid.dx}) {};
-    external_node<T>(node<T>* _parent, grid_parms _grid) : grid(_grid), X({1, _grid.dx}) {};
+    external_node(root<T>* _parent, grid_parms _grid) : grid(_grid), X({_parent->rank(), _grid.dx}) {};
+    external_node(internal_node<T>* _parent, grid_parms _grid) : grid(_grid), X({_parent->rank(), _grid.dx}) {};
 
     Index problem_size() const
     {
