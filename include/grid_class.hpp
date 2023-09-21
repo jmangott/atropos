@@ -6,6 +6,7 @@
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
 
+#include "reaction_class.hpp"
 
 // struct for storing the grid parameters in a compact form
 struct grid_info
@@ -41,14 +42,22 @@ struct grid_info
 
 struct grid_parms
 {
-    Index d;
-    multi_array<Index, 1> n;
-    multi_array<Index, 1> binsize;
-    multi_array<double, 1> liml;
+    std::vector<Index> n;
+    std::vector<Index> binsize;
+    std::vector<double> liml;
     Index dx;
     Index h_mult;
+    Index d;
 
-    grid_parms(Index _d, multi_array<Index, 1> _n, multi_array<Index, 1> _binsize, multi_array<double, 1> _liml);
+    std::vector<std::vector<Index>> dep;
+    std::vector<std::vector<Index>> n_dep;
+    std::vector<std::vector<Index>> n_rem;
+    std::vector<Index> dx_dep;
+    std::vector<Index> dx_rem;
+
+    grid_parms(std::vector<Index> _n, std::vector<Index> _binsize, std::vector<double> _liml, std::vector<std::vector<Index>> dep);
+
+    // grid_parms(grid_parms _grid1, grid_parms _grid2);
 };
 
 #endif

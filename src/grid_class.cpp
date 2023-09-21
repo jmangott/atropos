@@ -65,14 +65,51 @@ grid_info::grid_info(Index _m1, Index _m2, Index _r, const Index _n1[], const In
     grid_common_init();
 }
 
-grid_parms::grid_parms(Index _d, multi_array<Index, 1> _n, multi_array<Index, 1> _binsize, multi_array<double, 1> _liml) : d(_d), n(_n), binsize(_binsize), liml(_liml)
+grid_parms::grid_parms(vector<Index> _n, vector<Index> _binsize, vector<double> _liml, vector<vector<Index>> _dep) : n(_n), binsize(_binsize), liml(_liml), d(_n.size()), dep(_dep), n_dep(_dep.size()), n_rem(_dep.size()), dx_dep(_dep.size()), dx_rem(_dep.size())
 {
     dx = 1;
     h_mult = 1;
 
     for (Index i = 0; i < d; i++)
     {
-        dx *= n(i);
-        h_mult *= binsize(i);
+        dx *= n[i];
+        h_mult *= binsize[i];
+    }
+    for (size_t mu = 0; mu < _dep.size(); mu++)
+    {
+        dx_dep[mu] = 1;
+        dx_rem[mu] = 1;
+        n_rem[mu] = n;
+        for (auto const &dep_ele : dep[mu])
+        {
+            n_dep[mu].push_back(n[dep_ele]);
+            n_rem[mu][dep_ele] = 1;
+        }
     }
 }
+
+// grid_parms::grid_parms(grid_parms _grid1, grid_parms _grid2) : d(_grid1.d + _grid2.d) 
+// {
+//     n = _grid1.n;
+//     binsize = _grid1.binsize;
+//     liml = _grid1.liml;
+
+//     n.insert(n.end(), _grid2.n.begin(), _grid2.n.end());
+//     binsize.insert(binsize.end(), _grid2.binsize.begin(), _grid2.binsize.end());
+//     liml.insert(liml.end(), _grid2.liml.begin(), _grid2.liml.end());
+
+//     dep = _grid1.dep;
+//     n_dep = _grid1.n_dep;
+//     n_rem = _grid1.n_rem;
+//     dx_dep = _grid1.dx_dep;
+//     dx_rem = _grid1.dx_rem;
+
+//     for (size_t mu = 0; mu < _grid1.dep.size(); mu++)
+//     {
+//         dep[mu].insert(dep[mu].end(), _grid2.dep[mu].begin(), _grid2.dep[mu].end());
+//         n_dep[mu].insert(n_dep[mu].end(), _grid2.n_dep[mu].begin(), _grid2.n_dep[mu].end());
+//         n_rem[mu].insert(n_rem[mu].end(), _grid2.n_rem[mu].begin(), _grid2.n_rem[mu].end());
+//         dx_dep[mu] *= _grid2.dx_dep[mu];
+//         dx_rem[mu] *= _grid2.dx_rem[mu];
+//     }
+// }
