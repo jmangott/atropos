@@ -4,12 +4,6 @@ using std::ifstream;
 using std::string;
 using std::stringstream;
 
-#define ERROR_NETCDF(e)                                                         \
-    {                                                                           \
-        printf("NetCDF Error %s:%i: %s\n", __FILE__, __LINE__, nc_strerror(e)); \
-        exit(1);                                                                \
-    }
-
 
 void WriteNC(string fn, const lr2<double> &lr_sol, vector<string> names, grid_info grid, double *t, double *dt)
 {
