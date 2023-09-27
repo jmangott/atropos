@@ -79,7 +79,7 @@ class Partition:
             n = self.__countInternalNodes(partition_str1, n + 1)
         return n
 
-    def __buildBinaryTree(self, node, partition_str, r_iter):
+    def __buildTree(self, node, partition_str, r_iter):
         sigma = 0
         for i, ele in enumerate(partition_str):
             sigma += self.__parsingHelper(ele)
@@ -92,26 +92,26 @@ class Partition:
         p0 = self.__removeBrackets(partition_str0)
 
         grid0 = GridParms(
-            node.grid.n[:p0.size], node.grid.binsize[:p0.size], node.grid.liml[:p0.size])
+            node.grid.n[:p0.size], node.grid.binsize[:p0.size], node.grid.liml[:p0.size], node.grid.dep[:, :p0.size])
         grid1 = GridParms(
-            node.grid.n[p0.size:], node.grid.binsize[p0.size:], node.grid.liml[p0.size:])
+            node.grid.n[p0.size:], node.grid.binsize[p0.size:], node.grid.liml[p0.size:], node.grid.dep[:, p0.size:])
 
         if (partition_str0[0] == "("):
             node.left = InternalNode(node, node.id + 0, grid0, next(r_iter))
-            self.__buildBinaryTree(node.left, partition_str0, r_iter)
+            self.__buildTree(node.left, partition_str0, r_iter)
         else:
             node.left = ExternalNode(node, node.id + 0, grid0)
 
         if (partition_str1[0] == "("):
             node.right = InternalNode(node, node.id + 1, grid1, next(r_iter))
-            self.__buildBinaryTree(node.right, partition_str1, r_iter)
+            self.__buildTree(node.right, partition_str1, r_iter)
         else:
             node.right = ExternalNode(node, node.id + 1, grid1)
         return
 
-    def buildBinaryTree(self):
+    def buildTree(self):
         r_iter = iter(self.r[1:])
-        self.__buildBinaryTree(self.tree.root, self.partition_str, r_iter)
+        self.__buildTree(self.tree.root, self.partition_str, r_iter)
 
     def initializeTree(self):
         ...
@@ -127,7 +127,8 @@ class Partition:
                 "S": (["r", "r"], node.S),
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"],node.grid.binsize),
-                "liml": (["d"], node.grid.liml)
+                "liml": (["d"], node.grid.liml),
+                "dep": (["mu", "d"], node.grid.dep)
             }
         )
         return ds
@@ -139,7 +140,8 @@ class Partition:
                 "X": (["n_basisfunctions", "dx"], node.X),
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"],node.grid.binsize),
-                "liml": (["d"], node.grid.liml)
+                "liml": (["d"], node.grid.liml),
+                "dep": (["mu", "d"], node.grid.dep)
             }
         )
         return ds
@@ -176,6 +178,7 @@ class Partition:
                 "n": (["d"], self.tree.root.grid.n),
                 "binsize": (["d"], self.tree.root.grid.binsize),
                 "liml": (["d"], self.tree.root.grid.liml),
+                "dep": (["mu", "d"], self.tree.root.grid.dep)
             }
         )
         dt = DataTree(name=str(self.tree.root.id), data=ds)
@@ -185,11 +188,13 @@ class Partition:
 if __name__ == "__main__":
     partition_str = "((0 1)(2 3))((4 5)((6)(7 8)))"
     r = np.array([5, 4, 3, 2])
+    mu = 5
     n = np.array([4, 6, 7, 8, 3, 5, 2, 9, 1])
-    binsize = np.ones(9, dtype=int)
-    liml = np.zeros(9)
-    grid = GridParms(n, binsize, liml)
+    binsize = np.ones(n.size, dtype=int)
+    liml = np.zeros(n.size)
+    dep = np.ones((mu, n.size), dtype=bool)
+    grid = GridParms(n, binsize, liml, dep)
     j = Partition(partition_str, grid, r)
-    j.buildBinaryTree()
+    j.buildTree()
     j.printTree()
     j.writeTree()
