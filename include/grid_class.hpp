@@ -42,22 +42,49 @@ struct grid_info
 
 struct grid_parms
 {
+    Index d;
+    Index mu;
     std::vector<Index> n;
     std::vector<Index> binsize;
     std::vector<double> liml;
-    Index dx;
-    Index h_mult;
-    Index d;
+    multi_array<bool, 2> dep;
 
-    std::vector<std::vector<Index>> dep;
-    std::vector<std::vector<Index>> n_dep;
-    std::vector<std::vector<Index>> n_rem;
-    std::vector<Index> dx_dep;
-    std::vector<Index> dx_rem;
+    grid_parms(Index _d, Index _mu) : d(_d), mu(_mu), n(_d), binsize(_d), liml(_d), dep({_mu, _d}) {};
 
-    grid_parms(std::vector<Index> _n, std::vector<Index> _binsize, std::vector<double> _liml, std::vector<std::vector<Index>> dep);
+    grid_parms(std::vector<Index> _n, std::vector<Index> _binsize, std::vector<double> _liml, multi_array<bool, 2> _dep) : d(_n.size()), mu(_dep.shape()[0]), n(_n), binsize(_binsize), liml(_liml), dep(_dep) {};
 
-    // grid_parms(grid_parms _grid1, grid_parms _grid2);
+    Index dx() const
+    {
+        Index result = 1;
+        for (const auto &ele : n)
+        {
+            result *= ele;
+        }
+        return result;
+    }
+
+    Index h_mult() const
+    {
+        Index result = 1;
+        for (const auto &ele : binsize)
+        {
+            result *= ele;
+        }
+        return result;
+    }
+
+    Index dx_dep(Index mu) const
+    {
+        Index result = 1;
+        for (Index i = 0; i < d; i++)
+        {
+            if (dep(mu, i) == true)
+            {
+                result *= n[i];
+            }
+        }
+        return result;
+    }
 };
 
 #endif
