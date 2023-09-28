@@ -166,3 +166,53 @@ void ReadNC(string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2,
     if ((retval = nc_close(ncid)))
         ERROR_NETCDF(retval);
 }
+
+grid_parms ReadGridParms(int ncid)
+{
+    int retval;
+
+    // read dimensions
+    int id_d, id_mu;
+    if ((retval = nc_inq_dimid(ncid, "d", &id_d)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_dimid(ncid, "mu", &id_mu)))
+        ERROR_NETCDF(retval);
+
+    size_t d_t, mu_t;
+    char tmp[NC_MAX_NAME + 1];
+    if ((retval = nc_inq_dim(ncid, id_d, tmp, &d_t)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_dim(ncid, id_mu, tmp, &mu_t)))
+        ERROR_NETCDF(retval);
+
+    Index d = (Index)d_t;
+    Index mu = (Index)mu_t;
+
+    // read variables
+    int id_n, id_binsize, id_liml, id_dep;
+
+    if ((retval = nc_inq_varid(ncid, "n", &id_n)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_varid(ncid, "binsize", &id_binsize)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_varid(ncid, "liml", &id_liml)))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_inq_varid(ncid, "dep", &id_dep)))
+        ERROR_NETCDF(retval);
+
+    grid_parms grid(d, mu);
+    multi_array<signed char, 2> dep_int({mu, d});
+
+    if ((retval = nc_get_var_long(ncid, id_n, grid.n.data())))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_get_var_long(ncid, id_binsize, grid.binsize.data())))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_get_var_double(ncid, id_liml, grid.liml.data())))
+        ERROR_NETCDF(retval);
+    if ((retval = nc_get_var_schar(ncid, id_dep, dep_int.data())))
+        ERROR_NETCDF(retval);
+
+    std::copy(dep_int.begin(), dep_int.end(), grid.dep.begin());
+
+    return grid;
+}

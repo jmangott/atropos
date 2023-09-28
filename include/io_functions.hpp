@@ -32,58 +32,11 @@ void WriteNC(std::string fn, const lr2<double> &lr_sol, vector<string> names, gr
 void ReadNC(std::string fn, multi_array<double, 2> &xx1, multi_array<double, 2> &xx2, multi_array<double, 2> &ss, Index &n_basisfunctions);
 
 
-grid_parms ReadGridParms(int ncid)
-{
-    int retval;
+grid_parms ReadGridParms(int ncid);
 
-    // read dimensions
-    int id_d, id_mu;
-    if ((retval = nc_inq_dimid(ncid, "d", &id_d)))
-        ERROR_NETCDF(retval);
-    if ((retval = nc_inq_dimid(ncid, "mu", &id_mu)))
-        ERROR_NETCDF(retval);
-
-    size_t d_t, mu_t;
-    char tmp[NC_MAX_NAME + 1];
-    if ((retval = nc_inq_dim(ncid, id_d, tmp, &d_t)))
-        ERROR_NETCDF(retval);
-    if ((retval = nc_inq_dim(ncid, id_mu, tmp, &mu_t)))
-        ERROR_NETCDF(retval);
-
-    Index d = (Index)d_t;
-    Index mu = (Index)mu_t;
-
-    // read variables
-    int id_n, id_binsize, id_liml, id_dep, id_S;
-
-    if ((retval = nc_inq_varid(ncid, "n", &id_n)))
-        ERROR_NETCDF(retval);
-    if ((retval = nc_inq_varid(ncid, "binsize", &id_binsize)))
-        ERROR_NETCDF(retval);
-    if ((retval = nc_inq_varid(ncid, "liml", &id_liml)))
-        ERROR_NETCDF(retval);
-    if ((retval = nc_inq_varid(ncid, "dep", &id_dep)))
-        ERROR_NETCDF(retval);
-
-    grid_parms grid(d, mu);
-    multi_array<signed char, 2> dep_int({mu, d});
-
-    if ((retval = nc_get_var_long(ncid, id_n, grid.n.data())))
-        ERROR_NETCDF(retval);
-    if ((retval = nc_get_var_long(ncid, id_binsize, grid.binsize.data())))
-        ERROR_NETCDF(retval);
-    if ((retval = nc_get_var_double(ncid, id_liml, grid.liml.data())))
-        ERROR_NETCDF(retval);
-    if ((retval = nc_get_var_schar(ncid, id_dep, dep_int.data())))
-        ERROR_NETCDF(retval);
-
-    std::copy(dep_int.begin(), dep_int.end(), grid.dep.begin());
-
-    return grid;
-}
 
 template<class T>
-void ReadInternalNode(int ncid, internal_node<T>* node)
+void ReadInternalNode(int ncid, std::string id, node<T>* parent_node, node<T>* &node)
 {
     int retval;
 
@@ -100,10 +53,17 @@ void ReadInternalNode(int ncid, internal_node<T>* node)
     Index r = (Index) r_t;
 
     // read grid
-    grid_info grid = ReadGridParms(ncid);
+    grid_parms grid = ReadGridParms(ncid);
 
     // create node
-    tree.root_node = new cme_internal_node<T>(grid, r);
+    if (id == "0" || id == "1")
+    {
+        node = new cme_internal_node<T>(dynamic_cast<cme_root<T> *>(parent_node), grid, r);
+    }
+    else
+    {
+        node = new cme_internal_node<T>(dynamic_cast<cme_internal_node<T> *>(parent_node), grid, r);
+    }
     
     // read Q and S
     int id_Q, id_S;
@@ -111,55 +71,61 @@ void ReadInternalNode(int ncid, internal_node<T>* node)
         ERROR_NETCDF(retval);
     if ((retval = nc_inq_varid(ncid, "S", &id_S)))
         ERROR_NETCDF(retval);
-    if ((retval = nc_get_var_double(ncid, id_Q, tree.root_node->Q.data())))
+    if ((retval = nc_get_var_double(ncid, id_Q, dynamic_cast<cme_internal_node<T>*>(node)->Q.data())))
         ERROR_NETCDF(retval);
-    if ((retval = nc_get_var_double(ncid, id_S, tree.root_node->S.data())))
+    if ((retval = nc_get_var_double(ncid, id_S, dynamic_cast<cme_internal_node<T> *>(node)->S.data())))
         ERROR_NETCDF(retval);
 }
 
-
-template<class T>
-void ReadExternalNode(int ncid, external_node<T>* node)
+template <class T>
+void ReadExternalNode(int ncid, std::string id, node<T> *parent_node, node<T>* &node)
 {
     int retval;
 
     // read grid
-    grid_info grid = ReadGridParms(ncid);
+    grid_parms grid = ReadGridParms(ncid);
 
     // create node
-    tree.root_node = new cme_external_node<T>(grid);
+    if (id == "0" || id == "1")
+    {
+        node = new cme_external_node<T>(dynamic_cast<cme_root<T>*>(parent_node), grid);
+    }
+    else
+    {
+        node = new cme_external_node<T>(dynamic_cast<cme_internal_node<T>*>(parent_node), grid);
+    }
 
     // read X
     int id_X;
     if ((retval = nc_inq_varid(ncid, "X", &id_X)))
         ERROR_NETCDF(retval);
-    if ((retval = nc_get_var_double(ncid, id_X, tree.root_node->X.data())))
+    if ((retval = nc_get_var_double(ncid, id_X, dynamic_cast<cme_external_node<T>*>(node)->X.data())))
         ERROR_NETCDF(retval);
 }
 
 
 template<class T>
-void __ReadHierarchicalNC(int ncid, std::string id, node<T>* node)
+void __ReadHierarchicalNC(int ncid, std::string id, node<T>* parent_node, node<T>* &node)
 {
     int retval, grp_ncid;
-    if (retval = nc_inq_grp_ncid(ncid, (id + "0").c_str(), &grp_ncid))
+    if ((retval = nc_inq_ncid(ncid, (id + "0").c_str(), &grp_ncid)))
     {
-        ReadInternalNode(node);
-        __ReadHierarchicalNC(grp_ncid, id + "0", node->left);
+        ReadExternalNode(ncid, id, parent_node, node);
     }
     else
     {
-        ReadExternalNode(node);
+        ReadInternalNode(ncid, id, parent_node, node);
+        __ReadHierarchicalNC(grp_ncid, id + "0", node, dynamic_cast<internal_node<T> *>(node)->left);
     }
 
-    if (retval = nc_inq_grp_ncid(ncid, (id + "1").c_str(), &grp_ncid))
+    if ((retval = nc_inq_ncid(ncid, (id + "1").c_str(), &grp_ncid)))
     {
-        ReadInternalNode(node);
-        __ReadHierarchicalNC(grp_ncid, id + "1", node->right);
+        ReadExternalNode(ncid, id, parent_node, node);
     }
     else
     {
-        ReadExternalNode(node);
+        ReadInternalNode(ncid, id, parent_node, node);
+        __ReadHierarchicalNC(grp_ncid, id + "1", node, node->right);
     }
 }
 
@@ -186,7 +152,7 @@ void ReadHierarchicalNC(std::string fn, lr_tree<T> &tree)
     Index r = (Index)r_t;
 
     // read grid
-    grid_info grid = ReadGridParms(ncid);
+    grid_parms grid = ReadGridParms(ncid);
 
     // create node
     tree.root_node = new cme_root<T>(grid, r);
@@ -200,13 +166,13 @@ void ReadHierarchicalNC(std::string fn, lr_tree<T> &tree)
 
     int grp_ncid;
 
-    if (retval = nc_inq_grp_ncid(ncid, (id + "0").c_str(), &grp_ncid))
+    if ((retval = nc_inq_ncid(ncid, "0", &grp_ncid)))
         ERROR_NETCDF(retval);
-    __ReadHierarchicalNC(tree.root_node, grp_ncid);
+    __ReadHierarchicalNC(grp_ncid, "0", tree.root_node, tree.root_node->left);
 
-    if (retval = nc_inq_grp_ncid(ncid, (id + "1").c_str(), &grp_ncid))
+    if ((retval = nc_inq_ncid(ncid, "1", &grp_ncid)))
         ERROR_NETCDF(retval);
-    __ReadHierarchicalNC(tree.root_node, grp_ncid);
+    __ReadHierarchicalNC(grp_ncid, "1", tree.root_node, tree.root_node->right);
 
     if ((retval = nc_close(ncid)))
         ERROR_NETCDF(retval);
