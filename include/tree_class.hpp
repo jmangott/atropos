@@ -1,32 +1,53 @@
 #ifndef TREE_CLASS_HPP
 #define TREE_CLASS_HPP
 
+#include <variant>
 #include <vector>
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
 
+#include <netcdf.h>
+
 #include "coeff_class.hpp"
 #include "grid_class.hpp"
-
+#include "netcdf_error.hpp"
 
 // General classes for the hierarchical DLR approximation
-template<class T>
 struct node
 {
-    node<T>* left = nullptr;
-    node<T>* right = nullptr;
+    std::string id;
+
+    node* parent;
+    node* left;
+    node* right;
+
+    node(std::string _id, node* _parent, node* _left, node* _right) : id(_id), parent(_parent), left(_left), right(_right) {};
 
     virtual ~node() {};
+
+    virtual bool IsRoot() = 0;
+    virtual bool IsExternal() = 0;
+    virtual void InitializeNode(int ncid) = 0;
 };
 
-template<class T>
-struct root : node<T>
+struct root_node : node
 {
-    T root_coeff;
     multi_array<double, 2> S;
 
-    root(Index _r) : S({_r, _r}) {};
+    root_node(Index _r) : node("", nullptr, nullptr, nullptr), S({_r, _r}) {};
+
+    bool IsRoot()
+    {
+        return true;
+    }
+    
+    bool IsExternal()
+    {
+        return false;
+    }
+
+    void InitializeNode(int ncid);
 
     Index rank() const
     {
@@ -34,17 +55,26 @@ struct root : node<T>
     }
 };
 
-template<class T>
-struct internal_node : node<T>
+struct internal_node : node
 {
-    node<T>* parent;
-    T internal_coeff;
     multi_array<double, 3> Q;
     multi_array<double, 3> G;
     multi_array<double, 2> S;
 
-    internal_node(root<T>* _parent, Index _r) : Q({_parent->rank(), _r, _r}), G({_parent->rank(), _r, _r}), S({_r, _r}) {};
-    internal_node(internal_node<T>* _parent, Index _r) : Q({_parent->rank(), _r, _r}), G({_parent->rank(), _r, _r}), S({_r, _r}) {};
+    internal_node(std::string _id, root_node* _parent, Index _r) : node(_id, _parent, nullptr, nullptr), Q({_parent->rank(), _r, _r}), G({_parent->rank(), _r, _r}), S({_r, _r}) {};
+    internal_node(std::string _id, internal_node *_parent, Index _r) : node(_id, _parent, nullptr, nullptr), Q({_parent->rank(), _r, _r}), G({_parent->rank(), _r, _r}), S({_r, _r}) {};
+
+    bool IsRoot()
+    {
+        return false;
+    }
+
+    bool IsExternal()
+    {
+        return false;
+    }
+
+    void InitializeNode(int ncid);
 
     Index rank() const
     {
@@ -52,15 +82,24 @@ struct internal_node : node<T>
     }
 };
 
-template<class T>
-struct external_node : node<T>
+struct external_node : node
 {
-    node<T>* parent;
-    T external_coeff;
     multi_array<double, 2> X;
 
-    external_node(root<T>* _parent, Index _dx) : X({_parent->rank(), _dx}) {};
-    external_node(internal_node<T>* _parent, Index _dx) : X({_parent->rank(), _dx}) {};
+    external_node(std::string _id, root_node* _parent, Index _dx) : node(_id, _parent, nullptr, nullptr), X({_parent->rank(), _dx}) {};
+    external_node(std::string _id, internal_node *_parent, Index _dx) : node(_id, _parent, nullptr, nullptr), X({_parent->rank(), _dx}) {};
+
+    bool IsRoot()
+    {
+        return false;
+    }
+
+    bool IsExternal()
+    {
+        return true;
+    }
+
+    void InitializeNode(int ncid);
 
     Index problem_size() const
     {
@@ -68,40 +107,47 @@ struct external_node : node<T>
     }
 };
 
-template<class T>
-struct lr_tree
-{
-    root<T>* root_node;
-
-    // lr_tree(root<T>* _root_node) : root_node(_root_node) {};
-};
-
-
-// Dervied, CME-specific classes
-template<class T>
-struct cme_root : root<T>
+// Derived, CME-specific classes
+struct cme_root_node : root_node
 {
     grid_parms grid;
+    root_coeff coefficients;
 
-    cme_root(grid_parms _grid, Index _r) : root<T>(_r), grid(_grid) {};
+    cme_root_node(grid_parms _grid, Index _r) : root_node(_r), grid(_grid) {};
 };
 
-template<class T>
-struct cme_internal_node : internal_node<T>
+struct cme_internal_node : internal_node
 {
     grid_parms grid;
+    internal_coeff coefficients;
 
-    cme_internal_node(root<T> *_parent, grid_parms _grid, Index _r) : internal_node<T>(_parent, _r), grid(_grid){};
-    cme_internal_node(internal_node<T> *_parent, grid_parms _grid, Index _r) : internal_node<T>(_parent, _r), grid(_grid) {};
+    cme_internal_node(std::string _id, cme_root_node *_parent, grid_parms _grid, Index _r) : internal_node
+    (_id, _parent, _r), grid(_grid) {};
+    cme_internal_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r) : internal_node(_id, _parent, _r), grid(_grid) {};
 };
 
-template<class T>
-struct cme_external_node : external_node<T>
+struct cme_external_node : external_node
 {
     grid_parms grid;
+    external_coeff coefficients;
 
-    cme_external_node(root<T> *_parent, grid_parms _grid) : external_node<T>(_parent, _grid.dx()), grid(_grid) {};
-    cme_external_node(internal_node<T> *_parent, grid_parms _grid) : external_node<T>(_parent, _grid.dx()), grid(_grid) {};
+    cme_external_node(std::string _id, cme_root_node* _parent, grid_parms _grid) : external_node(_id, _parent, _grid.dx()), grid(_grid) {};
+    cme_external_node(std::string _id, cme_internal_node* _parent, grid_parms _grid) : external_node(_id, _parent, _grid.dx()), grid(_grid) {};
+};
+
+struct cme_lr_tree
+{
+    cme_root_node *root;
+
+    private:
+        struct ReadTreeHelpers;
+        ReadTreeHelpers* pReadTreeHelpers;
+        // node* ReadTreeHelper(int ncid, std::string id, node* parent_node);
+        void PrintTreeHelper(node* node);
+
+    public:
+        void ReadTree(std::string fn);
+        void PrintTree();
 };
 
 #endif
