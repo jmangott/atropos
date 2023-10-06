@@ -1,3 +1,4 @@
+"""Contains the `GridParms` class for storing grid parameters for a partition of the reaction network."""
 import numpy as np
 import numpy.typing as npt
 
