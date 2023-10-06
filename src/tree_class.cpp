@@ -186,17 +186,17 @@ void cme_lr_tree::PrintTreeHelper(node* node)
 {
     if (node->IsExternal())
     {
-        cout << "external_node, id: " << node->id << "X.shape(): " << endl;
+        cout << "external_node, id: " << node->id << ", X.shape(): (" << ((cme_external_node*) node)->X.shape()[0] << "," << ((cme_external_node*) node)->X.shape()[1] << ")" << endl;
     }
     else
     {
         if (node->IsRoot())
         {
-            cout << "root_node, id: " << node->id << endl;
+            cout << "root_node, id: " << node->id << ", rank: " << ((cme_root_node*) node)->rank() << endl;
         }
         else
         {
-            cout << "internal_node, id: " << node->id << endl;
+            cout << "internal_node, id: " << node->id << ", rank: " << ((cme_internal_node*) node)->rank() << endl;
         }
         cme_lr_tree::PrintTreeHelper(node->left);
         cme_lr_tree::PrintTreeHelper(node->right);
