@@ -35,7 +35,7 @@ struct root_node : node
 {
     multi_array<double, 2> S;
 
-    root_node(Index _r) : node("", nullptr, nullptr, nullptr), S({_r, _r}) {};
+    root_node(Index _r) : node("root", nullptr, nullptr, nullptr), S({_r, _r}) {};
 
     bool IsRoot()
     {
@@ -105,6 +105,12 @@ struct external_node : node
     {
         return X.shape()[0];
     }
+
+// TODO: Ask Lukas how orthogonalization should be done, inplace or with a temporary array?
+    Index n_basisfunctions() const
+    {
+        return X.shape()[1];
+    }
 };
 
 // Derived, CME-specific classes
@@ -142,7 +148,6 @@ struct cme_lr_tree
     private:
         struct ReadTreeHelpers;
         ReadTreeHelpers* pReadTreeHelpers;
-        // node* ReadTreeHelper(int ncid, std::string id, node* parent_node);
         void PrintTreeHelper(node* node);
 
     public:
