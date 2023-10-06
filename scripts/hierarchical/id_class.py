@@ -1,3 +1,4 @@
+"""Contains the `Id` class for proper naming of the partitions of the reaction network."""
 from typing import Union
 import re
 

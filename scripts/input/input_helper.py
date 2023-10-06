@@ -1,4 +1,4 @@
-"""Helper moodule for setting the initial conditions."""
+"""Helper module for setting the initial conditions."""
 import numpy as np
 import os
 import xarray as xr
