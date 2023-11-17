@@ -39,7 +39,7 @@ with rank $`r`$, low-rank factors $`X_i^1(t,x_{(1)})`$ and $`X_i^2(t,x_{(2)})`$ 
 
 ## Requirements
 - CMake (3.22.1 or later)
-- C++17 compatible C++ compiler
+- C++20 compatible C++ compiler
 - Fortran compiler (if OpenBLAS is used)
 - HDF5 (1.10.x)
 - netCDF4
