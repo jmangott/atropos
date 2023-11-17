@@ -16,6 +16,19 @@
 
 Index VecIndexToCombIndex(std::vector<Index> vec_index, multi_array<Index, 1> interval);
 
+template<class InputIt, class InputItInt>
+Index VecIndexToCombIndex(InputIt first, InputIt last, InputItInt first_int)
+{
+    Index comb_index = 0;
+    Index stride = 1;
+    for (; first != last; ++first, ++first_int)
+    {
+        comb_index += *first * stride;
+        stride *= *first_int;
+    }
+    return comb_index;
+}
+
 
 inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index, const std::vector<Index> &interval)
 {
@@ -38,6 +51,20 @@ inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index,
         comb_index = Index (comb_index / interval(i));
     }
     if (dim > 0) vec_index[dim - 1] = comb_index;
+}
+
+template<class InputIt, class InputItInt>
+inline Index CombIndexToVecIndex(InputIt first, InputIt last, InputItInt first_int)
+{
+    Index comb_index;
+    for (; first != last; ++first, ++first_int)
+    {
+        *first = comb_index % *first_int;
+        comb_index = Index (comb_index / *first_int);
+    }
+    *last = comb_index;
+
+    return comb_index;
 }
 
 
@@ -67,6 +94,19 @@ inline void IncrVecIndex(std::vector<Index> &vec_index, const multi_array<Index,
         vec_index[k] = 0;
     }
     if (dim > 0) vec_index[dim - 1]++;
+}
+
+template <class InputIt, class OutputIt>
+inline void IncrVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
+{
+    for ( ; d_first != std::next(d_last, -1); ++first, ++d_first)
+    {
+        ++(*d_first);
+        if (*d_first < *first)
+            return;
+        *d_first = 0;
+    }
+    ++(*(std::next(d_last, -1)));
 }
 
 
