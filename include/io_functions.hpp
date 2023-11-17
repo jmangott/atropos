@@ -17,7 +17,6 @@
 #include "grid_class.hpp"
 #include "netcdf_error.hpp"
 #include "reaction_class.hpp"
-#include "tree_class.hpp"
 
 // Write `lr_sol` to a .netCDF file
 void WriteNC(std::string fn, const lr2<double> &lr_sol, vector<string> names, grid_info grid, double *t, double *dt);
