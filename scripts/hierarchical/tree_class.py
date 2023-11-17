@@ -1,5 +1,5 @@
 """
-Contains the `InitialCondition` class for setting up initial conditions and the `Tree` class for storing them as a binary tree according to a prescribed partition and writing them to a netCDF file.
+Contains the `Tree` class for storing the low-rank approximation od the initial probability distribution as a binary tree according to a prescribed partition and writing it to a netCDF file.
 """
 from datatree import DataTree
 import numpy as np
@@ -20,22 +20,26 @@ class Node:
         self.id = _id
         self.grid = _grid
 
-class RootNode(Node):
-    def __init__(self, _grid: GridParms, _r: int):
-        super().__init__(Id(""), _grid)
-        self.r = _r
-        self.S = np.zeros((_r, _r))
+# class RootNode(Node):
+#     def __init__(self, _grid: GridParms, _r: int):
+#         super().__init__(Id(""), _grid)
+#         self.r = _r
+#         self.S = np.zeros((_r, _r))
 
 class InternalNode(Node):
-    def __init__(self, _parent: Union[RootNode, 'InternalNode'], _id: Id, _grid: GridParms, _r: int):
+    def __init__(self, _parent: 'InternalNode', _id: Id, _grid: GridParms, _r: int):
         super().__init__(_id, _grid)
         self.parent = _parent
         self.r = _r
-        self.Q = np.zeros((self.parent.r, self.r, self.r))
+        if _parent == None:
+            parent_r = 1
+        else:
+            parent_r = self.parent.r
+        self.Q = np.zeros((parent_r, self.r, self.r), order="C")
         self.S = np.zeros((self.r, self.r))
 
 class ExternalNode(Node):
-    def __init__(self, _parent: Union[RootNode, 'InternalNode'], _id: Id, _grid: GridParms):
+    def __init__(self, _parent: InternalNode, _id: Id, _grid: GridParms):
         super().__init__(_id, _grid)
         self.parent = _parent
         self.X = np.zeros((self.parent.r, self.grid.dx))
@@ -71,12 +75,12 @@ class Tree:
                 "Dimensions of `_partition_str` and `_grid` do not match")
 
         # Calculate the number of internal nodes
-        self.n_internal_nodes = self.__countInternalNodes(_partition_str, 0)
+        self.n_internal_nodes = self.__countInternalNodes(_partition_str, 1)
 
-        # Test whether the dimension of `_r` is equal to n_internal_nodes + 1
-        if _r.size != self.n_internal_nodes + 1:
+        # Test whether the dimension of `_r` is equal to n_internal_nodes
+        if _r.size != self.n_internal_nodes:
             raise ValueError(
-                "`_r.size` must be equal to the number of internal nodes + 1")
+                "`_r.size` must be equal to the number of internal nodes")
         
         # Calculate the number of external nodes
         self.n_external_nodes = len(regex.findall(r"\(\d+(?:\s\d)*\)", _partition_str))
@@ -85,7 +89,7 @@ class Tree:
         self.grid = _grid
         self.r = _r
         self.parent_r = []
-        self.root = RootNode(self.grid, self.r[0])
+        self.root = InternalNode(None, Id(""), self.grid, self.r[0])
 
     @staticmethod
     def __parsingHelper(input_str):
@@ -157,7 +161,9 @@ class Tree:
 
     def __printTree(self, node: Node):
         if isinstance(node, ExternalNode):
-            print(type(node), "id:", node.id, "n:", node.grid)
+            print(type(node), "id:", node.id, "n:", node.grid, "X.shape:", node.X.shape)
+        elif isinstance(node, InternalNode):
+            print(type(node), "id:", node.id, "n:", node.grid, "Q.shape:", node.Q.shape)
         else:
             print(type(node), "id:", node.id, "n:", node.grid, "r:", node.r)
         if node.left:
@@ -172,7 +178,7 @@ class Tree:
     def __createInternalDataset(node: InternalNode):
         ds = xr.Dataset(
             {
-                "Q": (["parent_r", "r", "r"], node.Q),
+                "Q": (["n_basisfunctions", "r", "r"], node.Q),
                 "S": (["r", "r"], node.S),
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"], node.grid.binsize),
@@ -221,135 +227,18 @@ class Tree:
         if not os.path.exists("input"):
             os.makedirs("input")
 
-        ds = xr.Dataset(
-            {
-                "S": (["r", "r"], self.root.S),
-                "n": (["d"], self.root.grid.n),
-                "binsize": (["d"], self.root.grid.binsize),
-                "liml": (["d"], self.root.grid.liml),
-                "dep": (["mu", "d"], self.root.grid.dep)
-            }
-        )
+        ds = self.__createInternalDataset(self.root)
+
+        # xr.Dataset(
+        #     {
+        #         "S": (["r", "r"], self.root.S),
+        #         "n": (["d"], self.root.grid.n),
+        #         "binsize": (["d"], self.root.grid.binsize),
+        #         "liml": (["d"], self.root.grid.liml),
+        #         "dep": (["mu", "d"], self.root.grid.dep)
+        #     }
+        # )
+
         dt = DataTree(name=str(self.root.id), data=ds)
         self.__writeTree(self.root, dt)
         dt.to_netcdf(fname)
-
-class InitialCondition:
-    """
-    Provides all S matrices, the Q tensors and the low-rank factors as an array according to the following (recursive) ordering convention (OC):
-
-        1. left node
-        2. apply OC
-        3. right node
-
-    These arrays can then set conveniently to obey the initial conditions. For setting up the low-rank factors, the grid objects of the external nodes are also provided as an array (`grid_external_nodes`).
-    """
-    def __testNBasisfunctions(self, node: Node, n_basisfunctions_iter):
-        err = ValueError(
-            "The number of basisfunctions for the external node with id ({}) must be less or equal to the rank of the parent node".format(node.id))
-
-        if isinstance(node.left, ExternalNode) and isinstance(node.right, ExternalNode):
-                r0 = next(n_basisfunctions_iter)
-                r1 = next(n_basisfunctions_iter)
-                if (r0 != r1):
-                    raise ValueError(
-                        "The number of basisfunctions for two adjacent external nodes must be the same")
-                if (r0 > node.r):
-                    raise err
-
-        elif isinstance(node.left, ExternalNode) and isinstance(node.right, InternalNode):
-            r0 = next(n_basisfunctions_iter)
-            if (r0 > node.r):
-                raise err
-            self.__testNBasisfunctions(node.right, n_basisfunctions_iter)
-
-        elif isinstance(node.left, InternalNode) and isinstance(node.right, ExternalNode):
-            r1 = next(n_basisfunctions_iter)
-            if (r1 > node.r):
-                raise err
-            self.__testNBasisfunctions(node.left, n_basisfunctions_iter)
-
-        else:
-            self.__testNBasisfunctions(node.left, n_basisfunctions_iter)
-            self.__testNBasisfunctions(node.right, n_basisfunctions_iter)
-
-    def __getNodeData(self, node: Node):
-        if isinstance(node, ExternalNode):
-            self.grid_external_nodes.append(node.grid)
-            self.X.append(node.X)
-        else:
-            if isinstance(node, InternalNode):
-                self.Q.append(node.Q)
-            self.S.append(node.S)
-            self.__getNodeData(node.left)
-            self.__getNodeData(node.right)
-
-    def __init__(self, _tree: Tree, _n_basisfunctions: npt.NDArray[np.int_]):
-        if (_n_basisfunctions.size != _tree.n_external_nodes):
-            raise ValueError("`_n_basisfunctions.size` must be equal to the number of external nodes")
-        n_basisfunctions_iter = iter(_n_basisfunctions)
-        self.__testNBasisfunctions(_tree.root, n_basisfunctions_iter) 
-
-        self.n_basisfunctions = _n_basisfunctions
-        self.grid_external_nodes = []
-        self.S = []
-        self.Q = []
-        self.X = []
-        self.__getNodeData(_tree.root)
-
-        for i in range(tree.n_external_nodes):
-            np.resize(self.X[i], (self.n_basisfunctions[i], self.grid_external_nodes[i].dx))
-
-if __name__ == "__main__":
-    # Partition string
-    partition_str = "((0 1)(2 3))((4 5)((6)(7 8)))"
-
-    # Rank
-    r = np.array([5, 4, 3, 2])
-
-    # Number of reactions
-    mu = 5
-
-    # Grid parameters
-    n = np.array([4, 6, 7, 8, 3, 5, 2, 9, 1])
-    binsize = np.ones(n.size, dtype=int)
-    liml = np.zeros(n.size)
-    dep = np.ones((mu, n.size), dtype=bool)
-    grid = GridParms(n, binsize, liml, dep)
-
-    # Set up the partition tree
-    tree = Tree(partition_str, grid, r)
-    tree.buildTree()
-
-    # Initial distribution
-    def gaussian(x: np.ndarray, mu: np.ndarray, C) -> float:
-        Cinv = 1 / C
-        return np.exp(-0.5 * np.dot(np.transpose(x - mu), np.dot(Cinv, (x - mu))))
-
-    # Number of basisfunctions
-    n_basisfunctions = np.array([1, 1, 1, 1, 1])
-
-    # Low-rank initial conditions
-    initial_conditions = InitialCondition(tree, n_basisfunctions)
-    for S_el in initial_conditions.S:
-        S_el[0, 0] = 1
-
-    for Q_el in initial_conditions.Q:
-        Q_el[0, 0, 0] = 1
-
-    for k in range(tree.n_external_nodes):
-        grid = initial_conditions.grid_external_nodes[k]
-        for i in range(n_basisfunctions[k]):
-            X_function = (lambda x: gaussian(x, np.zeros((grid.d)), 0.5))
-            vec_index = np.zeros(grid.d)
-            for j in range(grid.dx):
-                state_x = vecIndexToState(vec_index, grid.liml, grid.binsize)
-                # TODO: Check whether state_x + grid.binsize * 0.5 is correct
-                initial_conditions.X[k][i, j] = X_function(state_x + grid.binsize * 0.5)
-                incrVecIndex(vec_index, grid.n, grid.d)
-            # Normalization
-            initial_conditions.X[k][i] /= np.sum(initial_conditions.X[k][i])
-
-    # Print tree and write it to a netCDF file
-    tree.printTree()
-    tree.writeTree()
