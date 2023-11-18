@@ -150,8 +150,7 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
         OrthogonalizeHelper(node_right);
 
         ip0 = inner_product_from_const_weight(1.0, node_left->Rank() * node_left->Rank());
-        ip0 = inner_product_from_const_weight(1.0, node_right->Rank() * node_right->Rank());
-
+        ip1 = inner_product_from_const_weight(1.0, node_right->Rank() * node_right->Rank());
         R0 = node_left->Orthogonalize(ip0, blas);
         R1 = node_right->Orthogonalize(ip1, blas);
     }
@@ -166,7 +165,6 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
     }
 
     blas.matmul_transb(R0, R1, node->S);
-
     for (Index k = 0; k < node->ParentRank(); ++k)
     {
         for (Index j = 0; j < node->Rank(); ++j)

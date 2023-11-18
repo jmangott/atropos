@@ -211,7 +211,7 @@ multi_array<T, 2> internal_node<T>::Orthogonalize(std::function<T(T *, T *)> inn
     multi_array<T, 2> Q_R({ParentRank(), ParentRank()});
     Matrix::Matricize(Q, Qmat, 2);
     Q_R = Matrix::Orthogonalize(Qmat, n_basisfunctions, inner_product, blas);
-    Matrix::Tensorize(Qmat, Q, 0);
+    Matrix::Tensorize(Qmat, Q, 2);
 
     return Q_R;
 };
