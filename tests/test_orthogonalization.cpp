@@ -23,7 +23,7 @@ class initial_distribution
         Index i = 0;
     public:
         initial_distribution(const double _liml, const Index _binsize) : liml(_liml), binsize(_binsize) {};
-        double operator()()
+        inline double operator()()
         {
             double output = std::exp(-std::pow(i + liml, 2));
             i = i + binsize;
