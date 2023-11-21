@@ -1,6 +1,7 @@
 #ifndef INDEX_FUNCTIONS_HPP
 #define INDEX_FUNCTIONS_HPP
 
+#include <iterator>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -104,7 +105,7 @@ inline void IncrVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
         ++(*d_first);
         if (*d_first < *first)
             return;
-        *d_first = (auto) 0;
+        *d_first = typename std::iterator_traits<OutputIt>::value_type (0);
     }
     ++(*(std::next(d_last, -1)));
 }
