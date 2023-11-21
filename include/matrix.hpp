@@ -67,7 +67,7 @@ namespace Matrix
         Index rows = input.shape()[0];
         Index cols = input.shape()[1];
 
-        assert(n_basisfunctions < cols);
+        assert(n_basisfunctions <= cols);
 
         std::default_random_engine generator(1234);
         std::normal_distribution<double> distribution(0.0, 1.0);
