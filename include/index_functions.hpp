@@ -104,7 +104,7 @@ inline void IncrVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
         ++(*d_first);
         if (*d_first < *first)
             return;
-        *d_first = 0;
+        *d_first = (auto) 0;
     }
     ++(*(std::next(d_last, -1)));
 }
