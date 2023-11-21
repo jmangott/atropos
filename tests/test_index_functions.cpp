@@ -7,7 +7,26 @@
 #include "grid_class.hpp"
 #include "index_functions.hpp"
 
-// TODO: Write test for IncrVecIndex
+TEST_CASE("IncrVecIndex", "[IncrVecIndex]")
+{
+    array<Index, 5> input = {0, 1, 1, 1, 3};
+    array<Index, 5> interval = {1, 2, 3, 4, 5};
+
+    array<Index, 5> output1_ref = {0, 0, 2, 1, 3};
+    array<Index, 5> output2_ref = {0, 0, 0, 2, 3};
+    array<Index, 5> output3_ref = {0, 0, 0, 0, 4};
+
+    IncrVecIndex(std::begin(interval), std::begin(input), std::end(input));
+    REQUIRE(bool(input == output1_ref));
+
+    IncrVecIndex(std::begin(interval), std::begin(input), std::end(input));
+    IncrVecIndex(std::begin(interval), std::begin(input), std::end(input));
+    REQUIRE(bool(input == output2_ref));
+
+    input = {0, 1, 2, 3, 3};
+    IncrVecIndex(std::begin(interval), std::begin(input), std::end(input));
+    REQUIRE(bool(input == output3_ref));
+}
 
 TEST_CASE("index_functions", "[index_functions]")
 {
