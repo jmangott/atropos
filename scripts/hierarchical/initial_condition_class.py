@@ -23,19 +23,19 @@ class InitialCondition:
 
         elif isinstance(node.left, ExternalNode) and isinstance(node.right, InternalNode):
             node.left.X.resize((nb, node.left.grid.dx))
-            node.right.Q.resize((nb, node.right.r, node.right.r))
+            node.right.Q.resize((nb, node.right.r_out, node.right.r_out))
 
             self.__setNodeData(node.right, n_basisfunctions_iter)
 
         elif isinstance(node.left, InternalNode) and isinstance(node.right, ExternalNode):
-            node.left.Q.resize((nb, node.left.r, node.left.r))
+            node.left.Q.resize((nb, node.left.r_out, node.left.r_out))
             node.right.X.resize((nb, node.right.grid.dx))
 
             self.__setNodeData(node.left, n_basisfunctions_iter)
 
         else:
-            node.left.Q.resize((nb, node.left.r, node.left.r))
-            node.right.Q.resize((nb, node.right.r, node.right.r))
+            node.left.Q.resize((nb, node.left.r_out, node.left.r_out))
+            node.right.Q.resize((nb, node.right.r_out, node.right.r_out))
 
             self.__setNodeData(node.left, n_basisfunctions_iter)
             self.__setNodeData(node.right, n_basisfunctions_iter)
@@ -55,9 +55,9 @@ class InitialCondition:
             raise ValueError(
                 "`_n_basisfunctions.size` must be equal to the number of internal nodes")
         
-        if (np.any(_n_basisfunctions > _tree.r)):
+        if (np.any(_n_basisfunctions > _tree.r_out)):
             raise ValueError(
-                "`_n_basisfunctions` must be smaller or equal than the rank")
+                "`_n_basisfunctions` must be smaller or equal than the incoming rank")
 
         self.n_basisfunctions = _n_basisfunctions
         self.external_nodes = []
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     partition_str = "((0 1)(2 3))((4 5)((6)(7 8)))"
 
     # Rank
-    r = np.array([5, 4, 3, 2])
+    r_out = np.array([5, 4, 3, 2])
 
     # Number of reactions
     mu = 5
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     grid = GridParms(n, binsize, liml, dep)
 
     # Set up the partition tree
-    tree = Tree(partition_str, grid, r)
+    tree = Tree(partition_str, grid, r_out)
     tree.buildTree()
 
     # Initial distribution
