@@ -20,7 +20,7 @@ namespace Matrix
     }
 
     template <class T, size_t d>
-    void Matricize(const multi_array<T, d> &input, multi_array<T, 2> &output, Index dim)
+    void Matricize(const multi_array<T, d> &input, multi_array<T, 2> &output, const Index dim)
     {
         std::array<Index, d> shape{input.shape()};
         std::array<Index, d - 1> cols_shape, vec_index_cols;
@@ -41,7 +41,7 @@ namespace Matrix
     }
 
     template <class T, size_t d>
-    void Tensorize(const multi_array<T, 2> &input, multi_array<T, d> &output, const Index dim)
+    void Tensorize(const multi_array<T, 2> &input, multi_array<T, d> &output, const Index dim) 
     {
         std::array<Index, d> shape{output.shape()};
         std::array<Index, d - 1> cols_shape, vec_index_cols;
