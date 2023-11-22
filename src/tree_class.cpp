@@ -1,20 +1,5 @@
 #include "tree_class.hpp"
 
-// template<>
-// void root_node<double>::InitializeNode(int ncid)
-// {
-//     int retval;
-
-//     // read S
-//     int id_S;
-//     if ((retval = nc_inq_varid(ncid, "S", &id_S)))
-//         NETCDF_ERROR(retval);
-//     if ((retval = nc_get_var_double(ncid, id_S, S.data())))
-//         NETCDF_ERROR(retval);
-
-//     return;
-// };
-
 template<>
 void internal_node<double>::Initialize(int ncid)
 {
@@ -24,12 +9,8 @@ void internal_node<double>::Initialize(int ncid)
     int id_Q;
     if ((retval = nc_inq_varid(ncid, "Q", &id_Q)))
         NETCDF_ERROR(retval);
-    // if ((retval = nc_inq_varid(ncid, "S", &id_S)))
-    //     NETCDF_ERROR(retval);
     if ((retval = nc_get_var_double(ncid, id_Q, Q.data())))
         NETCDF_ERROR(retval);
-    // if ((retval = nc_get_var_double(ncid, id_S, S.data())))
-    //     NETCDF_ERROR(retval);
     
     return;
 };
@@ -57,18 +38,18 @@ void cme_lr_tree::Read(std::string fn)
         NETCDF_ERROR(retval);
 
     grid_parms grid = ReadHelpers::ReadGridParms(ncid);
-    Index r = ReadHelpers::ReadRank(ncid);
-    root = new cme_internal_node("root", nullptr, grid, r, r);
+    std::array<Index, 2> r_out = ReadHelpers::ReadRankOut(ncid);
+    root = new cme_internal_node("root", nullptr, grid, 1, r_out, 1);
 
     int grp_ncid;
 
     if ((retval = nc_inq_ncid(ncid, "0", &grp_ncid)))
         NETCDF_ERROR(retval);
-    root->left = ReadHelpers::ReadNode(grp_ncid, "0", root);
+    root->child[0] = ReadHelpers::ReadNode(grp_ncid, "0", root, root->RankOut()[0]);
 
     if ((retval = nc_inq_ncid(ncid, "1", &grp_ncid)))
         NETCDF_ERROR(retval);
-    root->right = ReadHelpers::ReadNode(grp_ncid, "1", root);
+    root->child[1] = ReadHelpers::ReadNode(grp_ncid, "1", root, root->RankOut()[1]);
 
     if ((retval = nc_close(ncid)))
         NETCDF_ERROR(retval);
@@ -83,9 +64,9 @@ void cme_lr_tree::PrintHelper(node* node)
     }
     else
     {
-        cout << "internal_node, id: " << node->id << ", rank: " << ((cme_internal_node*) node)->Rank() << endl;
-        cme_lr_tree::PrintHelper(node->left);
-        cme_lr_tree::PrintHelper(node->right);
+        cout << "internal_node, id: " << node->id << ", rank_out: (" << ((cme_internal_node *)node)->RankOut()[0] << "," << ((cme_internal_node *)node)->RankOut()[1] << ")" << endl;
+        cme_lr_tree::PrintHelper(node->child[0]);
+        cme_lr_tree::PrintHelper(node->child[1]);
     }
 }
 
@@ -100,42 +81,39 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
     blas_ops blas;
     std::function<double(double *, double *)> ip0;
     std::function<double(double *, double *)> ip1;
-    multi_array<double, 2> R0({node->Rank(), node->Rank()});
-    multi_array<double, 2> R1({node->Rank(), node->Rank()});
-    multi_array<double, 2> tmp({node->Rank(), node->Rank()});
-
-    if (node->left->IsExternal() and node->right->IsExternal())
+    multi_array<double, 2> R0({node->RankOut()[0], node->RankOut()[0]});
+    multi_array<double, 2> R1({node->RankOut()[1], node->RankOut()[1]});
+    if (node->child[0]->IsExternal() and node->child[1]->IsExternal())
     {
-        cme_external_node* node_left = (cme_external_node*) node->left;
-        cme_external_node* node_right = (cme_external_node*) node->right;
+        cme_external_node* node_left = (cme_external_node*) node->child[0];
+        cme_external_node* node_right = (cme_external_node*) node->child[1];
 
         ip0 = inner_product_from_const_weight(double(node_left->grid.h_mult()), node_left->grid.dx());
         ip1 = inner_product_from_const_weight(double(node_right->grid.h_mult()), node_right->grid.dx());
-
         R0 = node_left->Orthogonalize(ip0, blas);
         R1 = node_right->Orthogonalize(ip1, blas);
     }
-    else if (node->left->IsExternal() and node->right->IsInternal())
+    else if (node->child[0]->IsExternal() and node->child[1]->IsInternal())
     {
-        cme_external_node *node_left = (cme_external_node *)node->left;
-        cme_internal_node *node_right = (cme_internal_node *)node->right;
+        cme_external_node *node_left = (cme_external_node *)node->child[0];
+        cme_internal_node *node_right = (cme_internal_node *)node->child[1];
 
         OrthogonalizeHelper(node_right);
 
         ip0 = inner_product_from_const_weight(double(node_left->grid.h_mult()), node_left->grid.dx());
-        ip1 = inner_product_from_const_weight(1.0, node_right->Rank() * node_right->Rank());
+        ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
 
         R0 = node_left->Orthogonalize(ip0, blas);
         R1 = node_right->Orthogonalize(ip1, blas);
     }
-    else if (node->left->IsInternal() and node->right->IsExternal())
+    else if (node->child[0]->IsInternal() and node->child[1]->IsExternal())
     {
-        cme_internal_node *node_left = (cme_internal_node *)node->left;
-        cme_external_node *node_right = (cme_external_node *)node->right;
+        cme_internal_node *node_left = (cme_internal_node *)node->child[0];
+        cme_external_node *node_right = (cme_external_node *)node->child[1];
 
         OrthogonalizeHelper(node_left);
 
-        ip0 = inner_product_from_const_weight(1.0, node_left->Rank() * node_left->Rank());
+        ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
         ip1 = inner_product_from_const_weight(double(node_right->grid.h_mult()), node_right->grid.dx());
 
         R0 = node_left->Orthogonalize(ip0, blas);
@@ -143,41 +121,40 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
     }
     else
     {
-        cme_internal_node *node_left = (cme_internal_node *)node->left;
-        cme_internal_node *node_right = (cme_internal_node *)node->right;
+        cme_internal_node *node_left = (cme_internal_node *)node->child[0];
+        cme_internal_node *node_right = (cme_internal_node *)node->child[1];
 
         OrthogonalizeHelper(node_left);
         OrthogonalizeHelper(node_right);
 
-        ip0 = inner_product_from_const_weight(1.0, node_left->Rank() * node_left->Rank());
-        ip1 = inner_product_from_const_weight(1.0, node_right->Rank() * node_right->Rank());
+        ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
+        ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
         R0 = node_left->Orthogonalize(ip0, blas);
         R1 = node_right->Orthogonalize(ip1, blas);
     }
 
-    for (int j = node->n_basisfunctions; j < node->Rank(); ++j)
+    for (int j = node->n_basisfunctions; j < node->RankOut()[1]; ++j)
     {
-        for (int i = 0; i < node->Rank(); ++i)
+        for (int i = 0; i < node->RankOut()[0]; ++i)
         {
             R0(i, j) = 0.0;
             R1(i, j) = 0.0;
         }
     }
 
-    blas.matmul_transb(R0, R1, node->S);
-    for (Index k = 0; k < node->ParentRank(); ++k)
+    for (Index k = 0; k < node->RankIn(); ++k)
     {
-        for (Index j = 0; j < node->Rank(); ++j)
+        for (Index j = 0; j < node->RankOut()[1]; ++j)
         {
-            for (Index i = 0; i < node->Rank(); ++i)
+            for (Index i = 0; i < node->RankOut()[0]; ++i)
             {
                 node->S(i, j) = node->Q(i, j, k);
             }
         }
         blas.matmul_transb(R0, R1, node->S);
-        for (Index j = 0; j < node->Rank(); ++j)
+        for (Index j = 0; j < node->RankOut()[1]; ++j)
         {
-            for (Index i = 0; i < node->Rank(); ++i)
+            for (Index i = 0; i < node->RankOut()[0]; ++i)
             {
                 node->Q(i, j, k) = node->S(i, j);
             }
@@ -240,13 +217,15 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
     return grid;
 }
 
-Index ReadHelpers::ReadRank(int ncid)
+// NOTE: Input .netCDF file is required to store a scalar `r_out`
+// (which guarantees that the rank is equal for both childs)
+std::array<Index, 2> ReadHelpers::ReadRankOut(int ncid)
 {
     int retval;
 
     // read rank
     int id_r;
-    if ((retval = nc_inq_dimid(ncid, "r", &id_r)))
+    if ((retval = nc_inq_dimid(ncid, "r_out", &id_r)))
         NETCDF_ERROR(retval);
 
     size_t r_t;
@@ -254,7 +233,8 @@ Index ReadHelpers::ReadRank(int ncid)
     if ((retval = nc_inq_dim(ncid, id_r, tmp, &r_t)))
         NETCDF_ERROR(retval);
 
-    return (Index)r_t;
+    std::array<Index, 2> r_out = {(Index) r_t, (Index) r_t};
+    return r_out;
 }
 
 Index ReadHelpers::ReadNBasisfunctions(int ncid)
@@ -274,7 +254,7 @@ Index ReadHelpers::ReadNBasisfunctions(int ncid)
     return (Index)n_basisfunctions_t;
 }
 
-node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *parent_node)
+node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in)
 {
     int retval0, retval1;
     int grp_ncid0, grp_ncid1;
@@ -287,16 +267,16 @@ node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *parent_
 
     if (retval0 or retval1) // NOTE: if retval0 is 1, then retval1 has also to be 1, due to the binary tree structure of the netCDF file
     {
-        child_node = new cme_external_node(id, parent_node, grid, n_basisfunctions);
+        child_node = new cme_external_node(id, parent_node, grid, r_in, n_basisfunctions);
         child_node->Initialize(ncid);
     }
     else
     {
-        Index r = ReadRank(ncid);
-        child_node = new cme_internal_node(id, parent_node, grid, r, n_basisfunctions);
+        std::array<Index, 2> r_out = ReadRankOut(ncid);
+        child_node = new cme_internal_node(id, parent_node, grid, r_in, r_out, n_basisfunctions);
         child_node->Initialize(ncid);
-        child_node->left = ReadNode(grp_ncid0, id + "0", (cme_internal_node *)child_node);
-        child_node->right = ReadNode(grp_ncid1, id + "1", (cme_internal_node *)child_node);
+        child_node->child[0] = ReadNode(grp_ncid0, id + "0", (cme_internal_node *)child_node, ((cme_internal_node *) child_node)->RankOut()[0]);
+        child_node->child[1] = ReadNode(grp_ncid1, id + "1", (cme_internal_node *)child_node, ((cme_internal_node *)child_node)->RankOut()[1]);
     }
     return child_node;
 }

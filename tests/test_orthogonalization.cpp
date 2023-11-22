@@ -103,11 +103,11 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     Q0 /= gamma0;
 
     // Construct cme_lr_tree
-    cme_internal_node* root = new cme_internal_node("", nullptr, grid, r, 1);
-    cme_internal_node* node0 = new cme_internal_node("0", root, grid0, r0, n_basisfunctions);
-    cme_external_node* node1 = new cme_external_node("1", root, grid1, n_basisfunctions);
-    cme_external_node* node00 = new cme_external_node("00", node0, grid00, n_basisfunctions0);
-    cme_external_node* node01 = new cme_external_node("01", node0, grid01, n_basisfunctions0);
+    cme_internal_node* root = new cme_internal_node("", nullptr, grid, 1, {r, r}, 1);
+    cme_internal_node* node0 = new cme_internal_node("0", root, grid0, r, {r0, r0}, n_basisfunctions);
+    cme_external_node* node1 = new cme_external_node("1", root, grid1, r, n_basisfunctions);
+    cme_external_node* node00 = new cme_external_node("00", node0, grid00, r0, n_basisfunctions0);
+    cme_external_node* node01 = new cme_external_node("01", node0, grid01, r0, n_basisfunctions0);
 
     root->Q = Q;
     node0->Q = Q0;
@@ -115,10 +115,10 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     node00->X = X00;
     node01->X = X01;
 
-    root->left = node0;
-    root->right = node1;
-    root->left->left = node00;
-    root->left->right = node01;
+    root->child[0] = node0;
+    root->child[1] = node1;
+    root->child[0]->child[0] = node00;
+    root->child[0]->child[1] = node01;
     cme_lr_tree tree(root);
 
     // Calculate probability distribution
@@ -173,10 +173,10 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
                             {
                                 p_ortho(x00, x01, x1) 
                                 += tree.root->Q(i, j, 0) 
-                                * ((cme_internal_node*) tree.root->left)->Q(i0, j0, i) 
-                                * ((cme_external_node*) tree.root->left->left)->X(x00, i0) 
-                                * ((cme_external_node*) tree.root->left->right)->X(x01, j0) 
-                                * ((cme_external_node*) tree.root->right)->X(x1, j);
+                                * ((cme_internal_node*) tree.root->child[0])->Q(i0, j0, i) 
+                                * ((cme_external_node*) tree.root->child[0]->child[0])->X(x00, i0) 
+                                * ((cme_external_node*) tree.root->child[0]->child[1])->X(x01, j0) 
+                                * ((cme_external_node*) tree.root->child[1])->X(x1, j);
                             }
                         }
                     }
@@ -197,24 +197,24 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     set_zero(Q0_ortho);
 
     blas.matmul_transa(
-        ((cme_external_node*) tree.root->left->left)->X,
-        ((cme_external_node*) tree.root->left->left)->X,
+        ((cme_external_node*) tree.root->child[0]->child[0])->X,
+        ((cme_external_node*) tree.root->child[0]->child[0])->X,
         X00_ortho
         );
 
     blas.matmul_transa(
-        ((cme_external_node*) tree.root->left->right)->X,
-        ((cme_external_node*) tree.root->left->right)->X,
+        ((cme_external_node*) tree.root->child[0]->child[1])->X,
+        ((cme_external_node*) tree.root->child[0]->child[1])->X,
         X01_ortho
         );
 
     blas.matmul_transa(
-        ((cme_external_node*) tree.root->right)->X,
-        ((cme_external_node*) tree.root->right)->X,
+        ((cme_external_node*) tree.root->child[1])->X,
+        ((cme_external_node*) tree.root->child[1])->X,
         X1_ortho
         );
 
-    Matrix::Matricize(((cme_internal_node*) tree.root->left)->Q, Q0_mat, 2);
+    Matrix::Matricize(((cme_internal_node*) tree.root->child[0])->Q, Q0_mat, 2);
     blas.matmul_transa(Q0_mat, Q0_mat, Q0_ortho);
 
     multi_array<double, 2> id_r({r, r}), id_r0({r0, r0}), id_1({1, 1});

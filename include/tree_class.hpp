@@ -22,50 +22,20 @@ struct node
     std::string id;
 
     node* parent;
-    node* left;
-    node* right;
+    std::array<node*, 2> child;
 
-    node(std::string _id, node* _parent, node* _left, node* _right) : id(_id), parent(_parent), left(_left), right(_right) {};
+    node(std::string _id, node* _parent, std::array<node*, 2> _child) 
+    : id(_id)
+    , parent(_parent)
+    , child(_child) {}
 
-    virtual ~node() {};
+    virtual ~node() {}
 
-    // virtual bool IsRoot() = 0;
     virtual bool IsInternal() const = 0;
     virtual bool IsExternal() const = 0;
-    virtual Index ParentRank() const = 0;
+    virtual Index RankIn() const = 0;
     virtual void Initialize(int ncid) = 0;
 };
-
-
-// template<class T>
-// struct root_node : node
-// {
-//     multi_array<T, 2> S;
-
-//     root_node(Index _r) : node("root", nullptr, nullptr, nullptr), S({_r, _r}) {};
-
-//     bool IsRoot()
-//     {
-//         return true;
-//     }
-    
-//     bool IsInternal()
-//     {
-//         return false;
-//     }
-    
-//     bool IsExternal()
-//     {
-//         return false;
-//     }
-
-//     Index rank() const
-//     {
-//         return S.shape()[0];
-//     }
-
-//     void InitializeNode(int ncid);
-// };
 
 template<class T>
 struct internal_node : node
@@ -75,14 +45,15 @@ struct internal_node : node
     multi_array<T, 2> S;
     Index n_basisfunctions;
 
-    // internal_node(std::string _id, root_node<T>* _parent, Index _r, Index _n_basisfunctions) : node(_id, _parent, nullptr, nullptr), Q({_r, _r, _parent->rank()}), G({_r, _r, _parent->rank()}), S({_r, _r}), n_basisfunctions(_n_basisfunctions) {};
-    internal_node(std::string _id, internal_node *_parent, Index _r, Index _n_basisfunctions)
-        : node(_id, _parent, nullptr, nullptr), Q((_parent == nullptr) ? std::array<Index, 3>({_r, _r, 1}) : std::array<Index, 3>({_r, _r, _parent->Rank()})), G((_parent == nullptr) ? std::array<Index, 3>({_r, _r, 1}) : std::array<Index, 3>({_r, _r, _parent->Rank()})), S({_r, _r}), n_basisfunctions(_n_basisfunctions){};
-
-    // bool IsRoot()
-    // {
-    //     return false;
-    // }
+    internal_node(std::string _id, internal_node *_parent, Index _r_in, std::array<Index, 2> _r_out, Index _n_basisfunctions)
+    : node(_id, _parent, {nullptr, nullptr})
+    , Q((_parent == nullptr) ? std::array<Index, 3>({_r_out[0], _r_out[1], 1}) : std::array<Index, 3>({_r_out[0], _r_out[1], _r_in}))
+    , G((_parent == nullptr) ? std::array<Index, 3>({_r_out[0], _r_out[1], 1}) : std::array<Index, 3>({_r_out[0], _r_out[1], _r_in}))
+    , S(_r_out)
+    , n_basisfunctions(_n_basisfunctions)
+    {
+        assert(n_basisfunctions <= _r_in);
+    }
     
     bool IsInternal() const
     {
@@ -94,12 +65,12 @@ struct internal_node : node
         return false;
     }
 
-    Index Rank() const
+    std::array<Index, 2> RankOut() const
     {
-        return S.shape()[0];
+        return S.shape();
     }
 
-    Index ParentRank() const
+    Index RankIn() const
     {
         return Q.shape()[2];
     }
@@ -115,13 +86,13 @@ struct external_node : node
     multi_array<T, 2> X;
     Index n_basisfunctions;
 
-    // external_node(std::string _id, root_node<T> *_parent, Index _dx, Index _n_basisfunctions) : node(_id, _parent, nullptr, nullptr), X({_dx, _parent->rank()}), n_basisfunctions(_n_basisfunctions){};
-    external_node(std::string _id, internal_node<T> *_parent, Index _dx, Index _n_basisfunctions) : node(_id, _parent, nullptr, nullptr), X({_dx, _parent->Rank()}), n_basisfunctions(_n_basisfunctions){};
-
-    // bool IsRoot()
-    // {
-    //     return false;
-    // }
+    external_node(std::string _id, internal_node<T> *_parent, Index _dx, Index _r_in, Index _n_basisfunctions) 
+    : node(_id, _parent, {nullptr, nullptr})
+    , X({_dx, _r_in})
+    , n_basisfunctions(_n_basisfunctions)
+    {
+        assert(n_basisfunctions < _r_in);
+    }
     
     bool IsInternal() const
     {
@@ -138,7 +109,7 @@ struct external_node : node
         return X.shape()[0];
     }
 
-    Index ParentRank() const
+    Index RankIn() const
     {
         return X.shape()[1];
     }
@@ -148,24 +119,15 @@ struct external_node : node
     multi_array<T, 2> Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas);
 };
 
-// Derived, CME-specific classes
-// struct cme_root_node : root_node<double>
-// {
-//     grid_parms grid;
-//     cme_root_coeff coefficients;
-
-//     cme_root_node(grid_parms _grid, Index _r) : root_node<double>(_r), grid(_grid) {};
-// };
-
 struct cme_internal_node : internal_node<double>
 {
     grid_parms grid;
     cme_internal_coeff coefficients;
 
-    // cme_internal_node(std::string _id, cme_root_node *_parent, grid_parms _grid, Index _r, Index _n_basisfunctions) : internal_node<double> (_id, _parent, _r, _n_basisfunctions), grid(_grid) {};
-    cme_internal_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r, Index _n_basisfunctions) : internal_node<double>(_id, _parent, _r, _n_basisfunctions), grid(_grid) {};
+    cme_internal_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, std::array<Index, 2> _r_out, Index _n_basisfunctions) 
+    : internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
+    , grid(_grid) {}
 
-    // multi_array<double, 2> Orthogonalize(std::function<double(double *, double *)> inner_product, const blas_ops &blas);
 };
 
 struct cme_external_node : external_node<double>
@@ -173,10 +135,9 @@ struct cme_external_node : external_node<double>
     grid_parms grid;
     cme_external_coeff coefficients;
 
-    // cme_external_node(std::string _id, cme_root_node* _parent, grid_parms _grid, Index _n_basisfunctions) : external_node<double>(_id, _parent, _grid.dx(), _n_basisfunctions), grid(_grid) {};
-    cme_external_node(std::string _id, cme_internal_node* _parent, grid_parms _grid, Index _n_basisfunctions) : external_node<double>(_id, _parent, _grid.dx(), _n_basisfunctions), grid(_grid) {};
-
-    // multi_array<double, 2> Orthogonalize(std::function<double(double *, double *)> inner_product, const blas_ops &blas);
+    cme_external_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, Index _n_basisfunctions) 
+    : external_node<double>(_id, _parent, _grid.dx(), _r_in, _n_basisfunctions)
+    , grid(_grid) {}
 };
 
 struct cme_lr_tree
@@ -197,18 +158,18 @@ namespace ReadHelpers
 {
     grid_parms ReadGridParms(int ncid);
 
-    Index ReadRank(int ncid);
+    std::array<Index, 2> ReadRankOut(int ncid);
 
     Index ReadNBasisfunctions(int ncid);
 
-    node *ReadNode(int ncid, std::string id, cme_internal_node *parent_node);
+    node *ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in);
 }
 
 template <class T>
 multi_array<T, 2> internal_node<T>::Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas)
 {
-    multi_array<T, 2> Qmat({Rank() * Rank(), ParentRank()});
-    multi_array<T, 2> Q_R({ParentRank(), ParentRank()});
+    multi_array<T, 2> Qmat({prod(RankOut()), RankIn()});
+    multi_array<T, 2> Q_R({RankIn(), RankIn()});
     Matrix::Matricize(Q, Qmat, 2);
     Q_R = Matrix::Orthogonalize(Qmat, n_basisfunctions, inner_product, blas);
     Matrix::Tensorize(Qmat, Q, 2);
@@ -219,7 +180,7 @@ multi_array<T, 2> internal_node<T>::Orthogonalize(std::function<T(T *, T *)> inn
 template <class T>
 multi_array<T, 2> external_node<T>::Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas)
 {
-    multi_array<T, 2> X_R({ParentRank(), ParentRank()});
+    multi_array<T, 2> X_R({RankIn(), RankIn()});
     X_R = Matrix::Orthogonalize(X, n_basisfunctions, inner_product, blas);
 
     return X_R;
