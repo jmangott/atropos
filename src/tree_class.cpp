@@ -88,8 +88,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
         cme_external_node* node_left = (cme_external_node*) node->child[0];
         cme_external_node* node_right = (cme_external_node*) node->child[1];
 
-        ip0 = inner_product_from_const_weight(double(node_left->grid.h_mult()), node_left->grid.dx());
-        ip1 = inner_product_from_const_weight(double(node_right->grid.h_mult()), node_right->grid.dx());
+        ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
+        ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
         R0 = node_left->Orthogonalize(ip0, blas);
         R1 = node_right->Orthogonalize(ip1, blas);
     }
@@ -100,7 +100,7 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
 
         OrthogonalizeHelper(node_right);
 
-        ip0 = inner_product_from_const_weight(double(node_left->grid.h_mult()), node_left->grid.dx());
+        ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
         ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
 
         R0 = node_left->Orthogonalize(ip0, blas);
@@ -114,7 +114,7 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
         OrthogonalizeHelper(node_left);
 
         ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
-        ip1 = inner_product_from_const_weight(double(node_right->grid.h_mult()), node_right->grid.dx());
+        ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
 
         R0 = node_left->Orthogonalize(ip0, blas);
         R1 = node_right->Orthogonalize(ip1, blas);
@@ -172,24 +172,24 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
     int retval;
 
     // read dimensions
-    int id_d, id_mu;
+    int id_d, id_n_reactions;
     if ((retval = nc_inq_dimid(ncid, "d", &id_d)))
         NETCDF_ERROR(retval);
-    if ((retval = nc_inq_dimid(ncid, "mu", &id_mu)))
+    if ((retval = nc_inq_dimid(ncid, "n_reactions", &id_n_reactions)))
         NETCDF_ERROR(retval);
 
-    size_t d_t, mu_t;
+    size_t d_t, n_reactions_t;
     char tmp[NC_MAX_NAME + 1];
     if ((retval = nc_inq_dim(ncid, id_d, tmp, &d_t)))
         NETCDF_ERROR(retval);
-    if ((retval = nc_inq_dim(ncid, id_mu, tmp, &mu_t)))
+    if ((retval = nc_inq_dim(ncid, id_n_reactions, tmp, &n_reactions_t)))
         NETCDF_ERROR(retval);
 
     Index d = (Index)d_t;
-    Index mu = (Index)mu_t;
+    Index n_reactions = (Index)n_reactions_t;
 
     // read variables
-    int id_n, id_binsize, id_liml, id_dep;
+    int id_n, id_binsize, id_liml, id_dep, id_nu;
 
     if ((retval = nc_inq_varid(ncid, "n", &id_n)))
         NETCDF_ERROR(retval);
@@ -199,9 +199,11 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
         NETCDF_ERROR(retval);
     if ((retval = nc_inq_varid(ncid, "dep", &id_dep)))
         NETCDF_ERROR(retval);
+    if ((retval = nc_inq_varid(ncid, "nu", &id_nu)))
+        NETCDF_ERROR(retval);
 
-    grid_parms grid(d, mu);
-    multi_array<signed char, 2> dep_int({mu, d});
+    grid_parms grid(d, n_reactions);
+    multi_array<signed char, 2> dep_int({n_reactions, d});
 
     if ((retval = nc_get_var_long(ncid, id_n, grid.n.data())))
         NETCDF_ERROR(retval);
@@ -211,8 +213,11 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
         NETCDF_ERROR(retval);
     if ((retval = nc_get_var_schar(ncid, id_dep, dep_int.data())))
         NETCDF_ERROR(retval);
+    if ((retval = nc_get_var_long(ncid, id_dep, grid.nu.data())))
+        NETCDF_ERROR(retval);
 
     std::copy(dep_int.begin(), dep_int.end(), grid.dep.begin());
+    grid.Initialize();
 
     return grid;
 }

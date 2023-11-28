@@ -17,6 +17,7 @@
 #include "matrix.hpp"
 
 // General classes for the hierarchical DLR approximation
+// TODO: introduce a template parameter `N` for arbitrary many outgoing legs
 struct node
 {
     std::string id;
@@ -45,7 +46,7 @@ struct internal_node : node
     multi_array<T, 2> S;
     Index n_basisfunctions;
 
-    internal_node(std::string _id, internal_node *_parent, Index _r_in, std::array<Index, 2> _r_out, Index _n_basisfunctions)
+    internal_node(const std::string _id, internal_node * const _parent, const Index _r_in, const std::array<Index, 2> _r_out, const Index _n_basisfunctions)
     : node(_id, _parent, {nullptr, nullptr})
     , Q((_parent == nullptr) ? std::array<Index, 3>({_r_out[0], _r_out[1], 1}) : std::array<Index, 3>({_r_out[0], _r_out[1], _r_in}))
     , G((_parent == nullptr) ? std::array<Index, 3>({_r_out[0], _r_out[1], 1}) : std::array<Index, 3>({_r_out[0], _r_out[1], _r_in}))
@@ -86,7 +87,7 @@ struct external_node : node
     multi_array<T, 2> X;
     Index n_basisfunctions;
 
-    external_node(std::string _id, internal_node<T> *_parent, Index _dx, Index _r_in, Index _n_basisfunctions) 
+    external_node(std::string _id, internal_node<T> * const _parent, const Index _dx, const Index _r_in, const Index _n_basisfunctions) 
     : node(_id, _parent, {nullptr, nullptr})
     , X({_dx, _r_in})
     , n_basisfunctions(_n_basisfunctions)
@@ -126,8 +127,7 @@ struct cme_internal_node : internal_node<double>
 
     cme_internal_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, std::array<Index, 2> _r_out, Index _n_basisfunctions) 
     : internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
-    , grid(_grid) {}
-
+    , grid(_grid), coefficients(_grid.n_reactions, _r_in, _r_out) {}
 };
 
 struct cme_external_node : external_node<double>
@@ -136,8 +136,8 @@ struct cme_external_node : external_node<double>
     cme_external_coeff coefficients;
 
     cme_external_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, Index _n_basisfunctions) 
-    : external_node<double>(_id, _parent, _grid.dx(), _r_in, _n_basisfunctions)
-    , grid(_grid) {}
+    : external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
+    , grid(_grid), coefficients(_grid.n_reactions) {}
 };
 
 struct cme_lr_tree
