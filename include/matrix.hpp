@@ -97,6 +97,8 @@ namespace Matrix
         }
         return R;
     }
+
+    void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, const grid_parms grid, const Index mu);
 }
 
 #endif
