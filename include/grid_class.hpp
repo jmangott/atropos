@@ -39,52 +39,51 @@ struct grid_info
 
 
 // struct for storing the grid parameters of one node of the hierarchical problem in a compact form
-
 struct grid_parms
 {
     Index d;
-    Index mu;
+    Index n_reactions;
     std::vector<Index> n;
     std::vector<Index> binsize;
     std::vector<double> liml;
     multi_array<bool, 2> dep;
+    multi_array<Index, 2> nu;
 
-    grid_parms(Index _d, Index _mu) : d(_d), mu(_mu), n(_d), binsize(_d), liml(_d), dep({_mu, _d}) {};
+    Index dx = 1;
+    double h_mult = 1.0;
+    std::vector<Index> dx_dep;
+    std::vector<Index> shift;
+    std::vector<std::vector<Index>> idx_dep;
+    std::vector<std::vector<Index>> n_dep;
 
-    grid_parms(std::vector<Index> _n, std::vector<Index> _binsize, std::vector<double> _liml, multi_array<bool, 2> _dep) : d(_n.size()), mu(_dep.shape()[0]), n(_n), binsize(_binsize), liml(_liml), dep(_dep) {};
+    grid_parms(Index _d, Index _n_reactions)
+    : d(_d)
+    , n_reactions(_n_reactions)
+    , n(_d), binsize(_d)
+    , liml(_d)
+    , dep({_n_reactions, _d})
+    , nu({_n_reactions, _d})
+    , dx_dep(_n_reactions)
+    , shift(_n_reactions)
+    , idx_dep(_n_reactions)
+    , n_dep(_n_reactions)
+    {};
 
-    Index dx() const
-    {
-        Index result = 1;
-        for (const auto &ele : n)
-        {
-            result *= ele;
-        }
-        return result;
-    }
+    grid_parms(std::vector<Index> _n, std::vector<Index> _binsize, std::vector<double> _liml, multi_array<bool, 2> _dep, multi_array<Index, 2> _nu)
+    : d(_n.size())
+    , n_reactions(_dep.shape()[0])
+    , n(_n)
+    , binsize(_binsize)
+    , liml(_liml)
+    , dep(_dep)
+    , nu(_nu)
+    , dx_dep(n_reactions)
+    , shift(n_reactions)
+    , idx_dep(n_reactions)
+    , n_dep(n_reactions)
+    {};
 
-    Index h_mult() const
-    {
-        Index result = 1;
-        for (const auto &ele : binsize)
-        {
-            result *= ele;
-        }
-        return result;
-    }
-
-    Index dx_dep(Index mu) const
-    {
-        Index result = 1;
-        for (Index i = 0; i < d; i++)
-        {
-            if (dep(mu, i) == true)
-            {
-                result *= n[i];
-            }
-        }
-        return result;
-    }
+    void Initialize();
 };
 
 #endif
