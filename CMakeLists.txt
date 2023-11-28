@@ -131,9 +131,11 @@ set(SRC_FILES ${SRC}/grid_class.cpp
               ${SRC}/index_functions.cpp
               ${SRC}/integrators.cpp
               ${SRC}/io_functions.cpp
+              ${SRC}/matrix.cpp
               ${SRC}/print_functions.cpp
               ${SRC}/reaction_class.cpp
               ${SRC}/s_step_functions.cpp
+              ${SRC}/subflows.cpp
               ${SRC}/timer_class.cpp
               ${SRC}/tree_class.cpp
               ${SRC}/weight_functions.cpp)
