@@ -22,12 +22,12 @@ struct cme_internal_coeff : coeff
     multi_array<double, 4> E, F;
     multi_array<double, 6> G, H;
 
-    cme_internal_coeff(const Index _n_reactions, const Index r_in, const Index r_out) 
+    cme_internal_coeff(const Index _n_reactions, const Index r_in, const std::array<Index, 2> r_out) 
     : coeff(_n_reactions)
-    , E({r_out, r_out, r_out, r_out})
-    , F({r_out, r_out, r_out, r_out})
-    , G({r_in, r_out, r_out, r_in, r_out, r_out})
-    , H({r_in, r_out, r_out, r_in, r_out, r_out})
+    , E({r_out[0], r_out[1], r_out[0], r_out[1]})
+    , F({r_out[0], r_out[1], r_out[0], r_out[1]})
+    , G({r_in, r_out[0], r_out[1], r_in, r_out[0], r_out[1]})
+    , H({r_in, r_out[0], r_out[1], r_in, r_out[0], r_out[1]})
     {}
 };
 
