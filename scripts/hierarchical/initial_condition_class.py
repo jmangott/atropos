@@ -17,28 +17,28 @@ class InitialCondition:
     def __setNodeData(self, node: Node, n_basisfunctions_iter):
         nb = next(n_basisfunctions_iter)
 
-        if isinstance(node.left, ExternalNode) and isinstance(node.right, ExternalNode):
-            node.left.X.resize((nb, node.left.grid.dx))
-            node.right.X.resize((nb, node.right.grid.dx))
+        if isinstance(node.child[0], ExternalNode) and isinstance(node.child[1], ExternalNode):
+            node.child[0].X.resize((nb, node.child[0].grid.dx), refcheck=False)
+            node.child[1].X.resize((nb, node.child[1].grid.dx), refcheck=False)
 
-        elif isinstance(node.left, ExternalNode) and isinstance(node.right, InternalNode):
-            node.left.X.resize((nb, node.left.grid.dx))
-            node.right.Q.resize((nb, node.right.r_out, node.right.r_out))
+        elif isinstance(node.child[0], ExternalNode) and isinstance(node.child[1], InternalNode):
+            node.child[0].X.resize((nb, node.child[0].grid.dx), refcheck=False)
+            node.child[1].Q.resize((nb, node.child[1].r_out, node.child[1].r_out), refcheck=False)
 
-            self.__setNodeData(node.right, n_basisfunctions_iter)
+            self.__setNodeData(node.child[1], n_basisfunctions_iter)
 
-        elif isinstance(node.left, InternalNode) and isinstance(node.right, ExternalNode):
-            node.left.Q.resize((nb, node.left.r_out, node.left.r_out))
-            node.right.X.resize((nb, node.right.grid.dx))
+        elif isinstance(node.child[0], InternalNode) and isinstance(node.child[1], ExternalNode):
+            node.child[0].Q.resize((nb, node.child[0].r_out, node.child[0].r_out), refcheck=False)
+            node.child[1].X.resize((nb, node.child[1].grid.dx), refcheck=False)
 
-            self.__setNodeData(node.left, n_basisfunctions_iter)
+            self.__setNodeData(node.child[0], n_basisfunctions_iter)
 
         else:
-            node.left.Q.resize((nb, node.left.r_out, node.left.r_out))
-            node.right.Q.resize((nb, node.right.r_out, node.right.r_out))
+            node.child[0].Q.resize((nb, node.child[0].r_out, node.child[0].r_out), refcheck=False)
+            node.child[1].Q.resize((nb, node.child[1].r_out, node.child[1].r_out), refcheck=False)
 
-            self.__setNodeData(node.left, n_basisfunctions_iter)
-            self.__setNodeData(node.right, n_basisfunctions_iter)
+            self.__setNodeData(node.child[0], n_basisfunctions_iter)
+            self.__setNodeData(node.child[1], n_basisfunctions_iter)
 
     def __getNodeData(self, node: Node):
         if isinstance(node, ExternalNode):
@@ -47,8 +47,8 @@ class InitialCondition:
         else:
             self.Q.append(node.Q)
             self.S.append(node.S)
-            self.__getNodeData(node.left)
-            self.__getNodeData(node.right)
+            self.__getNodeData(node.child[0])
+            self.__getNodeData(node.child[1])
 
     def __init__(self, _tree: Tree, _n_basisfunctions: npt.NDArray[np.int_]):
         if (_n_basisfunctions.size != _tree.n_internal_nodes):
@@ -70,24 +70,23 @@ class InitialCondition:
         self.__getNodeData(_tree.root)
 
 if __name__ == "__main__":
+    import models.lambda_phage as model
+
     # Partition string
-    partition_str = "((0 1)(2 3))((4 5)((6)(7 8)))"
+    partition_str = "((0 1)(2 3))(4)"
 
     # Rank
-    r_out = np.array([5, 4, 3, 2])
-
-    # Number of reactions
-    mu = 5
+    r_out = np.array([5, 4])
 
     # Grid parameters
-    n = np.array([4, 6, 7, 8, 3, 5, 2, 9, 1])
-    binsize = np.ones(n.size, dtype=int)
-    liml = np.zeros(n.size)
-    dep = np.ones((mu, n.size), dtype=bool)
-    grid = GridParms(n, binsize, liml, dep)
+    n = np.array([16, 41, 11, 11, 11])
+    d = n.size
+    binsize = np.ones(d, dtype=int)
+    liml = np.zeros(d)
+    grid = GridParms(n, binsize, liml)
 
     # Set up the partition tree
-    tree = Tree(partition_str, grid, r_out)
+    tree = Tree(model.reaction_system, partition_str, grid, r_out)
     tree.buildTree()
 
     # Initial distribution
@@ -96,7 +95,7 @@ if __name__ == "__main__":
         return np.exp(-0.5 * np.dot(np.transpose(x - mu), np.dot(Cinv, (x - mu))))
 
     # Number of basisfunctions
-    n_basisfunctions = np.array([2, 1, 1, 1])
+    n_basisfunctions = np.array([2, 1])
 
     # Low-rank initial conditions
     initial_conditions = InitialCondition(tree, n_basisfunctions)
@@ -105,7 +104,6 @@ if __name__ == "__main__":
 
     for Q_el in initial_conditions.Q:
         Q_el[0, 0, 0] = 1
-    initial_conditions.Q[1][1, 0, 0] = 1
 
     for k, node in enumerate(initial_conditions.external_nodes):
         for i in range(node.X.shape[0]):
@@ -118,7 +116,7 @@ if __name__ == "__main__":
                     state_x + node.grid.binsize * 0.5)
                 incrVecIndex(vec_index, node.grid.n, node.grid.d)
             # Normalization
-            initial_conditions.X[k][i] /= np.sum(initial_conditions.X[k][i])
+            initial_conditions.X[k][i] /= np.linalg.norm(initial_conditions.X[k][i])
 
     # Print tree and write it to a netCDF file
     tree.printTree()
