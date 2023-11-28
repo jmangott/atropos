@@ -11,9 +11,18 @@ void internal_node<double>::Initialize(int ncid)
         NETCDF_ERROR(retval);
     if ((retval = nc_get_var_double(ncid, id_Q, Q.data())))
         NETCDF_ERROR(retval);
-    
+
     return;
-};
+}
+
+void cme_internal_node::Initialize(int ncid)
+{
+    internal_node::Initialize(ncid);
+
+    // read propensity
+    coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
+    return;
+}
 
 template<>
 void external_node<double>::Initialize(int ncid)
@@ -28,7 +37,16 @@ void external_node<double>::Initialize(int ncid)
         NETCDF_ERROR(retval);
 
     return;
-};
+}
+
+void cme_external_node::Initialize(int ncid)
+{
+    external_node::Initialize(ncid);
+
+    // read propensity
+    coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
+    return;
+}
 
 void cme_lr_tree::Read(std::string fn)
 {
@@ -40,6 +58,7 @@ void cme_lr_tree::Read(std::string fn)
     grid_parms grid = ReadHelpers::ReadGridParms(ncid);
     std::array<Index, 2> r_out = ReadHelpers::ReadRankOut(ncid);
     root = new cme_internal_node("root", nullptr, grid, 1, r_out, 1);
+    // root->Initialize(ncid);
 
     int grp_ncid;
 
@@ -257,6 +276,38 @@ Index ReadHelpers::ReadNBasisfunctions(int ncid)
         NETCDF_ERROR(retval);
 
     return (Index)n_basisfunctions_t;
+}
+
+std::vector<std::vector<double>> ReadHelpers::ReadPropensity(int ncid, const Index n_reactions)
+{
+    int retval;
+    std::vector<std::vector<double>> result(n_reactions);
+
+    for (Index mu = 0; mu < n_reactions; ++mu)
+    {
+        // read dimension dx_{mu}
+        int id_dx_mu;
+        if ((retval = nc_inq_dimid(ncid, ("dx_" + std::to_string(mu)).c_str(), &id_dx_mu)))
+            NETCDF_ERROR(retval);
+
+        size_t dx_mu_t;
+        char tmp[NC_MAX_NAME + 1];
+        if ((retval = nc_inq_dim(ncid, id_dx_mu, tmp, &dx_mu_t)))
+            NETCDF_ERROR(retval);
+
+        result[mu].resize(dx_mu_t);
+
+        // read propensity
+        int id_propensity;
+
+        if ((retval = nc_inq_varid(ncid, ("propensity_" + std::to_string(mu)).c_str(), &id_propensity)))
+            NETCDF_ERROR(retval);
+
+        if ((retval = nc_get_var_double(ncid, id_propensity, result[mu].data())))
+            NETCDF_ERROR(retval);
+    }
+
+    return result;
 }
 
 node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in)

@@ -128,6 +128,8 @@ struct cme_internal_node : internal_node<double>
     cme_internal_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, std::array<Index, 2> _r_out, Index _n_basisfunctions) 
     : internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
     , grid(_grid), coefficients(_grid.n_reactions, _r_in, _r_out) {}
+
+    void Initialize(int ncid);
 };
 
 struct cme_external_node : external_node<double>
@@ -138,6 +140,8 @@ struct cme_external_node : external_node<double>
     cme_external_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, Index _n_basisfunctions) 
     : external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
     , grid(_grid), coefficients(_grid.n_reactions) {}
+
+    void Initialize(int ncid);
 };
 
 struct cme_lr_tree
@@ -161,6 +165,8 @@ namespace ReadHelpers
     std::array<Index, 2> ReadRankOut(int ncid);
 
     Index ReadNBasisfunctions(int ncid);
+
+    std::vector<std::vector<double>> ReadPropensity(int ncid, const Index n_reactions);
 
     node *ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in);
 }
