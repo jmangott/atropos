@@ -35,6 +35,7 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
 {
     Index r = 5, r0 = 4;
     Index n_basisfunctions = 1, n_basisfunctions0 = 1;
+    Index n_reactions = 1;
 
     Index val_n00 = 11, val_n01 = 11, val_n1 = 21;
     double val_liml00 = 0.0, val_liml01 = 0.0, val_liml1 = 0.0;
@@ -58,13 +59,28 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     vector<Index> binsize00 {val_binsize00};
     vector<Index> binsize01 {val_binsize01};
 
-    multi_array<bool, 2> dep({1});
+    multi_array<bool, 2> dep({n_reactions, n.size()});
+    multi_array<bool, 2> dep0({n_reactions, n0.size()});
+    multi_array<bool, 2> dep1({n_reactions, n1.size()});
+    multi_array<bool, 2> dep00({n_reactions, n00.size()});
+    multi_array<bool, 2> dep01({n_reactions, n01.size()});
 
-    grid_parms grid(n, binsize, liml, dep);
-    grid_parms grid0(n0, binsize0, liml0, dep);
-    grid_parms grid1(n1, binsize1, liml1, dep);
-    grid_parms grid00(n00, binsize00, liml00, dep);
-    grid_parms grid01(n01, binsize01, liml01, dep);
+    multi_array<Index, 2> nu({n_reactions, n.size()});
+    multi_array<Index, 2> nu0({n_reactions, n0.size()});
+    multi_array<Index, 2> nu1({n_reactions, n1.size()});
+    multi_array<Index, 2> nu00({n_reactions, n00.size()});
+    multi_array<Index, 2> nu01({n_reactions, n01.size()});
+
+    grid_parms grid(n, binsize, liml, dep, nu);
+    grid_parms grid0(n0, binsize0, liml0, dep0, nu0);
+    grid_parms grid1(n1, binsize1, liml1, dep1, nu1);
+    grid_parms grid00(n00, binsize00, liml00, dep00, nu00);
+    grid_parms grid01(n01, binsize01, liml01, dep01, nu01);
+    grid.Initialize();
+    grid0.Initialize();
+    grid1.Initialize();
+    grid00.Initialize();
+    grid01.Initialize();
 
     multi_array<double, 3> p({val_n00, val_n01, val_n1}), p_ortho({val_n00, val_n01, val_n1});
     multi_array<double, 3> Q({r, r, 1}), Q0({r0, r0, r});
@@ -81,9 +97,9 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     set_zero(X00);
     set_zero(X01);
     set_zero(X1);
-    std::function<double(double*, double*)> ip00 = inner_product_from_const_weight(double(grid00.h_mult()), grid00.dx());
-    std::function<double(double*, double*)> ip01 = inner_product_from_const_weight(double(grid01.h_mult()), grid01.dx());
-    std::function<double(double*, double*)> ip1 = inner_product_from_const_weight(double(grid1.h_mult()), grid1.dx());
+    std::function<double(double*, double*)> ip00 = inner_product_from_const_weight(grid00.h_mult, grid00.dx);
+    std::function<double(double*, double*)> ip01 = inner_product_from_const_weight(grid01.h_mult, grid01.dx);
+    std::function<double(double*, double*)> ip1 = inner_product_from_const_weight(grid1.h_mult, grid1.dx);
     std::function<double(double *, double *)> ip0 = inner_product_from_const_weight(1.0, r0 * r0);
 
     std::generate(std::begin(X00), std::begin(X00) + val_n00, initial_distribution(val_liml00, val_binsize00));
