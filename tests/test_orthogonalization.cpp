@@ -59,17 +59,34 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     vector<Index> binsize00 {val_binsize00};
     vector<Index> binsize01 {val_binsize01};
 
-    multi_array<bool, 2> dep({n_reactions, n.size()});
-    multi_array<bool, 2> dep0({n_reactions, n0.size()});
-    multi_array<bool, 2> dep1({n_reactions, n1.size()});
-    multi_array<bool, 2> dep00({n_reactions, n00.size()});
-    multi_array<bool, 2> dep01({n_reactions, n01.size()});
+    multi_array<bool, 2> dep({n_reactions, (Index)n.size()});
+    multi_array<bool, 2> dep0({n_reactions, (Index)n0.size()});
+    multi_array<bool, 2> dep1({n_reactions, (Index)n1.size()});
+    multi_array<bool, 2> dep00({n_reactions, (Index)n00.size()});
+    multi_array<bool, 2> dep01({n_reactions, (Index)n01.size()});
 
-    multi_array<Index, 2> nu({n_reactions, n.size()});
-    multi_array<Index, 2> nu0({n_reactions, n0.size()});
-    multi_array<Index, 2> nu1({n_reactions, n1.size()});
-    multi_array<Index, 2> nu00({n_reactions, n00.size()});
-    multi_array<Index, 2> nu01({n_reactions, n01.size()});
+    std::fill(std::begin(dep), std::end(dep), false);
+    std::fill(std::begin(dep0), std::end(dep0), false);
+    std::fill(std::begin(dep1), std::end(dep1), false);
+    std::fill(std::begin(dep00), std::end(dep00), false);
+    std::fill(std::begin(dep01), std::end(dep01), false);
+    // set_zero(dep);
+    // set_zero(dep0);
+    // set_zero(dep1);
+    // set_zero(dep00);
+    // set_zero(dep01);
+
+    multi_array<Index, 2> nu({n_reactions, (Index)n.size()});
+    multi_array<Index, 2> nu0({n_reactions, (Index)n0.size()});
+    multi_array<Index, 2> nu1({n_reactions, (Index)n1.size()});
+    multi_array<Index, 2> nu00({n_reactions, (Index)n00.size()});
+    multi_array<Index, 2> nu01({n_reactions, (Index)n01.size()});
+
+    std::fill(std::begin(nu), std::end(nu), 0);
+    std::fill(std::begin(nu0), std::end(nu0), 0);
+    std::fill(std::begin(nu1), std::end(nu1), 0);
+    std::fill(std::begin(nu00), std::end(nu00), 0);
+    std::fill(std::begin(nu01), std::end(nu01), 0);
 
     grid_parms grid(n, binsize, liml, dep, nu);
     grid_parms grid0(n0, binsize0, liml0, dep0, nu0);
