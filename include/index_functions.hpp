@@ -15,7 +15,7 @@
 #include "grid_class.hpp"
 #include "reaction_class.hpp"
 
-Index VecIndexToCombIndex(std::vector<Index> vec_index, multi_array<Index, 1> interval);
+// TODO: write tests
 
 template<class InputIt, class InputItInt>
 Index VecIndexToCombIndex(InputIt first, InputIt last, InputItInt first_int)
@@ -30,6 +30,63 @@ Index VecIndexToCombIndex(InputIt first, InputIt last, InputItInt first_int)
     return comb_index;
 }
 
+template <class InputIt, class OutputIt>
+void CombIndexToVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
+{
+    assert(d_first != d_last);
+    Index comb_index;
+    for (; d_first != std::next(d_last, -1); ++first, ++d_first)
+    {
+        *d_first = comb_index % *first;
+        comb_index = Index(comb_index / *first);
+    }
+    *(std::next(d_last, -1)) = comb_index;
+}
+
+template <class InputIt, class InputItInt, class InputItDep>
+Index VecIndexToDepCombIndex(InputIt first, InputItInt first_int, InputItDep first_dep, InputIt last_dep)
+{
+    Index comb_index = 0;
+    Index stride = 1;
+    for (; first_dep != last_dep; ++first_int, ++first_dep)
+    {
+        comb_index += *std::next(first, *first_dep) * stride;
+        stride *= *first_int;
+    }
+    return comb_index;
+}
+
+template <class InputIt, class OutputIt>
+void IncrVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
+{
+    assert(d_first != d_last);
+    for (; d_first != std::next(d_last, -1); ++first, ++d_first)
+    {
+        ++(*d_first);
+        if (*d_first < *first)
+            return;
+        *d_first = typename std::iterator_traits<OutputIt>::value_type(0);
+    }
+    ++(*(std::next(d_last, -1)));
+}
+
+#ifdef __OPENMP__
+template <InputIt, InputItInt>
+Index SetVecIndex(InputIt first, InputIt last, InputItInt first_int, Index dx)
+{
+    Index chunk_size, start_index;
+    int num_threads = omp_get_num_threads();
+    int thread_num = omp_get_thread_num();
+    chunk_size = (Index)std::ceil((double)dx / num_threads);
+    start_index = thread_num * chunk_size;
+    CombIndexToVecIndex(first_int, first, last);
+    return chunk_size;
+}
+#endif
+
+//-----------------------------------------------------------------------------
+
+Index VecIndexToCombIndex(std::vector<Index> vec_index, multi_array<Index, 1> interval);
 
 inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index, const std::vector<Index> &interval)
 {
@@ -42,7 +99,6 @@ inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index,
     if (dim > 0) vec_index[dim - 1] = comb_index;
 }
 
-
 inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index, const multi_array<Index, 1> &interval)
 {
     Index dim = interval.shape()[0];
@@ -53,21 +109,6 @@ inline void CombIndexToVecIndex(std::vector<Index> &vec_index, Index comb_index,
     }
     if (dim > 0) vec_index[dim - 1] = comb_index;
 }
-
-template<class InputIt, class InputItInt>
-inline Index CombIndexToVecIndex(InputIt first, InputIt last, InputItInt first_int)
-{
-    Index comb_index;
-    for (; first != last; ++first, ++first_int)
-    {
-        *first = comb_index % *first_int;
-        comb_index = Index (comb_index / *first_int);
-    }
-    *last = comb_index;
-
-    return comb_index;
-}
-
 
 inline void CombIndexToState(std::vector<double> &state, Index comb_index, const multi_array<Index, 1> &interval, const multi_array<double, 1> &liml, const multi_array<Index, 1> &binsize)
 {
@@ -97,19 +138,6 @@ inline void IncrVecIndex(std::vector<Index> &vec_index, const multi_array<Index,
     if (dim > 0) vec_index[dim - 1]++;
 }
 
-template <class InputIt, class OutputIt>
-inline void IncrVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
-{
-    for ( ; d_first != std::next(d_last, -1); ++first, ++d_first)
-    {
-        ++(*d_first);
-        if (*d_first < *first)
-            return;
-        *d_first = typename std::iterator_traits<OutputIt>::value_type (0);
-    }
-    ++(*(std::next(d_last, -1)));
-}
-
 
 #ifdef __OPENMP__
 inline Index SetVecIndex(std::vector<Index> &vec_index, const multi_array<Index, 1> &interval, Index dx)
@@ -124,7 +152,6 @@ inline Index SetVecIndex(std::vector<Index> &vec_index, const multi_array<Index,
 }
 #endif
 
-
 inline Index VecIndexToDepCombIndex(std::vector<Index> &vec_index, const std::vector<Index> &n_dep, const std::vector<Index> &dep_vec)
 {
     Index comb_index = 0;
@@ -137,10 +164,8 @@ inline Index VecIndexToDepCombIndex(std::vector<Index> &vec_index, const std::ve
     return comb_index;
 }
 
-
 // Calculate for all reactions the number of indices by which arrays have to be shifted in order to calculate coefficients
 void CalculateShiftAmount(std::vector<Index> &sigma1, std::vector<Index> &sigma2, mysys reaction_system, grid_info grid);
-
 
 // Calculate `output_array`, where rows of `input_array` are shifted by `shift`
 // NOTE: for positive values of `shift` rows are shifted to larger row indices
