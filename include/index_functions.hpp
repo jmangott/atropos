@@ -17,72 +17,75 @@
 
 // TODO: write tests
 
-template<class InputIt, class InputItInt>
-Index VecIndexToCombIndex(InputIt first, InputIt last, InputItInt first_int)
+namespace IndexFunction
 {
-    Index comb_index = 0;
-    Index stride = 1;
-    for (; first != last; ++first, ++first_int)
+    template<class InputIt, class InputItInt>
+    Index VecIndexToCombIndex(InputIt first, InputIt last, InputItInt first_int)
     {
-        comb_index += *first * stride;
-        stride *= *first_int;
+        Index comb_index = 0;
+        Index stride = 1;
+        for (; first != last; ++first, ++first_int)
+        {
+            comb_index += *first * stride;
+            stride *= *first_int;
+        }
+        return comb_index;
     }
-    return comb_index;
-}
 
-template <class InputIt, class OutputIt>
-void CombIndexToVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
-{
-    assert(d_first != d_last);
-    Index comb_index;
-    for (; d_first != std::next(d_last, -1); ++first, ++d_first)
+    template <class InputIt, class OutputIt>
+    void CombIndexToVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
     {
-        *d_first = comb_index % *first;
-        comb_index = Index(comb_index / *first);
+        assert(d_first != d_last);
+        Index comb_index;
+        for (; d_first != std::next(d_last, -1); ++first, ++d_first)
+        {
+            *d_first = comb_index % *first;
+            comb_index = Index(comb_index / *first);
+        }
+        *(std::next(d_last, -1)) = comb_index;
     }
-    *(std::next(d_last, -1)) = comb_index;
-}
 
-template <class InputIt, class InputItInt, class InputItDep>
-Index VecIndexToDepCombIndex(InputIt first, InputItInt first_int, InputItDep first_dep, InputIt last_dep)
-{
-    Index comb_index = 0;
-    Index stride = 1;
-    for (; first_dep != last_dep; ++first_int, ++first_dep)
+    template <class InputIt, class InputItInt, class InputItDep>
+    Index VecIndexToDepCombIndex(InputIt first, InputItInt first_int, InputItDep first_dep, InputIt last_dep)
     {
-        comb_index += *std::next(first, *first_dep) * stride;
-        stride *= *first_int;
+        Index comb_index = 0;
+        Index stride = 1;
+        for (; first_dep != last_dep; ++first_int, ++first_dep)
+        {
+            comb_index += *std::next(first, *first_dep) * stride;
+            stride *= *first_int;
+        }
+        return comb_index;
     }
-    return comb_index;
-}
 
-template <class InputIt, class OutputIt>
-void IncrVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
-{
-    assert(d_first != d_last);
-    for (; d_first != std::next(d_last, -1); ++first, ++d_first)
+    template <class InputIt, class OutputIt>
+    void IncrVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
     {
-        ++(*d_first);
-        if (*d_first < *first)
-            return;
-        *d_first = typename std::iterator_traits<OutputIt>::value_type(0);
+        assert(d_first != d_last);
+        for (; d_first != std::next(d_last, -1); ++first, ++d_first)
+        {
+            ++(*d_first);
+            if (*d_first < *first)
+                return;
+            *d_first = typename std::iterator_traits<OutputIt>::value_type(0);
+        }
+        ++(*(std::next(d_last, -1)));
     }
-    ++(*(std::next(d_last, -1)));
-}
 
-#ifdef __OPENMP__
-template <InputIt, InputItInt>
-Index SetVecIndex(InputIt first, InputIt last, InputItInt first_int, Index dx)
-{
-    Index chunk_size, start_index;
-    int num_threads = omp_get_num_threads();
-    int thread_num = omp_get_thread_num();
-    chunk_size = (Index)std::ceil((double)dx / num_threads);
-    start_index = thread_num * chunk_size;
-    CombIndexToVecIndex(first_int, first, last);
-    return chunk_size;
+    #ifdef __OPENMP__
+    template <InputIt, InputItInt>
+    Index SetVecIndex(InputIt first, InputIt last, InputItInt first_int, Index dx)
+    {
+        Index chunk_size, start_index;
+        int num_threads = omp_get_num_threads();
+        int thread_num = omp_get_thread_num();
+        chunk_size = (Index)std::ceil((double)dx / num_threads);
+        start_index = thread_num * chunk_size;
+        CombIndexToVecIndex(first_int, first, last);
+        return chunk_size;
+    }
+    #endif
 }
-#endif
 
 //-----------------------------------------------------------------------------
 
