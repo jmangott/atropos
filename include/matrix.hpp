@@ -34,9 +34,9 @@ namespace Matrix
         {
             i = vec_index[dim];
             RemoveElement(std::begin(vec_index), std::end(vec_index), std::begin(vec_index_cols), dim);
-            j = VecIndexToCombIndex(std::begin(vec_index_cols), std::end(vec_index_cols), std::begin(cols_shape));
+            j = IndexFunction::VecIndexToCombIndex(std::begin(vec_index_cols), std::end(vec_index_cols), std::begin(cols_shape));
             output(j, i) = el;
-            IncrVecIndex(std::begin(shape), std::begin(vec_index), std::end(vec_index));
+            IndexFunction::IncrVecIndex(std::begin(shape), std::begin(vec_index), std::end(vec_index));
         }
     }
 
@@ -55,9 +55,9 @@ namespace Matrix
         {
             i = vec_index[dim];
             RemoveElement(std::begin(vec_index), std::end(vec_index), std::begin(vec_index_cols), dim);
-            j = VecIndexToCombIndex(std::begin(vec_index_cols), std::end(vec_index_cols), std::begin(cols_shape));
+            j = IndexFunction::VecIndexToCombIndex(std::begin(vec_index_cols), std::end(vec_index_cols), std::begin(cols_shape));
             el = input(j, i);
-            IncrVecIndex(std::begin(shape), std::begin(vec_index), std::end(vec_index));
+            IndexFunction::IncrVecIndex(std::begin(shape), std::begin(vec_index), std::end(vec_index));
         }
     }
 
@@ -98,7 +98,62 @@ namespace Matrix
         return R;
     }
 
-    void ShiftMultiArrayRows(multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, const grid_parms grid, const Index mu);
+    template <Index inv>
+    void ShiftRows(multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, const grid_parms grid, const Index mu)
+    {
+        assert(output_array.shape() == input_array.shape());
+
+        Index shift = inv * grid.shift[mu];
+        Index n_rows = output_array.shape()[0];
+        Index n_cols = output_array.shape()[1];
+
+        // NOTE: Ensign stores matrices in column-major order
+
+        vector<Index> vec_index(grid.d);
+
+        for (Index j = 0; j < n_cols; j++)
+        {
+            std::fill(vec_index.begin(), vec_index.end(), 0);
+
+#ifdef __OPENMP__
+#pragma omp parallel firstprivate(vec_index) private(k_inc)
+#endif
+            {
+#ifdef __OPENMP__
+                Index chunk_size = SetVecIndex(vec_index, grid_alt->n1, grid_alt->dx1);
+#endif
+
+#ifdef __OPENMP__
+#pragma omp for schedule(static, chunk_size)
+#endif
+                for (Index i = 0; i < n_rows; i++)
+                {
+                    if ((shift < 0 && i - shift < n_rows) || (shift >= 0 && i - shift >= 0))
+                    {
+                        output_array(i, j) = input_array(i - shift, j);
+                    }
+                    else
+                    {
+                        output_array(i, j) = 0.0;
+                        IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
+                        continue;
+                    }
+
+                    for (int k = 0; k < grid.d; k++)
+                    {
+                        if (
+                            ((grid.nu(mu, k) > 0) && (vec_index[k] - grid.nu(mu, k) < 0)) ||
+                            ((grid.nu(mu, k) < 0) && (vec_index[k] - grid.nu(mu, k) >= grid.n[k])))
+                        {
+                            output_array(i, j) = 0.0;
+                            break;
+                        }
+                    }
+                    IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
+                }
+            }
+        }
+    }
 }
 
 #endif
