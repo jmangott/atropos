@@ -53,7 +53,7 @@ void SubflowPhi(cme_internal_node *node, const blas_ops &blas, const double tau)
 
         // Compute QR decomposition C^(n+id) = Q^(n+id) * S^(n+id)
         std::function<double(double *, double *)> ip_child;
-        ip = inner_product_from_const_weight(1.0, prod(child_node->RankOut()));
+        ip_child = inner_product_from_const_weight(1.0, prod(child_node->RankOut()));
         Matrix::Matricize(child_node->Q, Cmat_child, 2);
         gs(Cmat_child, child_node->S, ip_child);
     }
@@ -81,6 +81,7 @@ void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const doub
     // Integrate C
 }
 
+// TODO: rewrite this as a class method for cme_external_node
 void SubflowK(cme_external_node* const node, const blas_ops &blas, const double tau)
 {
     multi_array<double, 2> prod_KC(node->X.shape());
@@ -135,7 +136,8 @@ void SubflowK(cme_external_node* const node, const blas_ops &blas, const double 
     node->X += K_dot;
 }
 
-void SubflowS(cme_node* node, const blas_ops &blas, const double tau)
+// TODO: rewrite this as a class method for cme_node
+void SubflowS(cme_node *node, const blas_ops &blas, const double tau)
 {
     multi_array<double, 2> S_dot(node->S.shape());
     set_zero(S_dot);

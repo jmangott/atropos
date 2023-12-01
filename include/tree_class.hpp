@@ -251,7 +251,7 @@ template <Index id>
 void cme_internal_node::CalculateEF(const blas_ops &blas)
 {
     std::fill(std::begin(child[id]->coefficients.E), std::end(child[id]->coefficients.E), 0.0);
-    std::fill(std::begin(child[id]->coefficients.E), std::end(coefficients.E), 0.0);
+    std::fill(std::begin(child[id]->coefficients.F), std::end(child[id]->coefficients.F), 0.0);
 
     multi_array<double, 3> A_bar({grid.n_reactions, RankOut()[id], RankOut()[id]});
     multi_array<double, 3> B_bar({grid.n_reactions, RankOut()[id], RankOut()[id]});
@@ -268,8 +268,8 @@ void cme_internal_node::CalculateEF(const blas_ops &blas)
                 {
                     for (Index l = 0; l < child[id]->RankIn(); ++l)
                     {
-                        child[id]->coefficients.E(i, j, k, l) += coefficients.A(mu, i, k) * child[id]->coefficients.A(mu, j, l);
-                        child[id]->coefficients.F(i, j, k, l) += coefficients.B(mu, i, k) * child[id]->coefficients.B(mu, j, l);
+                        child[id]->coefficients.E(i, j, k, l) += A_bar(mu, i, k) * child[id]->coefficients.A(mu, j, l);
+                        child[id]->coefficients.F(i, j, k, l) += B_bar(mu, i, k) * child[id]->coefficients.B(mu, j, l);
                     }
                 }
             }

@@ -57,7 +57,6 @@ void cme_external_node::Initialize(int ncid)
 
     // read propensity
     coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
-    return;
 
     // resize C and D coefficients
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
@@ -65,6 +64,7 @@ void cme_external_node::Initialize(int ncid)
         external_coefficients.C[mu].resize({grid.dx_dep[mu], RankIn(), RankIn()});
         external_coefficients.D[mu].resize({grid.dx_dep[mu], RankIn(), RankIn()});
     }
+    return;
 }
 
 void cme_lr_tree::Read(std::string fn)
@@ -435,7 +435,7 @@ void cme_external_node::CalculateCD(const blas_ops &blas)
 {
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
-        for (Index alpha = 0; alpha < grid.n_reactions; ++alpha)
+        for (Index alpha = 0; alpha < grid.dx_dep[mu]; ++alpha)
         {
             for (Index i = 0; i < RankIn(); ++i)
             {
