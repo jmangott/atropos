@@ -18,43 +18,52 @@
 
 // General classes for the hierarchical DLR approximation
 // TODO: introduce a template parameter `N` for arbitrary many outgoing legs
+template<class T>
 struct node
 {
     std::string id;
 
     node* parent;
     std::array<node*, 2> child;
+    Index n_basisfunctions;
 
-    node(std::string _id, node* _parent, std::array<node*, 2> _child) 
+    multi_array<T, 2> S;
+
+    node() = default;
+
+    node(std::string _id, node* _parent, std::array<node*, 2> _child, const Index _r_in, const Index _n_basisfunctions) 
     : id(_id)
     , parent(_parent)
-    , child(_child) {}
+    , child(_child)
+    , n_basisfunctions(_n_basisfunctions)
+    , S({_r_in, _r_in})
+    {
+        assert(n_basisfunctions <= _r_in);
+    }
 
     virtual ~node() {}
 
     virtual bool IsInternal() const = 0;
     virtual bool IsExternal() const = 0;
-    virtual Index RankIn() const = 0;
     virtual void Initialize(int ncid) = 0;
+
+    Index RankIn() const
+    {
+        return S.shape()[0];
+    }
 };
 
 template<class T>
-struct internal_node : node
+struct internal_node : virtual node<T>
 {
     multi_array<T, 3> Q;
     multi_array<T, 3> G;
-    multi_array<T, 2> S;
-    Index n_basisfunctions;
 
     internal_node(const std::string _id, internal_node * const _parent, const Index _r_in, const std::array<Index, 2> _r_out, const Index _n_basisfunctions)
-    : node(_id, _parent, {nullptr, nullptr})
-    , Q((_parent == nullptr) ? std::array<Index, 3>({_r_out[0], _r_out[1], 1}) : std::array<Index, 3>({_r_out[0], _r_out[1], _r_in}))
-    , G((_parent == nullptr) ? std::array<Index, 3>({_r_out[0], _r_out[1], 1}) : std::array<Index, 3>({_r_out[0], _r_out[1], _r_in}))
-    , S(_r_out)
-    , n_basisfunctions(_n_basisfunctions)
-    {
-        assert(n_basisfunctions <= _r_in);
-    }
+    : node<T>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
+    , Q({_r_out[0], _r_out[1], _r_in})
+    , G({_r_out[0], _r_out[1], _r_in})
+    {}
     
     bool IsInternal() const
     {
@@ -68,12 +77,7 @@ struct internal_node : node
 
     std::array<Index, 2> RankOut() const
     {
-        return S.shape();
-    }
-
-    Index RankIn() const
-    {
-        return Q.shape()[2];
+        return array<Index, 2>({Q.shape()[0], Q.shape()[1]});
     }
 
     void Initialize(int ncid);
@@ -82,18 +86,15 @@ struct internal_node : node
 };
 
 template<class T>
-struct external_node : node
+struct external_node : virtual node<T>
 {
     multi_array<T, 2> X;
     Index n_basisfunctions;
 
     external_node(std::string _id, internal_node<T> * const _parent, const Index _dx, const Index _r_in, const Index _n_basisfunctions) 
-    : node(_id, _parent, {nullptr, nullptr})
+    : node<T>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , X({_dx, _r_in})
-    , n_basisfunctions(_n_basisfunctions)
-    {
-        assert(n_basisfunctions < _r_in);
-    }
+    {}
     
     bool IsInternal() const
     {
@@ -110,38 +111,58 @@ struct external_node : node
         return X.shape()[0];
     }
 
-    Index RankIn() const
-    {
-        return X.shape()[1];
-    }
-
     void Initialize(int ncid);
 
     multi_array<T, 2> Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas);
 };
 
-struct cme_internal_node : internal_node<double>
+struct cme_node : virtual node<double>
 {
+    std::array<cme_node*, 2> child;
     grid_parms grid;
-    cme_internal_coeff coefficients;
+    cme_coeff coefficients;
+
+    cme_node(std::string _id, cme_node *_parent, grid_parms _grid, Index _r_in, Index _n_basisfunctions)
+    : node<double>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
+    , child({nullptr, nullptr})
+    , grid(_grid)
+    , coefficients(_grid.n_reactions, _r_in)
+    {}
+};
+
+struct cme_internal_node : cme_node, internal_node<double>
+{
+    cme_internal_coeff internal_coefficients;
 
     cme_internal_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, std::array<Index, 2> _r_out, Index _n_basisfunctions) 
-    : internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
-    , grid(_grid), coefficients(_grid.n_reactions, _r_in, _r_out) {}
+    : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
+    , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
+    , internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
+    , internal_coefficients(_grid.n_reactions, _r_in, _r_out)
+    {}
 
+    template <Index id>
+    void CalculateAB(const blas_ops &blas);
+
+    template <Index id>
+    void CalculateEF(const blas_ops &blas);
+
+    void CalculateGH(const blas_ops &blas);
     void Initialize(int ncid);
 };
 
-struct cme_external_node : external_node<double>
+struct cme_external_node : cme_node, external_node<double>
 {
-    grid_parms grid;
-    cme_external_coeff coefficients;
+    cme_external_coeff external_coefficients;
 
-    cme_external_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, Index _n_basisfunctions) 
-    : external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
-    , grid(_grid), coefficients(_grid.n_reactions) {}
-
+    cme_external_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, Index _n_basisfunctions)
+    : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
+    , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
+    , external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
+    , external_coefficients(_grid.n_reactions, _r_in)
+    {}
     void Initialize(int ncid);
+    void CalculateCD(const blas_ops &blas);
 };
 
 struct cme_lr_tree
@@ -149,7 +170,7 @@ struct cme_lr_tree
     cme_internal_node *root;
 
     private:
-        void PrintHelper(node* node);
+        void PrintHelper(cme_node* node);
         void OrthogonalizeHelper(cme_internal_node *node);
 
     public:
@@ -161,23 +182,19 @@ struct cme_lr_tree
 namespace ReadHelpers
 {
     grid_parms ReadGridParms(int ncid);
-
     std::array<Index, 2> ReadRankOut(int ncid);
-
     Index ReadNBasisfunctions(int ncid);
-
     std::vector<std::vector<double>> ReadPropensity(int ncid, const Index n_reactions);
-
-    node *ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in);
+    cme_node *ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in);
 }
 
 template <class T>
 multi_array<T, 2> internal_node<T>::Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas)
 {
-    multi_array<T, 2> Qmat({prod(RankOut()), RankIn()});
-    multi_array<T, 2> Q_R({RankIn(), RankIn()});
+    multi_array<T, 2> Qmat({prod(RankOut()), node<T>::RankIn()});
+    multi_array<T, 2> Q_R({node<T>::RankIn(), node<T>::RankIn()});
     Matrix::Matricize(Q, Qmat, 2);
-    Q_R = Matrix::Orthogonalize(Qmat, n_basisfunctions, inner_product, blas);
+    Q_R = Matrix::Orthogonalize(Qmat, node<T>::n_basisfunctions, inner_product, blas);
     Matrix::Tensorize(Qmat, Q, 2);
 
     return Q_R;
@@ -186,10 +203,78 @@ multi_array<T, 2> internal_node<T>::Orthogonalize(std::function<T(T *, T *)> inn
 template <class T>
 multi_array<T, 2> external_node<T>::Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas)
 {
-    multi_array<T, 2> X_R({RankIn(), RankIn()});
-    X_R = Matrix::Orthogonalize(X, n_basisfunctions, inner_product, blas);
+    multi_array<T, 2> X_R({node<T>::RankIn(), node<T>::RankIn()});
+    X_R = Matrix::Orthogonalize(X, node<T>::n_basisfunctions, inner_product, blas);
 
     return X_R;
 };
+
+// TODO: Is the propensity really needed for all nodes or only for the external ones?
+void CalculateAB_bar(cme_node *child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas);
+
+template <Index id>
+void cme_internal_node::CalculateAB(const blas_ops &blas)
+{
+    const Index id_c = (id == 0) ? 1 : 0;
+    multi_array<double, 3> A_bar({grid.n_reactions, RankOut()[id_c], RankOut()[id_c]});
+    multi_array<double, 3> B_bar({grid.n_reactions, RankOut()[id_c], RankOut()[id_c]});
+
+    CalculateAB_bar(child[id_c], A_bar, B_bar, blas);
+
+    // TODO: reduce number of loops
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        for (Index i0 = 0; i0 < RankOut()[id]; ++i0)
+        {
+            for (Index j0 = 0; j0 < RankOut()[id]; ++j0)
+            {
+                for (Index i1 = 0; i1 < RankOut()[id_c]; ++i1)
+                {
+                    for (Index j1 = 0; j1 < RankOut()[id_c]; ++j1)
+                    {
+                        for (Index i = 0; i < RankIn(); ++i)
+                        {
+                            for (Index j = 0; j < RankIn(); ++j)
+                            {
+                                child[id]->coefficients.A(mu, i0, j0) = coefficients.A(mu, i, j) * G(i0, i1, i) * G(j0, j1, j) * A_bar(mu, i1, j1);
+                                child[id]->coefficients.B(mu, i0, j0) = coefficients.B(mu, i, j) * G(i0, i1, i) * G(j0, j1, j) * B_bar(mu, i1, j1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
+
+template <Index id>
+void cme_internal_node::CalculateEF(const blas_ops &blas)
+{
+    std::fill(std::begin(child[id]->coefficients.E), std::end(child[id]->coefficients.E), 0.0);
+    std::fill(std::begin(child[id]->coefficients.E), std::end(coefficients.E), 0.0);
+
+    multi_array<double, 3> A_bar({grid.n_reactions, RankOut()[id], RankOut()[id]});
+    multi_array<double, 3> B_bar({grid.n_reactions, RankOut()[id], RankOut()[id]});
+
+    CalculateAB_bar(child[id], A_bar, B_bar, blas);
+
+    for (Index mu = 0; mu < child[id]->grid.n_reactions; ++mu)
+    {
+        for (Index i = 0; i < child[id]->RankIn(); ++i)
+        {
+            for (Index j = 0; j < child[id]->RankIn(); ++j)
+            {
+                for (Index k = 0; k < child[id]->RankIn(); ++k)
+                {
+                    for (Index l = 0; l < child[id]->RankIn(); ++l)
+                    {
+                        child[id]->coefficients.E(i, j, k, l) += coefficients.A(mu, i, k) * child[id]->coefficients.A(mu, j, l);
+                        child[id]->coefficients.F(i, j, k, l) += coefficients.B(mu, i, k) * child[id]->coefficients.B(mu, j, l);
+                    }
+                }
+            }
+        }
+    }
+}
 
 #endif

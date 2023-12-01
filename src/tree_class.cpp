@@ -21,6 +21,18 @@ void cme_internal_node::Initialize(int ncid)
 
     // read propensity
     coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
+
+    // initialize A, B, E and F for the root
+    if (parent == nullptr)
+    {
+        for (Index mu = 0; mu < grid.n_reactions; ++mu)
+        {
+            coefficients.A(mu, 0, 0) = 1.0;
+            coefficients.B(mu, 0, 0) = 1.0;
+        }
+        coefficients.E(0, 0, 0, 0) = 1.0;
+        coefficients.F(0, 0, 0, 0) = 1.0;
+    }
     return;
 }
 
@@ -46,6 +58,13 @@ void cme_external_node::Initialize(int ncid)
     // read propensity
     coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
     return;
+
+    // resize C and D coefficients
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        external_coefficients.C[mu].resize({grid.dx_dep[mu], RankIn(), RankIn()});
+        external_coefficients.D[mu].resize({grid.dx_dep[mu], RankIn(), RankIn()});
+    }
 }
 
 void cme_lr_tree::Read(std::string fn)
@@ -58,7 +77,7 @@ void cme_lr_tree::Read(std::string fn)
     grid_parms grid = ReadHelpers::ReadGridParms(ncid);
     std::array<Index, 2> r_out = ReadHelpers::ReadRankOut(ncid);
     root = new cme_internal_node("root", nullptr, grid, 1, r_out, 1);
-    // root->Initialize(ncid);
+    root->Initialize(ncid);
 
     int grp_ncid;
 
@@ -75,7 +94,7 @@ void cme_lr_tree::Read(std::string fn)
     return;
 }
 
-void cme_lr_tree::PrintHelper(node* node)
+void cme_lr_tree::PrintHelper(cme_node* node)
 {
     if (node->IsExternal())
     {
@@ -161,21 +180,23 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
         }
     }
 
+    multi_array<double, 2> tmp(node->RankOut());
+
     for (Index k = 0; k < node->RankIn(); ++k)
     {
         for (Index j = 0; j < node->RankOut()[1]; ++j)
         {
             for (Index i = 0; i < node->RankOut()[0]; ++i)
             {
-                node->S(i, j) = node->Q(i, j, k);
+                tmp(i, j) = node->Q(i, j, k);
             }
         }
-        blas.matmul_transb(R0, R1, node->S);
+        blas.matmul_transb(R0, R1, tmp);
         for (Index j = 0; j < node->RankOut()[1]; ++j)
         {
             for (Index i = 0; i < node->RankOut()[0]; ++i)
             {
-                node->Q(i, j, k) = node->S(i, j);
+                node->Q(i, j, k) = tmp(i, j);
             }
         }
     }
@@ -286,16 +307,16 @@ std::vector<std::vector<double>> ReadHelpers::ReadPropensity(int ncid, const Ind
     for (Index mu = 0; mu < n_reactions; ++mu)
     {
         // read dimension dx_{mu}
-        int id_dx_mu;
-        if ((retval = nc_inq_dimid(ncid, ("dx_" + std::to_string(mu)).c_str(), &id_dx_mu)))
+        int id_dx_dep;
+        if ((retval = nc_inq_dimid(ncid, ("dx_" + std::to_string(mu)).c_str(), &id_dx_dep)))
             NETCDF_ERROR(retval);
 
-        size_t dx_mu_t;
+        size_t dx_dep_t;
         char tmp[NC_MAX_NAME + 1];
-        if ((retval = nc_inq_dim(ncid, id_dx_mu, tmp, &dx_mu_t)))
+        if ((retval = nc_inq_dim(ncid, id_dx_dep, tmp, &dx_dep_t)))
             NETCDF_ERROR(retval);
 
-        result[mu].resize(dx_mu_t);
+        result[mu].resize(dx_dep_t);
 
         // read propensity
         int id_propensity;
@@ -310,13 +331,13 @@ std::vector<std::vector<double>> ReadHelpers::ReadPropensity(int ncid, const Ind
     return result;
 }
 
-node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in)
+cme_node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in)
 {
     int retval0, retval1;
     int grp_ncid0, grp_ncid1;
     grid_parms grid = ReadGridParms(ncid);
     Index n_basisfunctions = ReadNBasisfunctions(ncid);
-    node *child_node;
+    cme_node *child_node;
 
     retval0 = nc_inq_ncid(ncid, (id + "0").c_str(), &grp_ncid0);
     retval1 = nc_inq_ncid(ncid, (id + "1").c_str(), &grp_ncid1);
@@ -335,4 +356,95 @@ node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *parent_
         child_node->child[1] = ReadNode(grp_ncid1, id + "1", (cme_internal_node *)child_node, ((cme_internal_node *)child_node)->RankOut()[1]);
     }
     return child_node;
+}
+
+void CalculateAB_bar(cme_node *child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas)
+{
+    if (child_node_init->IsExternal())
+    {
+        cme_external_node *child_node = (cme_external_node *)child_node_init;
+        multi_array<double, 2> X_shift({child_node->grid.dx, child_node->RankIn()});
+        multi_array<double, 2> tmp_A_bar({child_node->RankIn(), child_node->RankIn()});
+        multi_array<double, 2> tmp_B_bar({child_node->RankIn(), child_node->RankIn()});
+        multi_array<double, 1> weight({child_node->grid.dx});
+
+        for (Index mu = 0; mu < child_node->grid.n_reactions; ++mu)
+        {
+            Matrix::ShiftRows<-1>(X_shift, child_node->X, child_node->grid, mu);
+
+            std::vector<Index> vec_index(child_node->grid.d, 0);
+
+            for (Index alpha = 0; alpha < child_node->grid.dx; ++alpha)
+            {
+                Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(child_node->grid.n_dep[mu]), std::begin(child_node->grid.idx_dep[mu]), std::end(child_node->grid.idx_dep[mu]));
+
+                weight(alpha) = child_node->coefficients.propensity[mu][alpha_dep] * child_node->grid.h_mult;
+                IndexFunction::IncrVecIndex(std::begin(child_node->grid.n), std::begin(vec_index), std::end(vec_index));
+            }
+            coeff(X_shift, child_node->X, weight, tmp_A_bar, blas);
+            coeff(child_node->X, child_node->X, weight, tmp_B_bar, blas);
+
+            for (Index i = 0; i < child_node->RankIn(); ++i)
+            {
+                for (Index j = 0; j < child_node->RankIn(); ++j)
+                {
+                    A_bar(mu, i, j) = tmp_A_bar(i, j);
+                    B_bar(mu, i, j) = tmp_B_bar(i, j);
+                }
+            }
+        }
+    }
+    else
+    {
+        cme_internal_node *child_node = (cme_internal_node *)child_node_init;
+        multi_array<double, 3> A_bar_child0({child_node->grid.n_reactions, child_node->RankOut()[0], child_node->RankOut()[0]});
+        multi_array<double, 3> B_bar_child0({child_node->grid.n_reactions, child_node->RankOut()[0], child_node->RankOut()[0]});
+        multi_array<double, 3> A_bar_child1({child_node->grid.n_reactions, child_node->RankOut()[1], child_node->RankOut()[1]});
+        multi_array<double, 3> B_bar_child1({child_node->grid.n_reactions, child_node->RankOut()[1], child_node->RankOut()[1]});
+
+        CalculateAB_bar(child_node->child[0], A_bar_child0, B_bar_child0, blas);
+        CalculateAB_bar(child_node->child[1], A_bar_child1, B_bar_child1, blas);
+
+        for (Index mu = 0; mu < child_node->grid.n_reactions; ++mu)
+        {
+            for (Index i0 = 0; i0 < child_node->RankOut()[0]; ++i0)
+            {
+                for (Index j0 = 0; j0 < child_node->RankOut()[0]; ++j0)
+                {
+                    for (Index i1 = 0; i1 < child_node->RankOut()[1]; ++i1)
+                    {
+                        for (Index j1 = 0; j1 < child_node->RankOut()[1]; ++j1)
+                        {
+                            for (Index i = 0; i < child_node->RankIn(); ++i)
+                            {
+                                for (Index j = 0; j < child_node->RankIn(); ++j)
+                                {
+                                    A_bar(mu, i, j) = child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * A_bar_child0(mu, i0, j0) * A_bar_child1(mu, i1, j1);
+                                    B_bar(mu, i, j) = child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * B_bar_child0(mu, i0, j0) * B_bar_child1(mu, i1, j1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void cme_external_node::CalculateCD(const blas_ops &blas)
+{
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        for (Index alpha = 0; alpha < grid.n_reactions; ++alpha)
+        {
+            for (Index i = 0; i < RankIn(); ++i)
+            {
+                for (Index j = 0; j < RankIn(); ++j)
+                {
+                    external_coefficients.C[mu](alpha, i, j) = coefficients.propensity[mu][alpha] * coefficients.A(mu, i, j);
+                    external_coefficients.D[mu](alpha, i, j) = coefficients.propensity[mu][alpha] * coefficients.B(mu, i, j);
+                }
+            }
+        }
+    }
 }
