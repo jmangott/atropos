@@ -9,36 +9,40 @@
 
 #include "grid_class.hpp"
 
-
-struct coeff
+struct cme_coeff
 {
     std::vector<std::vector<double>> propensity;
-
-    explicit coeff(const Index _n_reactions) : propensity(_n_reactions) {}
-};
-
-struct cme_internal_coeff : coeff
-{
+    multi_array<double, 3> A, B;
     multi_array<double, 4> E, F;
-    multi_array<double, 6> G, H;
 
-    cme_internal_coeff(const Index _n_reactions, const Index r_in, const std::array<Index, 2> r_out) 
-    : coeff(_n_reactions)
-    , E({r_out[0], r_out[1], r_out[0], r_out[1]})
-    , F({r_out[0], r_out[1], r_out[0], r_out[1]})
-    , G({r_in, r_out[0], r_out[1], r_in, r_out[0], r_out[1]})
-    , H({r_in, r_out[0], r_out[1], r_in, r_out[0], r_out[1]})
+    cme_coeff(const Index _n_reactions, const Index _r_in)
+    : propensity(_n_reactions) 
+    , A({_n_reactions, _r_in, _r_in})
+    , B({_n_reactions, _r_in, _r_in})
+    , E({_r_in, _r_in, _r_in, _r_in})
+    , F({_r_in, _r_in, _r_in, _r_in})
     {}
 };
 
-struct cme_external_coeff : coeff
+struct cme_internal_coeff : cme_coeff
+{
+    multi_array<double, 6> G, H;
+
+    cme_internal_coeff(const Index _n_reactions, const Index _r_in, const std::array<Index, 2> _r_out) 
+    : cme_coeff(_n_reactions, _r_in)
+    , G({_r_in, _r_out[0], _r_out[1], _r_in, _r_out[0], _r_out[1]})
+    , H({_r_in, _r_out[0], _r_out[1], _r_in, _r_out[0], _r_out[1]})
+    {}
+};
+
+struct cme_external_coeff : cme_coeff
 {
     std::vector<multi_array<double, 3>> C, D;
-    
-    explicit cme_external_coeff(const Index n_reactions)
-    : coeff(n_reactions)
-    , C(n_reactions)
-    , D(n_reactions)
+
+    cme_external_coeff(const Index _n_reactions, const Index _r_in)
+    : cme_coeff(_n_reactions, _r_in)
+    , C(_n_reactions)
+    , D(_n_reactions)
     {}
 };
 
