@@ -18,12 +18,15 @@
 #include "integrators.hpp"
 #include "tree_class.hpp"
 
-// TODO: Verify transposed quantities
+// TODO: Verify transposed quantities -> should be ok
+// TODO: check if input from netcdf file is transposed in (r_out, r_out)-dimensions or transpose it in Python interface
 template <Index id>
 void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const double tau);
 
 void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const double tau);
 
 void SubflowK(cme_external_node * const node, const blas_ops &blas, const double tau);
+
+void SubflowS(cme_node* const node, const blas_ops &blas, const double tau);
 
 #endif
