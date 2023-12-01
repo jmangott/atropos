@@ -53,7 +53,7 @@ class InitialCondition:
     def __init__(self, _tree: Tree, _n_basisfunctions: npt.NDArray[np.int_]):
         if (_n_basisfunctions.size != _tree.n_internal_nodes):
             raise ValueError(
-                "`_n_basisfunctions.size` must be equal to the number of internal nodes")
+                "`_n_basisfunctions.size` must be equal to the number of internal nodes - 1")
         
         if (np.any(_n_basisfunctions > _tree.r_out)):
             raise ValueError(
