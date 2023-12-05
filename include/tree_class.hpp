@@ -163,6 +163,7 @@ struct cme_external_node : cme_node, external_node<double>
     {}
     void Initialize(int ncid);
     void CalculateCD(const blas_ops &blas);
+    void CalculateK(const blas_ops &blas, const double tau);
 };
 
 struct cme_lr_tree

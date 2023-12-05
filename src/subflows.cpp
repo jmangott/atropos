@@ -29,8 +29,7 @@ void SubflowPhi(cme_internal_node *node, const blas_ops &blas, const double tau)
         blas.matmul(tmp_x, child_node->S, child_node->X);
 
         // K step
-        // TODO:`SubflowK` and `SubflowS` should be functions depending on the current node, not on the child node
-        SubflowK(child_node, blas, tau);
+        child_node->CalculateK(blas, tau);
 
         // Perform the QR decomposition K = X * S
         std::function<double(double *, double *)> ip_x;
@@ -60,6 +59,7 @@ void SubflowPhi(cme_internal_node *node, const blas_ops &blas, const double tau)
 
     // Integrate S
     node->CalculateEF<id>(blas);
+    // TODO:`SubflowS` should be a function depending on the current node, not on the child node
     SubflowS(node->child[id], blas, tau);
 
     // Set C^n = (S^(n+id))^T * G^n
@@ -77,63 +77,8 @@ template void SubflowPhi<1>(cme_internal_node * const node, const blas_ops &blas
 // TODO:
 void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const double tau)
 {
-    // Compute coefficients g and h
-    // Integrate C
-}
-
-// TODO: rewrite this as a class method for cme_external_node
-void SubflowK(cme_external_node* const node, const blas_ops &blas, const double tau)
-{
-    multi_array<double, 2> prod_KC(node->X.shape());
-    multi_array<double, 2> prod_KC_shift(node->X.shape());
-    multi_array<double, 2> prod_KD(node->X.shape());
-    multi_array<double, 2> K_dot(node->X.shape());
-    set_zero(K_dot);
-
-    std::vector<Index> vec_index(node->grid.d);
-
-    for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
-    {
-        set_zero(prod_KC);
-        set_zero(prod_KD);
-        std::fill(vec_index.begin(), vec_index.end(), 0);
-
-#ifdef __OPENMP__
-#pragma omp parallel firstprivate(vec_index)
-#endif
-        {
-            Index alpha;
-#ifdef __OPENMP__
-            Index chunk_size = SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(node->grid.n), node->grid.dx());
-#endif
-
-#ifdef __OPENMP__
-#pragma omp for schedule(static, chunk_size)
-#endif
-            for (Index i = 0; i < node->grid.dx; ++i)
-            {
-                alpha = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(node->grid.n_dep[mu]), std::begin(node->grid.idx_dep[mu]), std::end(node->grid.idx_dep[mu]));
-                IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
-
-                // Calculate matrix-vector multiplication of C2*K and D2*K
-                for (Index j = 0; j < node->RankIn(); ++j)
-                {
-                    for (Index l = 0; l < node->RankIn(); ++l)
-                    {
-                        prod_KC(i, j) += tau * node->X(i, l) * node->external_coefficients.C[mu](alpha, j, l);
-                        prod_KD(i, j) += tau * node->X(i, l) * node->external_coefficients.D[mu](alpha, j, l);
-                    }
-                }
-            }
-        }
-        // Shift prod_KC
-        Matrix::ShiftRows<1>(prod_KC_shift, prod_KC, node->grid, mu);
-
-        // Calculate k_dot = shift(C * K) - D * K
-        K_dot += prod_KC_shift;
-        K_dot -= prod_KD;
-    }
-    node->X += K_dot;
+    // TODO: Compute coefficients g and h
+    // TODO: Integrate C
 }
 
 // TODO: rewrite this as a class method for cme_node

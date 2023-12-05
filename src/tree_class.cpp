@@ -358,6 +358,7 @@ cme_node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *par
     return child_node;
 }
 
+// TODO: Rename A_bar and B_bar
 void CalculateAB_bar(cme_node *child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas)
 {
     if (child_node_init->IsExternal())
@@ -447,4 +448,58 @@ void cme_external_node::CalculateCD(const blas_ops &blas)
             }
         }
     }
+}
+
+void cme_external_node::CalculateK(const blas_ops &blas, const double tau)
+{
+    multi_array<double, 2> prod_KC(X.shape());
+    multi_array<double, 2> prod_KC_shift(X.shape());
+    multi_array<double, 2> prod_KD(X.shape());
+    multi_array<double, 2> K_dot(X.shape());
+    set_zero(K_dot);
+
+    std::vector<Index> vec_index(grid.d);
+
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        set_zero(prod_KC);
+        set_zero(prod_KD);
+        std::fill(vec_index.begin(), vec_index.end(), 0);
+
+#ifdef __OPENMP__
+#pragma omp parallel firstprivate(vec_index)
+#endif
+        {
+            Index alpha;
+#ifdef __OPENMP__
+            Index chunk_size = SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(node->grid.n), node->grid.dx());
+#endif
+
+#ifdef __OPENMP__
+#pragma omp for schedule(static, chunk_size)
+#endif
+            for (Index i = 0; i < grid.dx; ++i)
+            {
+                alpha = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(grid.n_dep[mu]), std::begin(grid.idx_dep[mu]), std::end(grid.idx_dep[mu]));
+                IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
+
+                // Calculate matrix-vector multiplication of C2*K and D2*K
+                for (Index j = 0; j < RankIn(); ++j)
+                {
+                    for (Index l = 0; l < RankIn(); ++l)
+                    {
+                        prod_KC(i, j) += tau * X(i, l) * external_coefficients.C[mu](alpha, j, l);
+                        prod_KD(i, j) += tau * X(i, l) * external_coefficients.D[mu](alpha, j, l);
+                    }
+                }
+            }
+        }
+        // Shift prod_KC
+        Matrix::ShiftRows<1>(prod_KC_shift, prod_KC, grid, mu);
+
+        // Calculate k_dot = shift(C * K) - D * K
+        K_dot += prod_KC_shift;
+        K_dot -= prod_KD;
+    }
+    X += K_dot;
 }
