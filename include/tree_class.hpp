@@ -128,6 +128,8 @@ struct cme_node : virtual node<double>
     , grid(_grid)
     , coefficients(_grid.n_reactions, _r_in)
     {}
+    void CalculateS(const blas_ops &blas, const double tau);
+    void CalculateEF(const blas_ops &blas);
 };
 
 struct cme_internal_node : cme_node, internal_node<double>
@@ -140,15 +142,10 @@ struct cme_internal_node : cme_node, internal_node<double>
     , internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
     , internal_coefficients(_grid.n_reactions, _r_in, _r_out)
     {}
-
+    void Initialize(int ncid);
     template <Index id>
     void CalculateAB(const blas_ops &blas);
-
-    template <Index id>
-    void CalculateEF(const blas_ops &blas);
-
     void CalculateGH(const blas_ops &blas);
-    void Initialize(int ncid);
 };
 
 struct cme_external_node : cme_node, external_node<double>
@@ -247,35 +244,5 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
         }
     }
 };
-
-template <Index id>
-void cme_internal_node::CalculateEF(const blas_ops &blas)
-{
-    std::fill(std::begin(child[id]->coefficients.E), std::end(child[id]->coefficients.E), 0.0);
-    std::fill(std::begin(child[id]->coefficients.F), std::end(child[id]->coefficients.F), 0.0);
-
-    multi_array<double, 3> A_bar({grid.n_reactions, RankOut()[id], RankOut()[id]});
-    multi_array<double, 3> B_bar({grid.n_reactions, RankOut()[id], RankOut()[id]});
-
-    CalculateAB_bar(child[id], A_bar, B_bar, blas);
-
-    for (Index mu = 0; mu < child[id]->grid.n_reactions; ++mu)
-    {
-        for (Index i = 0; i < child[id]->RankIn(); ++i)
-        {
-            for (Index j = 0; j < child[id]->RankIn(); ++j)
-            {
-                for (Index k = 0; k < child[id]->RankIn(); ++k)
-                {
-                    for (Index l = 0; l < child[id]->RankIn(); ++l)
-                    {
-                        child[id]->coefficients.E(i, j, k, l) += A_bar(mu, i, k) * child[id]->coefficients.A(mu, j, l);
-                        child[id]->coefficients.F(i, j, k, l) += B_bar(mu, i, k) * child[id]->coefficients.B(mu, j, l);
-                    }
-                }
-            }
-        }
-    }
-}
 
 #endif

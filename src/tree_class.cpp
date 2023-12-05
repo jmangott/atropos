@@ -363,7 +363,7 @@ void CalculateAB_bar(cme_node *child_node_init, multi_array<double, 3> &A_bar, m
 {
     if (child_node_init->IsExternal())
     {
-        cme_external_node *child_node = (cme_external_node *)child_node_init;
+        cme_external_node *child_node = (cme_external_node *) child_node_init;
         multi_array<double, 2> X_shift({child_node->grid.dx, child_node->RankIn()});
         multi_array<double, 2> tmp_A_bar({child_node->RankIn(), child_node->RankIn()});
         multi_array<double, 2> tmp_B_bar({child_node->RankIn(), child_node->RankIn()});
@@ -502,4 +502,58 @@ void cme_external_node::CalculateK(const blas_ops &blas, const double tau)
         K_dot -= prod_KD;
     }
     X += K_dot;
+}
+
+void cme_node::CalculateS(const blas_ops &blas, const double tau)
+{
+    multi_array<double, 2> S_dot(S.shape());
+    set_zero(S_dot);
+
+#ifdef __OPENMP__
+#pragma omp parallel for collapse(2)
+#endif
+    for (Index i = 0; i < RankIn(); i++)
+    {
+        for (Index j = 0; j < RankIn(); j++)
+        {
+            for (Index k = 0; k < RankIn(); k++)
+            {
+                for (Index l = 0; l < RankIn(); l++)
+                {
+                    S_dot(i, j) += tau * S(k, l) * coefficients.E(i, j, k, l);
+                    S_dot(i, j) -= tau * S(k, l) * coefficients.F(i, j, k, l);
+                }
+            }
+        }
+    }
+    S += S_dot;
+}
+
+void cme_node::CalculateEF(const blas_ops &blas)
+{
+    std::fill(std::begin(coefficients.E), std::end(coefficients.E), 0.0);
+    std::fill(std::begin(coefficients.F), std::end(coefficients.F), 0.0);
+
+    multi_array<double, 3> A_bar({grid.n_reactions, RankIn(), RankIn()});
+    multi_array<double, 3> B_bar({grid.n_reactions, RankIn(), RankIn()});
+
+    CalculateAB_bar(this, A_bar, B_bar, blas);
+
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        for (Index i = 0; i < RankIn(); ++i)
+        {
+            for (Index j = 0; j < RankIn(); ++j)
+            {
+                for (Index k = 0; k < RankIn(); ++k)
+                {
+                    for (Index l = 0; l < RankIn(); ++l)
+                    {
+                        coefficients.E(i, j, k, l) += A_bar(mu, i, k) * coefficients.A(mu, j, l);
+                        coefficients.F(i, j, k, l) += B_bar(mu, i, k) * coefficients.B(mu, j, l);
+                    }
+                }
+            }
+        }
+    }
 }

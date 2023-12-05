@@ -17,6 +17,7 @@ void SubflowPhi(cme_internal_node *node, const blas_ops &blas, const double tau)
     transpose_inplace(node->child[id]->S);
 
     node->CalculateAB<id>(blas);
+
     if (node->child[id]->IsExternal())
     {
         cme_external_node *child_node = (cme_external_node *)node->child[id];
@@ -58,9 +59,8 @@ void SubflowPhi(cme_internal_node *node, const blas_ops &blas, const double tau)
     }
 
     // Integrate S
-    node->CalculateEF<id>(blas);
-    // TODO:`SubflowS` should be a function depending on the current node, not on the child node
-    SubflowS(node->child[id], blas, tau);
+    node->child[id]->CalculateEF(blas);
+    node->child[id]->CalculateS(blas, tau);
 
     // Set C^n = (S^(n+id))^T * G^n
     multi_array<double, 2> Gmat({node->RankIn() * node->RankOut()[id_c], node->RankOut()[id]});
@@ -79,30 +79,4 @@ void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const doub
 {
     // TODO: Compute coefficients g and h
     // TODO: Integrate C
-}
-
-// TODO: rewrite this as a class method for cme_node
-void SubflowS(cme_node *node, const blas_ops &blas, const double tau)
-{
-    multi_array<double, 2> S_dot(node->S.shape());
-    set_zero(S_dot);
-
-#ifdef __OPENMP__
-#pragma omp parallel for collapse(2)
-#endif
-    for (Index i = 0; i < node->RankIn(); i++)
-    {
-        for (Index j = 0; j < node->RankIn(); j++)
-        {
-            for (Index k = 0; k < node->RankIn(); k++)
-            {
-                for (Index l = 0; l < node->RankIn(); l++)
-                {
-                    S_dot(i, j) += tau * node->S(k, l) * node->coefficients.E(i, j, k, l);
-                    S_dot(i, j) -= tau * node->S(k, l) * node->coefficients.F(i, j, k, l);
-                }
-            }
-        }
-    }
-    node->S += S_dot;
 }
