@@ -111,7 +111,7 @@ namespace Matrix
 
         vector<Index> vec_index(grid.d);
 
-        for (Index j = 0; j < n_cols; j++)
+        for (Index j = 0; j < n_cols; ++j)
         {
             std::fill(vec_index.begin(), vec_index.end(), 0);
 
@@ -126,7 +126,7 @@ namespace Matrix
 #ifdef __OPENMP__
 #pragma omp for schedule(static, chunk_size)
 #endif
-                for (Index i = 0; i < n_rows; i++)
+                for (Index i = 0; i < n_rows; ++i)
                 {
                     if ((shift < 0 && i - shift < n_rows) || (shift >= 0 && i - shift >= 0))
                     {
@@ -139,11 +139,11 @@ namespace Matrix
                         continue;
                     }
 
-                    for (int k = 0; k < grid.d; k++)
+                    for (int k = 0; k < grid.d; ++k)
                     {
                         if (
-                            ((grid.nu(mu, k) > 0) && (vec_index[k] - grid.nu(mu, k) < 0)) ||
-                            ((grid.nu(mu, k) < 0) && (vec_index[k] - grid.nu(mu, k) >= grid.n[k])))
+                            ((inv * grid.nu(mu, k) > 0) && (vec_index[k] - inv * grid.nu(mu, k) < 0)) ||
+                            ((inv * grid.nu(mu, k) < 0) && (vec_index[k] - inv * grid.nu(mu, k) >= grid.n[k])))
                         {
                             output_array(i, j) = 0.0;
                             break;

@@ -12,9 +12,6 @@
 #include "matrix.hpp"
 #include "tree_class.hpp"
 
-using std::cout;
-using std::endl;
-
 class generator
 {
     private:
@@ -105,9 +102,6 @@ TEST_CASE("RemoveElement", "[RemoveElement]")
     vec2_ref = {1, 2, 3, 4, 5, 7, 8, 9, 10};
     vec3_ref = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-    for(auto &el : vec1) cout << el << " ";
-    cout << endl;
-
     REQUIRE(bool(vec1 == vec1_ref));
     REQUIRE(bool(vec2 == vec2_ref));
     REQUIRE(bool(vec3 == vec3_ref));
@@ -136,4 +130,90 @@ TEST_CASE("Orthogonalize", "[Orthogonalize]")
 
     REQUIRE(bool(Q2 == id_r));
     REQUIRE(bool(mat == mat_ref));
+}
+
+TEST_CASE("ShiftRows", "[ShiftRows]")
+{
+    Index d = 2;
+    Index n_reactions = 4;
+    std::vector<Index> n(d);
+    std::vector<Index> binsize(d);
+    std::vector<double> liml(d);
+    multi_array<bool, 2> dep({n_reactions, d});
+    multi_array<Index, 2> nu({n_reactions, d});
+
+    n = {4, 3};
+    binsize = {1, 1};
+    liml = {0.0, 0.0};
+
+    std::fill(std::begin(dep), std::end(dep), false);
+    dep(0, 0) = true;
+    dep(0, 1) = true;
+    dep(1, 1) = true;
+    dep(2, 1) = true;
+    dep(3, 0) = true;
+
+    std::fill(std::begin(nu), std::end(nu), 0);
+    nu(0, 0) = -1;
+    nu(0, 1) = -1;
+    nu(1, 1) = -1;
+    nu(2, 0) = 1;
+    nu(3, 1) = 1;
+
+    grid_parms grid(n, binsize, liml, dep, nu);
+    grid.Initialize();
+
+    // TEST 1
+    Index n_rows = grid.dx;
+    multi_array<double, 2> input_array({n_rows, 1}), output_array({n_rows, 1});
+    multi_array<double, 2> comparison_array({n_rows, 1});
+
+    set_zero(input_array);
+    for (Index i = 0; i < n_rows; ++i)
+        input_array(i, 0) = (double)i + 1;
+
+    set_zero(comparison_array);
+    comparison_array(0, 0) = 6.0;
+    comparison_array(1, 0) = 7.0;
+    comparison_array(2, 0) = 8.0;
+    comparison_array(3, 0) = 0.0; // !
+    comparison_array(4, 0) = 10.0;
+    comparison_array(5, 0) = 11.0;
+    comparison_array(6, 0) = 12.0;
+
+    Matrix::ShiftRows<1>(output_array, input_array, grid, 0);
+
+    REQUIRE(bool(output_array == comparison_array));
+
+    // TEST 2
+    input_array.resize({n_rows, 2}), output_array.resize({n_rows, 2});
+    comparison_array.resize({n_rows, 2});
+
+    set_zero(input_array);
+    for (Index i = 0; i < n_rows; ++i)
+    {
+        input_array(i, 0) = (double) i + 1;
+        input_array(i, 1) = (double) i + 2;
+    }
+
+    set_zero(comparison_array);
+    comparison_array(5, 0) = 1.0;
+    comparison_array(6, 0) = 2.0;
+    comparison_array(7, 0) = 3.0;
+    comparison_array(8, 0) = 0.0; // !
+    comparison_array(9, 0) = 5.0;
+    comparison_array(10, 0) = 6.0;
+    comparison_array(11, 0) = 7.0;
+
+    comparison_array(5, 1) = 2.0;
+    comparison_array(6, 1) = 3.0;
+    comparison_array(7, 1) = 4.0;
+    comparison_array(8, 1) = 0.0; // !
+    comparison_array(9, 1) = 6.0;
+    comparison_array(10, 1) = 7.0;
+    comparison_array(11, 1) = 8.0;
+
+    Matrix::ShiftRows<-1>(output_array, input_array, grid, 0);
+
+    REQUIRE(bool(output_array == comparison_array));
 }
