@@ -25,8 +25,4 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
 
 void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const double tau);
 
-void SubflowK(cme_external_node * const node, const blas_ops &blas, const double tau);
-
-void SubflowS(cme_node* const node, const blas_ops &blas, const double tau);
-
 #endif
