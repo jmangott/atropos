@@ -12,9 +12,6 @@
 #include "matrix.hpp"
 #include "tree_class.hpp"
 
-using std::cout;
-using std::endl;
-
 class initial_distribution
 {
     private:
@@ -70,11 +67,6 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     std::fill(std::begin(dep1), std::end(dep1), false);
     std::fill(std::begin(dep00), std::end(dep00), false);
     std::fill(std::begin(dep01), std::end(dep01), false);
-    // set_zero(dep);
-    // set_zero(dep0);
-    // set_zero(dep1);
-    // set_zero(dep00);
-    // set_zero(dep01);
 
     multi_array<Index, 2> nu({n_reactions, (Index)n.size()});
     multi_array<Index, 2> nu0({n_reactions, (Index)n0.size()});
@@ -108,7 +100,7 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     std::fill(std::begin(Q), std::end(Q), 0.0);
     std::fill(std::begin(Q0), std::end(Q0), 0.0);
     Q(0, 0, 0) = 1.0;
-    Q0(0, 0, 1) = 1.0;
+    Q0(0, 0, 0) = 1.0;
 
     // Initialize and normalize X00, X01, X1
     set_zero(X00);
