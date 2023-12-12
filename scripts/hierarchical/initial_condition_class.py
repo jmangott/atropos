@@ -112,8 +112,7 @@ if __name__ == "__main__":
             for j in range(node.X.shape[1]):
                 state_x = vecIndexToState(vec_index, node.grid.liml, node.grid.binsize)
                 # TODO: Check whether state_x + grid.binsize * 0.5 is correct
-                initial_conditions.X[k][i, j] = X_function(
-                    state_x + node.grid.binsize * 0.5)
+                initial_conditions.X[k][i, j] = X_function(state_x)
                 incrVecIndex(vec_index, node.grid.n, node.grid.d)
             # Normalization
             initial_conditions.X[k][i] /= np.linalg.norm(initial_conditions.X[k][i])
