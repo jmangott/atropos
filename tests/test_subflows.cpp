@@ -304,7 +304,6 @@ TEST_CASE("subflows", "[subflows]")
     std::fill(std::begin(Q0), std::end(Q0), 0.0);
     set_zero(Q0_mat);
 
-    // TODO: correct error in notes
     Q(0, 0, 0) = (2.0 * std::exp(-0.5) * std::exp(-0.25) * sqrt(2.0 + std::exp(-4.0)));
     Q0_mat(0, 0) = 1.0;
     Q0_mat(1, 1) = 1.0;
@@ -373,59 +372,134 @@ TEST_CASE("subflows", "[subflows]")
     REQUIRE(bool(p == p_ortho));
 
     blas_ops blas;
+    gram_schmidt gs(&blas);
+
+    // Calculate G0_comparison (needed for A01_comparison)
+    multi_array<double, 2> Qmat({node0->RankIn() * node0->RankOut()[1], node0->RankOut()[0]});
+    multi_array<double, 3> Q0_comparison({node0->RankOut()[0], node0->RankOut()[1], node0->RankIn()});
+    multi_array<double, 3> G0_comparison({node0->RankOut()[0], node0->RankOut()[1], node0->RankIn()});
+
+    std::fill(std::begin(Q0_comparison), std::end(Q0_comparison), 0.0);
+
+    Q0_comparison(0, 0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
+
+    std::function<double(double *, double *)> ip;
+    ip = inner_product_from_const_weight(1.0, node0->RankIn() * node0->RankOut()[1]);
+
+    // Compute QR decomposition C^n = (S^(n+id))^T * G^n
+    Matrix::Matricize(Q0_comparison, Qmat, 0);
+    gs(Qmat, node0->child[0]->S, ip);
+    Matrix::Tensorize(Qmat, G0_comparison, 0);
+
     SubflowPhi<0>(root, blas, 1.0);
 
-    // for (Index i = 0; i < root->RankIn(); ++i)
-    // {
-    //     for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
-    //     {
-    //         for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1)
-    //         {
-    //             cout << root->Q(i0, i1, i) << " ";
-    //         }
-    //         cout << endl;
-    //     }
-    //     cout << endl;
-    // }
+    multi_array<double, 3> A0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
+    multi_array<double, 3> A00_comparison({node00->grid.n_reactions, node00->RankIn(), node00->RankIn()});
+    multi_array<double, 3> A1_bar_comparison({node1->grid.n_reactions, node1->RankIn(), node1->RankIn()});
+    multi_array<double, 3> A01_bar_comparison({node01->grid.n_reactions, node01->RankIn(), node01->RankIn()});
 
-    // cout << endl;
+    // Calculate A1_comparison
+    std::fill(std::begin(A1_bar_comparison), std::end(A1_bar_comparison), 0.0);
+    
+    A1_bar_comparison(0, 0, 0) = 1.0;
+    A1_bar_comparison(0, 1, 1) = 1.0;
+    A1_bar_comparison(0, 2, 2) = 1.0;
+    A1_bar_comparison(1, 0, 0) = 1.0;
+    A1_bar_comparison(1, 1, 1) = 1.0;
+    A1_bar_comparison(1, 2, 2) = 1.0;
+    A1_bar_comparison(3, 0, 0) = 1.0;
+    A1_bar_comparison(3, 1, 1) = 1.0;
+    A1_bar_comparison(3, 2, 2) = 1.0;
+    A1_bar_comparison(4, 0, 0) = 1.0;
+    A1_bar_comparison(4, 1, 1) = 1.0;
+    A1_bar_comparison(4, 2, 2) = 1.0;
 
-    // for (Index i = 0; i < root->child[0]->RankIn(); ++i)
-    // {
-    //     for (Index i0 = 0; i0 < ((cme_internal_node*) root->child[0])->RankOut()[0]; ++i0)
-    //     {
-    //         for (Index i1 = 0; i1 < ((cme_internal_node*) root->child[0])->RankOut()[1]; ++i1)
-    //         {
-    //             cout << ((cme_internal_node*) root->child[0])->Q(i0, i1, i) << " ";
-    //         }
-    //         cout << endl;
-    //     }
-    //     cout << endl;
-    // }
-    // cout << endl;
+    A1_bar_comparison(2, 0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 2.0 * std::exp(-2.0));
+    A1_bar_comparison(2, 0, 1) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
+    A1_bar_comparison(2, 0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (std::exp(-2.0) - 4.0) / sqrt(2.0);
+    A1_bar_comparison(2, 1, 0) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 - 2.0 * std::exp(-2.0));
+    A1_bar_comparison(2, 1, 1) =-0.5;
+    A1_bar_comparison(2, 1, 2) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (std::exp(-2.0) + 4.0) / sqrt(2.0);
+    A1_bar_comparison(2, 2, 0) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * (1.0 + 2.0 * std::exp(-2.0)) / sqrt(2.0);
+    A1_bar_comparison(2, 2, 1) =-1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * sqrt(1.0 + 0.5 * std::exp(-4.0)) / sqrt(2.0);
+    A1_bar_comparison(2, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * 0.5 * (std::exp(-2.0) - 4.0);
 
+    A1_bar_comparison(5, 0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 0.5 * std::exp(-2.0));
+    A1_bar_comparison(5, 0, 1) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 - 0.5 * std::exp(-2.0));
+    A1_bar_comparison(5, 0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * (1.0 + 0.5 * std::exp(-2.0)) / sqrt(2.0);
+    A1_bar_comparison(5, 1, 0) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
+    A1_bar_comparison(5, 1, 1) =-0.5;
+    A1_bar_comparison(5, 1, 2) =-1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * sqrt(1.0 + 0.5 * std::exp(-4.0)) / sqrt(2.0);
+    A1_bar_comparison(5, 2, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (std::exp(-2.0) - 1.0) / sqrt(2.0);
+    A1_bar_comparison(5, 2, 1) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 + std::exp(-2.0)) / sqrt(2.0);
+    A1_bar_comparison(5, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * 0.5 * (std::exp(-2.0) - 1.0);
 
+    std::fill(std::begin(A0_comparison), std::end(A0_comparison), 0.0);
+    for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
+    {
+        for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
+        {
+            for (Index j0 = 0; j0 < root->RankOut()[0]; ++j0)
+            {
+                for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1)
+                {
+                    for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
+                    {
+                        A0_comparison(mu, i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * A1_bar_comparison(mu, i1, j1);
+                    }
+                }
+            }
+        }
+    }
 
-    // blas_ops blas;
-    // TTNIntegrator(root, blas, 1.0);
-    // SubflowPhi<0>(root, blas, 1.0);
+    // Calculate A01_comparison
+    std::fill(std::begin(A01_bar_comparison), std::end(A01_bar_comparison), 0.0);
 
-    // for (Index mu = 0; mu < node1->grid.n_reactions; ++mu)
-    // {
-    //     cout << "mu: " << mu << endl;
-    //     for (Index x = 0; x < node1->grid.dx_dep[mu]; ++x)
-    //     {
-    //         cout << "x: " << x << endl;
-    //         for (Index i = 0; i < node1->RankIn(); ++i)
-    //         {
-    //             for (Index j = 0; j < node1->RankIn(); ++j)
-    //             {
-    //                 cout << node1->external_coefficients.C[mu](x, i, j) << " ";
-    //             }
-    //             cout << endl;
-    //         }
-    //         cout << endl;
-    //     }
-    //     cout << endl;
-    // }
+    A01_bar_comparison(0, 0, 0) = 1.0;
+    A01_bar_comparison(0, 1, 1) = 1.0;
+    A01_bar_comparison(2, 0, 0) = 1.0;
+    A01_bar_comparison(2, 1, 1) = 1.0;
+    A01_bar_comparison(3, 0, 0) = 1.0;
+    A01_bar_comparison(3, 1, 1) = 1.0;
+    A01_bar_comparison(5, 0, 0) = 1.0;
+    A01_bar_comparison(5, 1, 1) = 1.0;
+
+    A01_bar_comparison(1, 0, 0) = 0.5;
+    A01_bar_comparison(1, 0, 1) =-0.5;
+    A01_bar_comparison(1, 1, 0) = 0.5;
+    A01_bar_comparison(1, 1, 1) =-0.5;
+
+    A01_bar_comparison(4, 0, 0) = 0.5;
+    A01_bar_comparison(4, 0, 1) = 0.5;
+    A01_bar_comparison(4, 1, 0) =-0.5;
+    A01_bar_comparison(4, 1, 1) =-0.5;
+
+    std::fill(std::begin(A00_comparison), std::end(A00_comparison), 0.0);
+    for (Index mu = 0; mu < node0->grid.n_reactions; ++mu)
+    {
+        for (Index i0 = 0; i0 < node0->RankIn(); ++i0)
+        {
+            for (Index j0 = 0; j0 < node0->RankIn(); ++j0)
+            {
+                for (Index i00 = 0; i00 < node0->RankOut()[0]; ++i00)
+                {
+                    for (Index j00 = 0; j00 < node0->RankOut()[0]; ++j00)
+                    {
+                        for (Index i01 = 0; i01 < node0->RankOut()[1]; ++i01)
+                        {
+                            for (Index j01 = 0; j01 < node0->RankOut()[1]; ++j01)
+                            {
+                                A00_comparison(mu, i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * A01_bar_comparison(mu, i01, j01) * A0_comparison(mu, i0, j0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    REQUIRE(bool(node0->coefficients.A == A0_comparison));
+    REQUIRE(bool(node00->coefficients.A == A00_comparison));
+
+    // TODO: Tests for K and S steps
 }
