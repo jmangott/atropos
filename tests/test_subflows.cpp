@@ -394,12 +394,17 @@ TEST_CASE("subflows", "[subflows]")
     SubflowPhi<0>(root, blas, 1.0);
 
     multi_array<double, 3> A0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
+    multi_array<double, 3> B0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
     multi_array<double, 3> A00_comparison({node00->grid.n_reactions, node00->RankIn(), node00->RankIn()});
+    multi_array<double, 3> B00_comparison({node00->grid.n_reactions, node00->RankIn(), node00->RankIn()});
     multi_array<double, 3> A1_bar_comparison({node1->grid.n_reactions, node1->RankIn(), node1->RankIn()});
+    multi_array<double, 3> B1_bar_comparison({node1->grid.n_reactions, node1->RankIn(), node1->RankIn()});
     multi_array<double, 3> A01_bar_comparison({node01->grid.n_reactions, node01->RankIn(), node01->RankIn()});
+    multi_array<double, 3> B01_bar_comparison({node01->grid.n_reactions, node01->RankIn(), node01->RankIn()});
 
-    // Calculate A1_comparison
+    // Calculate A1_comparison and B1_comparison
     std::fill(std::begin(A1_bar_comparison), std::end(A1_bar_comparison), 0.0);
+    std::fill(std::begin(B1_bar_comparison), std::end(B1_bar_comparison), 0.0);
     
     A1_bar_comparison(0, 0, 0) = 1.0;
     A1_bar_comparison(0, 1, 1) = 1.0;
@@ -434,7 +439,41 @@ TEST_CASE("subflows", "[subflows]")
     A1_bar_comparison(5, 2, 1) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 + std::exp(-2.0)) / sqrt(2.0);
     A1_bar_comparison(5, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * 0.5 * (std::exp(-2.0) - 1.0);
 
+    B1_bar_comparison(0, 0, 0) = 1.0;
+    B1_bar_comparison(0, 1, 1) = 1.0;
+    B1_bar_comparison(0, 2, 2) = 1.0;
+    B1_bar_comparison(1, 0, 0) = 1.0;
+    B1_bar_comparison(1, 1, 1) = 1.0;
+    B1_bar_comparison(1, 2, 2) = 1.0;
+    B1_bar_comparison(3, 0, 0) = 1.0;
+    B1_bar_comparison(3, 1, 1) = 1.0;
+    B1_bar_comparison(3, 2, 2) = 1.0;
+    B1_bar_comparison(4, 0, 0) = 1.0;
+    B1_bar_comparison(4, 1, 1) = 1.0;
+    B1_bar_comparison(4, 2, 2) = 1.0;
+
+    B1_bar_comparison(2, 0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 2.0 * std::exp(-4.0));
+    B1_bar_comparison(2, 0, 1) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
+    B1_bar_comparison(2, 1, 0) = B1_bar_comparison(2, 0, 1);
+    B1_bar_comparison(2, 0, 2) =-3.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) / sqrt(2);
+    B1_bar_comparison(2, 2, 0) = B1_bar_comparison(2, 0, 2);
+    B1_bar_comparison(2, 1, 1) = 0.5;
+    B1_bar_comparison(2, 1, 2) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * std::exp(-2.0) / sqrt(2.0);
+    B1_bar_comparison(2, 2, 1) = B1_bar_comparison(2, 1, 2);
+    B1_bar_comparison(2, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (0.5 * std::exp(-4.0) + 4.0);
+
+    B1_bar_comparison(5, 0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.5 + std::exp(-4.0) / 3.0);
+    B1_bar_comparison(5, 0, 1) = 1.0 / (2.0 + std::exp(-4.0)) * 0.5 * sqrt(1.0 + 0.5 * std::exp(-4.0));
+    B1_bar_comparison(5, 1, 0) = B1_bar_comparison(5, 0, 1);
+    B1_bar_comparison(5, 0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * 5.0 * std::exp(-2.0) / (6.0 * sqrt(2));
+    B1_bar_comparison(5, 2, 0) = B1_bar_comparison(5, 0, 2);
+    B1_bar_comparison(5, 1, 1) = 0.75;
+    B1_bar_comparison(5, 1, 2) = 1.0 / (2.0 + std::exp(-4.0)) * 0.5 * sqrt(1.0 + 0.5 * std::exp(-4.0)) * std::exp(-2.0) / sqrt(2.0);
+    B1_bar_comparison(5, 2, 1) = B1_bar_comparison(5, 1, 2);
+    B1_bar_comparison(5, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (0.75 * std::exp(-4.0) + 2.0 / 3.0);
+
     std::fill(std::begin(A0_comparison), std::end(A0_comparison), 0.0);
+    std::fill(std::begin(B0_comparison), std::end(B0_comparison), 0.0);
     for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
     {
         for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
@@ -446,6 +485,7 @@ TEST_CASE("subflows", "[subflows]")
                     for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
                     {
                         A0_comparison(mu, i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * A1_bar_comparison(mu, i1, j1);
+                        B0_comparison(mu, i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * B1_bar_comparison(mu, i1, j1);
                     }
                 }
             }
@@ -454,6 +494,7 @@ TEST_CASE("subflows", "[subflows]")
 
     // Calculate A01_comparison
     std::fill(std::begin(A01_bar_comparison), std::end(A01_bar_comparison), 0.0);
+    std::fill(std::begin(B01_bar_comparison), std::end(B01_bar_comparison), 0.0);
 
     A01_bar_comparison(0, 0, 0) = 1.0;
     A01_bar_comparison(0, 1, 1) = 1.0;
@@ -474,7 +515,27 @@ TEST_CASE("subflows", "[subflows]")
     A01_bar_comparison(4, 1, 0) =-0.5;
     A01_bar_comparison(4, 1, 1) =-0.5;
 
+    B01_bar_comparison(0, 0, 0) = 1.0;
+    B01_bar_comparison(0, 1, 1) = 1.0;
+    B01_bar_comparison(2, 0, 0) = 1.0;
+    B01_bar_comparison(2, 1, 1) = 1.0;
+    B01_bar_comparison(3, 0, 0) = 1.0;
+    B01_bar_comparison(3, 1, 1) = 1.0;
+    B01_bar_comparison(5, 0, 0) = 1.0;
+    B01_bar_comparison(5, 1, 1) = 1.0;
+
+    B01_bar_comparison(1, 0, 0) = 0.5;
+    B01_bar_comparison(1, 0, 1) =-0.5;
+    B01_bar_comparison(1, 1, 0) = B01_bar_comparison(1, 0, 1);
+    B01_bar_comparison(1, 1, 1) = 0.5;
+
+    B01_bar_comparison(4, 0, 0) = 0.75;
+    B01_bar_comparison(4, 0, 1) = 0.25;
+    B01_bar_comparison(4, 1, 0) = B01_bar_comparison(4, 0, 1);
+    B01_bar_comparison(4, 1, 1) = 0.75;
+
     std::fill(std::begin(A00_comparison), std::end(A00_comparison), 0.0);
+    std::fill(std::begin(B00_comparison), std::end(B00_comparison), 0.0);
     for (Index mu = 0; mu < node0->grid.n_reactions; ++mu)
     {
         for (Index i0 = 0; i0 < node0->RankIn(); ++i0)
@@ -490,6 +551,7 @@ TEST_CASE("subflows", "[subflows]")
                             for (Index j01 = 0; j01 < node0->RankOut()[1]; ++j01)
                             {
                                 A00_comparison(mu, i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * A01_bar_comparison(mu, i01, j01) * A0_comparison(mu, i0, j0);
+                                B00_comparison(mu, i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * B01_bar_comparison(mu, i01, j01) * B0_comparison(mu, i0, j0);
                             }
                         }
                     }
@@ -499,7 +561,21 @@ TEST_CASE("subflows", "[subflows]")
     }
 
     REQUIRE(bool(node0->coefficients.A == A0_comparison));
+    REQUIRE(bool(node0->coefficients.B == B0_comparison));
     REQUIRE(bool(node00->coefficients.A == A00_comparison));
+    REQUIRE(bool(node00->coefficients.B == B00_comparison));
 
-    // TODO: Tests for K and S steps
+    // Calculate C00 coefficient
+    std::vector<multi_array<double, 3>> C00(node00->grid.n_reactions);
+    for (Index mu = 0; mu < node00->grid.n_reactions; ++mu)
+    {
+        C00[mu].resize({node00->grid.dx_dep[mu], node00->RankIn(), node00->RankIn()});
+    }
+
+    
+
+
+    // TODO: Tests for K step
+
+    // TODO: Tests for coefficients E and F and S step
 }
