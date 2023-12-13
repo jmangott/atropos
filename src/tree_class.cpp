@@ -180,7 +180,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
         }
     }
 
-    multi_array<double, 2> tmp(node->RankOut());
+    multi_array<double, 2> tmp1(node->RankOut());
+    multi_array<double, 2> tmp2(node->RankOut());
 
     for (Index k = 0; k < node->RankIn(); ++k)
     {
@@ -188,15 +189,16 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
         {
             for (Index i = 0; i < node->RankOut()[0]; ++i)
             {
-                tmp(i, j) = node->Q(i, j, k);
+                tmp1(i, j) = node->Q(i, j, k);
             }
         }
-        blas.matmul_transb(R0, R1, tmp);
+        blas.matmul(R0, tmp1, tmp2);
+        blas.matmul_transb(tmp2, R1, tmp1);
         for (Index j = 0; j < node->RankOut()[1]; ++j)
         {
             for (Index i = 0; i < node->RankOut()[0]; ++i)
             {
-                node->Q(i, j, k) = tmp(i, j);
+                node->Q(i, j, k) = tmp1(i, j);
             }
         }
     }

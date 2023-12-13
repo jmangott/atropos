@@ -112,20 +112,16 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     std::function<double(double *, double *)> ip0 = inner_product_from_const_weight(1.0, r0 * r0);
 
     std::generate(std::begin(X00), std::begin(X00) + val_n00, initial_distribution(val_liml00, val_binsize00));
-    double gamma00 = ip00(X00.extract({0}), X00.extract({0}));
+    double gamma00 = sqrt(ip00(X00.extract({0}), X00.extract({0})));
     X00 /= gamma00;
 
     std::generate(std::begin(X01), std::begin(X01) + val_n01, initial_distribution(val_liml01, val_binsize01));
-    double gamma01 = ip01(X01.extract({0}), X01.extract({0}));
+    double gamma01 = sqrt(ip01(X01.extract({0}), X01.extract({0})));
     X01 /= gamma01;
 
     std::generate(std::begin(X1), std::begin(X1) + val_n1, initial_distribution(val_liml1, val_binsize1));
-    double gamma1 = ip1(X1.extract({0}), X1.extract({0}));
+    double gamma1 = sqrt(ip1(X1.extract({0}), X1.extract({0})));
     X1 /= gamma1;
-
-    Matrix::Matricize(Q0, Q0_mat, 2);
-    double gamma0 = ip0(Q0_mat.extract({0}), Q0_mat.extract({0}));
-    Q0 /= gamma0;
 
     // Construct cme_lr_tree
     cme_internal_node* root = new cme_internal_node("", nullptr, grid, 1, {r, r}, 1);
