@@ -361,6 +361,9 @@ cme_node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *par
 // TODO: Rename A_bar and B_bar
 void CalculateAB_bar(cme_node *child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas)
 {
+    std::fill(std::begin(A_bar), std::end(A_bar), 0.0);
+    std::fill(std::begin(B_bar), std::end(B_bar), 0.0);
+
     if (child_node_init->IsExternal())
     {
         cme_external_node *child_node = (cme_external_node *) child_node_init;
@@ -420,8 +423,8 @@ void CalculateAB_bar(cme_node *child_node_init, multi_array<double, 3> &A_bar, m
                             {
                                 for (Index j = 0; j < child_node->RankIn(); ++j)
                                 {
-                                    A_bar(mu, i, j) = child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * A_bar_child0(mu, i0, j0) * A_bar_child1(mu, i1, j1);
-                                    B_bar(mu, i, j) = child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * B_bar_child0(mu, i0, j0) * B_bar_child1(mu, i1, j1);
+                                    A_bar(mu, i, j) += child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * A_bar_child0(mu, i0, j0) * A_bar_child1(mu, i1, j1);
+                                    B_bar(mu, i, j) += child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * B_bar_child0(mu, i0, j0) * B_bar_child1(mu, i1, j1);
                                 }
                             }
                         }

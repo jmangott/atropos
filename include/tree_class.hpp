@@ -217,6 +217,9 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
     multi_array<double, 3> A_bar({grid.n_reactions, RankOut()[id_c], RankOut()[id_c]});
     multi_array<double, 3> B_bar({grid.n_reactions, RankOut()[id_c], RankOut()[id_c]});
 
+    std::fill(std::begin(child[id]->coefficients.A), std::end(child[id]->coefficients.A), 0.0);
+    std::fill(std::begin(child[id]->coefficients.B), std::end(child[id]->coefficients.B), 0.0);
+
     CalculateAB_bar(child[id_c], A_bar, B_bar, blas);
 
     // TODO: reduce number of loops
@@ -234,8 +237,8 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
                         {
                             for (Index j = 0; j < RankIn(); ++j)
                             {
-                                child[id]->coefficients.A(mu, i0, j0) = coefficients.A(mu, i, j) * G(i0, i1, i) * G(j0, j1, j) * A_bar(mu, i1, j1);
-                                child[id]->coefficients.B(mu, i0, j0) = coefficients.B(mu, i, j) * G(i0, i1, i) * G(j0, j1, j) * B_bar(mu, i1, j1);
+                                child[id]->coefficients.A(mu, i0, j0) += coefficients.A(mu, i, j) * G(i0, i1, i) * G(j0, j1, j) * A_bar(mu, i1, j1);
+                                child[id]->coefficients.B(mu, i0, j0) += coefficients.B(mu, i, j) * G(i0, i1, i) * G(j0, j1, j) * B_bar(mu, i1, j1);
                             }
                         }
                     }
