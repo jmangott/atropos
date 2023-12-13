@@ -218,9 +218,8 @@ void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 
     lr_sol.S /= norm;
 }
 
-void TTNIntegrator(cme_internal_node *node, const blas_ops &blas)
+void TTNIntegrator(cme_internal_node *node, const blas_ops &blas, const double tau)
 {
-    double tau = 0.0;
     SubflowPhi<0>(node, blas, tau);
     SubflowPhi<1>(node, blas, tau);
     SubflowPsi(node, blas, tau);
