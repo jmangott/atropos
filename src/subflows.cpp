@@ -49,7 +49,7 @@ void SubflowPhi(cme_internal_node *node, const blas_ops &blas, const double tau)
         blas.matmul(Qmat_child, child_node->S, Cmat_child);
         Matrix::Tensorize(Cmat_child, child_node->Q, 2);
 
-        TTNIntegrator(child_node, blas);
+        TTNIntegrator(child_node, blas, tau);
 
         // Compute QR decomposition C^(n+id) = Q^(n+id) * S^(n+id)
         std::function<double(double *, double *)> ip_child;
