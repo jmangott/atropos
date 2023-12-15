@@ -455,6 +455,7 @@ void cme_external_node::CalculateCD(const blas_ops &blas)
     }
 }
 
+// TODO: Make this more efficient by using coefficients A and B instead of C and D and multiply the propensity in a separate loop
 void cme_external_node::CalculateK(const blas_ops &blas, const double tau)
 {
     multi_array<double, 2> prod_KC(X.shape());
@@ -477,7 +478,7 @@ void cme_external_node::CalculateK(const blas_ops &blas, const double tau)
         {
             Index alpha;
 #ifdef __OPENMP__
-            Index chunk_size = SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(node->grid.n), node->grid.dx());
+            Index chunk_size = IndexFunction::SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(grid.n), grid.dx);
 #endif
 
 #ifdef __OPENMP__

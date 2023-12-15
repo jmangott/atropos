@@ -32,11 +32,10 @@ namespace IndexFunction
         return comb_index;
     }
 
-    template <class InputIt, class OutputIt>
-    void CombIndexToVecIndex(InputIt first, OutputIt d_first, OutputIt d_last)
+    template <class InputItInt, class OutputIt>
+    void CombIndexToVecIndex(Index comb_index, InputItInt first, OutputIt d_first, OutputIt d_last)
     {
         assert(d_first != d_last);
-        Index comb_index;
         for (; d_first != std::next(d_last, -1); ++first, ++d_first)
         {
             *d_first = comb_index % *first;
@@ -46,7 +45,7 @@ namespace IndexFunction
     }
 
     template <class InputIt, class InputItInt, class InputItDep>
-    Index VecIndexToDepCombIndex(InputIt first, InputItInt first_int, InputItDep first_dep, InputIt last_dep)
+    Index VecIndexToDepCombIndex(InputIt first, InputItInt first_int, InputItDep first_dep, InputItDep last_dep)
     {
         Index comb_index = 0;
         Index stride = 1;
@@ -73,15 +72,15 @@ namespace IndexFunction
     }
 
     #ifdef __OPENMP__
-    template <InputIt, InputItInt>
-    Index SetVecIndex(InputIt first, InputIt last, InputItInt first_int, Index dx)
+    template <class InputIt, class InputItInt>
+    Index SetVecIndex(InputIt first, InputIt last, InputItInt first_int, const Index dx)
     {
         Index chunk_size, start_index;
         int num_threads = omp_get_num_threads();
         int thread_num = omp_get_thread_num();
         chunk_size = (Index)std::ceil((double)dx / num_threads);
         start_index = thread_num * chunk_size;
-        CombIndexToVecIndex(first_int, first, last);
+        CombIndexToVecIndex(start_index, first_int, first, last);
         return chunk_size;
     }
     #endif
