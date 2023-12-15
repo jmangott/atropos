@@ -116,11 +116,11 @@ namespace Matrix
             std::fill(vec_index.begin(), vec_index.end(), 0);
 
 #ifdef __OPENMP__
-#pragma omp parallel firstprivate(vec_index) private(k_inc)
+#pragma omp parallel firstprivate(vec_index)
 #endif
             {
 #ifdef __OPENMP__
-                Index chunk_size = SetVecIndex(vec_index, grid_alt->n1, grid_alt->dx1);
+                Index chunk_size = IndexFunction::SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(grid.n), grid.dx);
 #endif
 
 #ifdef __OPENMP__
