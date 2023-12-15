@@ -378,6 +378,7 @@ TEST_CASE("subflows", "[subflows]")
     multi_array<double, 2> Qmat({node0->RankIn() * node0->RankOut()[1], node0->RankOut()[0]});
     multi_array<double, 3> Q0_comparison({node0->RankOut()[0], node0->RankOut()[1], node0->RankIn()});
     multi_array<double, 3> G0_comparison({node0->RankOut()[0], node0->RankOut()[1], node0->RankIn()});
+    multi_array<double, 2> S00_comparison({node0->RankOut()[0], node0->RankOut()[0]});
 
     std::fill(std::begin(Q0_comparison), std::end(Q0_comparison), 0.0);
 
@@ -388,10 +389,11 @@ TEST_CASE("subflows", "[subflows]")
 
     // Compute QR decomposition C^n = (S^(n+id))^T * G^n
     Matrix::Matricize(Q0_comparison, Qmat, 0);
-    gs(Qmat, node0->child[0]->S, ip);
+    gs(Qmat, S00_comparison, ip);
     Matrix::Tensorize(Qmat, G0_comparison, 0);
 
-    SubflowPhi<0>(root, blas, 1.0);
+    double tau = 1.0;
+    SubflowPhi<0>(root, blas, tau);
 
     multi_array<double, 3> A0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
     multi_array<double, 3> B0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
@@ -565,17 +567,45 @@ TEST_CASE("subflows", "[subflows]")
     REQUIRE(bool(node00->coefficients.A == A00_comparison));
     REQUIRE(bool(node00->coefficients.B == B00_comparison));
 
-    // Calculate C00 coefficient
-    std::vector<multi_array<double, 3>> C00(node00->grid.n_reactions);
+    multi_array<double, 2> K00(X00.shape());
+    multi_array<double, 2> K00C(X00.shape());
+    multi_array<double, 2> K00D(X00.shape());
+    multi_array<double, 2> K00C_shift(X00.shape());
+    multi_array<double, 2> K_dot(X00.shape());
+    set_zero(K_dot);
+    blas.matmul(X00, S00_comparison, K00);
+
+    std::vector<Index> vec_index(node00->grid.d);
     for (Index mu = 0; mu < node00->grid.n_reactions; ++mu)
     {
-        C00[mu].resize({node00->grid.dx_dep[mu], node00->RankIn(), node00->RankIn()});
+        set_zero(K00C);
+        set_zero(K00D);
+        std::fill(std::begin(vec_index), std::end(vec_index), 0);
+        for (Index x = 0; x < node00->grid.dx; ++x)
+        {
+            Index x_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(node00->grid.n_dep[mu]), std::begin(node00->grid.idx_dep[mu]), std::end(node00->grid.idx_dep[mu]));
+            for (Index i = 0; i < node00->RankIn(); ++i)
+            {
+                for (Index j = 0; j < node00->RankIn(); ++j)
+                {
+                    K00C(x, i) += tau * A00_comparison(mu, i, j) * node00->coefficients.propensity[mu][x_dep] * K00(x, j);
+                    K00D(x, i) += tau * B00_comparison(mu, i, j) * node00->coefficients.propensity[mu][x_dep] * K00(x, j);
+                }
+            }
+            IndexFunction::IncrVecIndex(std::begin(node00->grid.n), std::begin(vec_index), std::end(vec_index));
+        }
+        Matrix::ShiftRows<1>(K00C_shift, K00C, node00->grid, mu);
+        K_dot += K00C_shift;
+        K_dot -= K00D;
     }
+    K00 += K_dot;
 
-    
+    std::function<double(double *, double *)> ip00;
+    ip00 = inner_product_from_const_weight(node00->grid.h_mult, node00->grid.dx);
+    gs(K00, node00->S, ip00);
 
-
-    // TODO: Tests for K step
+    REQUIRE(bool(K00 == node00->X));
 
     // TODO: Tests for coefficients E and F and S step
+    
 }
