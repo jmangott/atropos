@@ -470,7 +470,7 @@ void cme_external_node::CalculateK(const blas_ops &blas, const double tau)
     {
         set_zero(prod_KC);
         set_zero(prod_KD);
-        std::fill(vec_index.begin(), vec_index.end(), 0);
+        std::fill(std::begin(vec_index), std::end(vec_index), 0);
 
 #ifdef __OPENMP__
 #pragma omp parallel firstprivate(vec_index)
