@@ -404,21 +404,16 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     // Test K step
     multi_array<double, 2> K0_comparison(X0.shape());
-    double norm_2e = std::sqrt(2.0 / std::exp(1.0));
+    double norm_2e = std::sqrt(2.0) * std::exp(-0.5);
 
-    K0_comparison(0, 0) = (1.0 + 0.5 * tau) * norm_2e;
-    K0_comparison(0, 1) = 0.5 * tau * norm_2e;
-    K0_comparison(1, 0) = (1.0 - 0.25 * tau) * norm_2e;
+    K0_comparison(0, 0) = (1.0 - 0.25 * tau) * norm_2e;
+    K0_comparison(0, 1) = 0.25 * tau * norm_2e;
+    K0_comparison(1, 0) = (1.0 - 1.25 * tau) * norm_2e;
     K0_comparison(1, 1) = 0.75 * tau * norm_2e;
 
-    // Set up K
     multi_array<double, 2> tmp(node0->X);
-    blas.matmul(node0->S, tmp, node0->X);
-
+    blas.matmul(tmp, node0->S, node0->X);
     node0->CalculateK(blas, tau);
-
-    cout << K0_comparison << endl;
-    cout << node0->X << endl;
 
     REQUIRE(bool(K0_comparison == node0->X));
 
