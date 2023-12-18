@@ -21,17 +21,17 @@
 template<class T>
 struct node
 {
-    std::string id;
+    const std::string id;
 
-    node* parent;
+    node* const parent;
     std::array<node*, 2> child;
-    Index n_basisfunctions;
+    const Index n_basisfunctions;
 
     multi_array<T, 2> S;
 
     node() = default;
 
-    node(std::string _id, node* _parent, std::array<node*, 2> _child, const Index _r_in, const Index _n_basisfunctions) 
+    node(const std::string _id, node * const _parent, std::array<node*, 2> _child, const Index _r_in, const Index _n_basisfunctions) 
     : id(_id)
     , parent(_parent)
     , child(_child)
@@ -89,9 +89,8 @@ template<class T>
 struct external_node : virtual node<T>
 {
     multi_array<T, 2> X;
-    Index n_basisfunctions;
 
-    external_node(std::string _id, internal_node<T> * const _parent, const Index _dx, const Index _r_in, const Index _n_basisfunctions) 
+    external_node(const std::string _id, internal_node<T> * const _parent, const Index _dx, const Index _r_in, const Index _n_basisfunctions) 
     : node<T>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , X({_dx, _r_in})
     {}
@@ -119,10 +118,10 @@ struct external_node : virtual node<T>
 struct cme_node : virtual node<double>
 {
     std::array<cme_node*, 2> child;
-    grid_parms grid;
+    const grid_parms grid;
     cme_coeff coefficients;
 
-    cme_node(std::string _id, cme_node *_parent, grid_parms _grid, Index _r_in, Index _n_basisfunctions)
+    cme_node(const std::string _id, cme_node * const _parent, const grid_parms _grid, const Index _r_in, const Index _n_basisfunctions)
     : node<double>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , child({nullptr, nullptr})
     , grid(_grid)
@@ -136,7 +135,7 @@ struct cme_internal_node : cme_node, internal_node<double>
 {
     cme_internal_coeff internal_coefficients;
 
-    cme_internal_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, std::array<Index, 2> _r_out, Index _n_basisfunctions) 
+    cme_internal_node(const std::string _id, cme_internal_node * const _parent, const grid_parms _grid, const Index _r_in, const std::array<Index, 2> _r_out, const Index _n_basisfunctions) 
     : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
     , internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
@@ -152,7 +151,7 @@ struct cme_external_node : cme_node, external_node<double>
 {
     cme_external_coeff external_coefficients;
 
-    cme_external_node(std::string _id, cme_internal_node *_parent, grid_parms _grid, Index _r_in, Index _n_basisfunctions)
+    cme_external_node(const std::string _id, cme_internal_node * const _parent, const grid_parms _grid, const Index _r_in, const Index _n_basisfunctions)
     : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
     , external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
@@ -165,16 +164,16 @@ struct cme_external_node : cme_node, external_node<double>
 
 struct cme_lr_tree
 {
-    cme_internal_node *root;
+    cme_internal_node * root;
 
     private:
-        void PrintHelper(cme_node* node);
-        void OrthogonalizeHelper(cme_internal_node *node);
+        void PrintHelper(cme_node const * const node) const;
+        void OrthogonalizeHelper(cme_internal_node * const node) const;
 
     public:
-        void Read(std::string fn);
-        void Print();
-        void Orthogonalize();
+        void Read(const std::string fn);
+        void Print() const;
+        void Orthogonalize() const;
 };
 
 namespace ReadHelpers
@@ -183,7 +182,7 @@ namespace ReadHelpers
     std::array<Index, 2> ReadRankOut(int ncid);
     Index ReadNBasisfunctions(int ncid);
     std::vector<std::vector<double>> ReadPropensity(int ncid, const Index n_reactions);
-    cme_node *ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in);
+    cme_node *ReadNode(int ncid, const std::string id, cme_internal_node * const parent_node, const Index r_in);
 }
 
 template <class T>
@@ -208,7 +207,7 @@ multi_array<T, 2> external_node<T>::Orthogonalize(std::function<T(T *, T *)> inn
 };
 
 // TODO: Is the propensity really needed for all nodes or only for the external ones?
-void CalculateAB_bar(cme_node *child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas);
+void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas);
 
 template <Index id>
 void cme_internal_node::CalculateAB(const blas_ops &blas)

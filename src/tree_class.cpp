@@ -67,7 +67,7 @@ void cme_external_node::Initialize(int ncid)
     return;
 }
 
-void cme_lr_tree::Read(std::string fn)
+void cme_lr_tree::Read(const std::string fn)
 {
     int ncid, retval;
 
@@ -94,7 +94,7 @@ void cme_lr_tree::Read(std::string fn)
     return;
 }
 
-void cme_lr_tree::PrintHelper(cme_node* node)
+void cme_lr_tree::PrintHelper(cme_node const * const node) const
 {
     if (node->IsExternal())
     {
@@ -108,13 +108,13 @@ void cme_lr_tree::PrintHelper(cme_node* node)
     }
 }
 
-void cme_lr_tree::Print()
+void cme_lr_tree::Print() const
 {
     cme_lr_tree::PrintHelper(root);
     return;
 }
 
-void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
+void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node) const
 {
     blas_ops blas;
     std::function<double(double *, double *)> ip0;
@@ -204,7 +204,7 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node *node)
     }
 }
 
-void cme_lr_tree::Orthogonalize()
+void cme_lr_tree::Orthogonalize() const
 {
     OrthogonalizeHelper(root);
 };
@@ -333,7 +333,7 @@ std::vector<std::vector<double>> ReadHelpers::ReadPropensity(int ncid, const Ind
     return result;
 }
 
-cme_node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *parent_node, Index r_in)
+cme_node* ReadHelpers::ReadNode(int ncid, const std::string id, cme_internal_node * const parent_node, const Index r_in)
 {
     int retval0, retval1;
     int grp_ncid0, grp_ncid1;
@@ -361,7 +361,7 @@ cme_node* ReadHelpers::ReadNode(int ncid, std::string id, cme_internal_node *par
 }
 
 // TODO: Rename A_bar and B_bar
-void CalculateAB_bar(cme_node *child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas)
+void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas)
 {
     std::fill(std::begin(A_bar), std::end(A_bar), 0.0);
     std::fill(std::begin(B_bar), std::end(B_bar), 0.0);

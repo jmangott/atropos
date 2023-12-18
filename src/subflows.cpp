@@ -1,7 +1,7 @@
 #include "subflows.hpp"
 
 template <Index id>
-void SubflowPhi(cme_internal_node *node, const blas_ops &blas, const double tau)
+void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const double tau)
 {
     Index id_c = (id == 0) ? 1 : 0;
 
@@ -77,6 +77,7 @@ template void SubflowPhi<1>(cme_internal_node * const node, const blas_ops &blas
 // TODO:
 void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const double tau)
 {
+
     // TODO: Compute coefficients g and h
     // TODO: Integrate C
 }
