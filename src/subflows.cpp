@@ -74,10 +74,8 @@ template void SubflowPhi<0>(cme_internal_node * const node, const blas_ops &blas
 
 template void SubflowPhi<1>(cme_internal_node * const node, const blas_ops &blas, const double tau);
 
-// TODO:
 void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const double tau)
 {
-
-    // TODO: Compute coefficients g and h
-    // TODO: Integrate C
+    node->CalculateGH(blas);
+    node->CalculateQ(blas, tau);
 }
