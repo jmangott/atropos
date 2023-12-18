@@ -24,24 +24,22 @@ struct cme_coeff
     {}
 };
 
-struct cme_internal_coeff : cme_coeff
+struct cme_internal_coeff
 {
     multi_array<double, 6> G, H;
 
-    cme_internal_coeff(const Index _n_reactions, const Index _r_in, const std::array<Index, 2> _r_out) 
-    : cme_coeff(_n_reactions, _r_in)
-    , G({_r_in, _r_out[0], _r_out[1], _r_in, _r_out[0], _r_out[1]})
+    cme_internal_coeff(const Index _r_in, const std::array<Index, 2> _r_out) 
+    : G({_r_in, _r_out[0], _r_out[1], _r_in, _r_out[0], _r_out[1]})
     , H({_r_in, _r_out[0], _r_out[1], _r_in, _r_out[0], _r_out[1]})
     {}
 };
 
-struct cme_external_coeff : cme_coeff
+struct cme_external_coeff
 {
     std::vector<multi_array<double, 3>> C, D;
 
-    cme_external_coeff(const Index _n_reactions, const Index _r_in)
-    : cme_coeff(_n_reactions, _r_in)
-    , C(_n_reactions)
+    cme_external_coeff(const Index _n_reactions)
+    : C(_n_reactions)
     , D(_n_reactions)
     {}
 };
