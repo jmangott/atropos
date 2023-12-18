@@ -403,7 +403,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     }
 
     // Test K step
-    multi_array<double, 2> K0_comparison(X0.shape());
+    multi_array<double, 2> K0_comparison(node0->X.shape());
     double norm_2e = std::sqrt(2.0) * std::exp(-0.5);
 
     K0_comparison(0, 0) = (1.0 - 0.25 * tau) * norm_2e;
@@ -417,5 +417,203 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     REQUIRE(bool(K0_comparison == node0->X));
 
-    // TODO: Test S step
+    std::function<double(double *, double *)> ip0;
+    ip0 = inner_product_from_const_weight(node0->grid.h_mult, node0->grid.dx);
+    gs(node0->X, node0->S, ip0);
+
+    // Test S step
+    multi_array<double, 2> S0_comparison(node0->S.shape());
+
+    // Reset S and X0 to get reproducable results
+    node0->X = X0;
+    node0->S(0, 0) = 2.0 * std::exp(-0.5);
+    node0->S(0, 1) = 0.0;
+    node0->S(1, 0) = 0.0;
+    node0->S(1, 1) = 0.0;
+    multi_array<double, 2> S0_old(node0->S);
+
+    S0_comparison(0, 0) = tau * 1.5 * std::exp(-0.5);
+    S0_comparison(0, 1) = -tau * std::exp(-0.5);
+    S0_comparison(1, 0) = -tau * std::exp(-0.5);
+    S0_comparison(1, 1) = tau * 0.5 * std::exp(-0.5);
+
+    node0->CalculateEF(blas);
+
+    multi_array<double, 4> E_comparison({node0->RankIn(), node0->RankIn(), node0->RankIn(), node0->RankIn()});
+    multi_array<double, 4> F_comparison({node0->RankIn(), node0->RankIn(), node0->RankIn(), node0->RankIn()});
+
+    // E_comparison, mu = 0
+    E_comparison(0, 0, 0, 0) = 0.5;
+    E_comparison(0, 0, 1, 0) = -0.5;
+    E_comparison(1, 0, 0, 0) = 0.5;
+    E_comparison(1, 0, 1, 0) = -0.5;
+
+    E_comparison(0, 0, 0, 1) = 0.0;
+    E_comparison(0, 0, 1, 1) = 0.0;
+    E_comparison(1, 0, 0, 1) = 0.0;
+    E_comparison(1, 0, 1, 1) = 0.0;
+
+    E_comparison(0, 1, 0, 0) = 0.0;
+    E_comparison(0, 1, 1, 0) = 0.0;
+    E_comparison(1, 1, 0, 0) = 0.0;
+    E_comparison(1, 1, 1, 0) = 0.0;
+
+    E_comparison(0, 1, 0, 1) = 0.5;
+    E_comparison(0, 1, 1, 1) = -0.5;
+    E_comparison(1, 1, 0, 1) = 0.5;
+    E_comparison(1, 1, 1, 1) = -0.5;
+
+    // F_comparison, mu = 0
+    F_comparison(0, 0, 0, 0) = 0.5;
+    F_comparison(0, 0, 1, 0) = -0.5;
+    F_comparison(1, 0, 0, 0) = -0.5;
+    F_comparison(1, 0, 1, 0) = 0.5;
+
+    F_comparison(0, 0, 0, 1) = 0.0;
+    F_comparison(0, 0, 1, 1) = 0.0;
+    F_comparison(1, 0, 0, 1) = 0.0;
+    F_comparison(1, 0, 1, 1) = 0.0;
+
+    F_comparison(0, 1, 0, 0) = 0.0;
+    F_comparison(0, 1, 1, 0) = 0.0;
+    F_comparison(1, 1, 0, 0) = 0.0;
+    F_comparison(1, 1, 1, 0) = 0.0;
+
+    F_comparison(0, 1, 0, 1) = 0.5;
+    F_comparison(0, 1, 1, 1) = -0.5;
+    F_comparison(1, 1, 0, 1) = -0.5;
+    F_comparison(1, 1, 1, 1) = 0.5;
+
+    // E_comparison, mu = 1
+    E_comparison(0, 0, 0, 0) += 0.5;
+    E_comparison(0, 0, 1, 0) += 0.0;
+    E_comparison(1, 0, 0, 0) += 0.0;
+    E_comparison(1, 0, 1, 0) += 0.5;
+
+    E_comparison(0, 0, 0, 1) += -0.5;
+    E_comparison(0, 0, 1, 1) += -0.0;
+    E_comparison(1, 0, 0, 1) += -0.0;
+    E_comparison(1, 0, 1, 1) += -0.5;
+
+    E_comparison(0, 1, 0, 0) += 0.5;
+    E_comparison(0, 1, 1, 0) += 0.0;
+    E_comparison(1, 1, 0, 0) += 0.0;
+    E_comparison(1, 1, 1, 0) += 0.5;
+
+    E_comparison(0, 1, 0, 1) += -0.5;
+    E_comparison(0, 1, 1, 1) += -0.0;
+    E_comparison(1, 1, 0, 1) += -0.0;
+    E_comparison(1, 1, 1, 1) += -0.5;
+
+    // F_comparison, mu = 1
+    F_comparison(0, 0, 0, 0) += 0.5;
+    F_comparison(0, 0, 1, 0) += 0.0;
+    F_comparison(1, 0, 0, 0) += 0.0;
+    F_comparison(1, 0, 1, 0) += 0.5;
+
+    F_comparison(0, 0, 0, 1) += -0.5;
+    F_comparison(0, 0, 1, 1) += -0.0;
+    F_comparison(1, 0, 0, 1) += -0.0;
+    F_comparison(1, 0, 1, 1) += -0.5;
+
+    F_comparison(0, 1, 0, 0) += -0.5;
+    F_comparison(0, 1, 1, 0) += -0.0;
+    F_comparison(1, 1, 0, 0) += -0.0;
+    F_comparison(1, 1, 1, 0) += -0.5;
+
+    F_comparison(0, 1, 0, 1) += 0.5;
+    F_comparison(0, 1, 1, 1) += 0.0;
+    F_comparison(1, 1, 0, 1) += 0.0;
+    F_comparison(1, 1, 1, 1) += 0.5;
+
+    // E_comparison, mu = 2
+    E_comparison(0, 0, 0, 0) += 0.375;
+    E_comparison(0, 0, 1, 0) += 0.375;
+    E_comparison(1, 0, 0, 0) += -0.375;
+    E_comparison(1, 0, 1, 0) += -0.375;
+
+    E_comparison(0, 0, 0, 1) += 0.125;
+    E_comparison(0, 0, 1, 1) += 0.125;
+    E_comparison(1, 0, 0, 1) += -0.125;
+    E_comparison(1, 0, 1, 1) += -0.125;
+
+    E_comparison(0, 1, 0, 0) += 0.125;
+    E_comparison(0, 1, 1, 0) += 0.125;
+    E_comparison(1, 1, 0, 0) += -0.125;
+    E_comparison(1, 1, 1, 0) += -0.125;
+
+    E_comparison(0, 1, 0, 1) += 0.375;
+    E_comparison(0, 1, 1, 1) += 0.375;
+    E_comparison(1, 1, 0, 1) += -0.375;
+    E_comparison(1, 1, 1, 1) += -0.375;
+
+    // F_comparison, mu = 2
+    F_comparison(0, 0, 0, 0) += 0.75;
+    F_comparison(0, 0, 1, 0) += 0.0;
+    F_comparison(1, 0, 0, 0) += 0.0;
+    F_comparison(1, 0, 1, 0) += 0.75;
+
+    F_comparison(0, 0, 0, 1) += 0.25;
+    F_comparison(0, 0, 1, 1) += 0.0;
+    F_comparison(1, 0, 0, 1) += 0.0;
+    F_comparison(1, 0, 1, 1) += 0.25;
+
+    F_comparison(0, 1, 0, 0) += 0.25;
+    F_comparison(0, 1, 1, 0) += 0.0;
+    F_comparison(1, 1, 0, 0) += 0.0;
+    F_comparison(1, 1, 1, 0) += 0.25;
+
+    F_comparison(0, 1, 0, 1) += 0.75;
+    F_comparison(0, 1, 1, 1) += 0.0;
+    F_comparison(1, 1, 0, 1) += 0.0;
+    F_comparison(1, 1, 1, 1) += 0.75;
+
+    // E_comparison, mu = 3
+    E_comparison(0, 0, 0, 0) += 0.375;
+    E_comparison(0, 0, 1, 0) += 0.125;
+    E_comparison(1, 0, 0, 0) += 0.125;
+    E_comparison(1, 0, 1, 0) += 0.375;
+
+    E_comparison(0, 0, 0, 1) += 0.375;
+    E_comparison(0, 0, 1, 1) += 0.125;
+    E_comparison(1, 0, 0, 1) += 0.125;
+    E_comparison(1, 0, 1, 1) += 0.375;
+
+    E_comparison(0, 1, 0, 1) += -0.375;
+    E_comparison(0, 1, 1, 1) += -0.125;
+    E_comparison(1, 1, 0, 1) += -0.125;
+    E_comparison(1, 1, 1, 1) += -0.375;
+
+    E_comparison(0, 1, 0, 0) += -0.375;
+    E_comparison(0, 1, 1, 0) += -0.125;
+    E_comparison(1, 1, 0, 0) += -0.125;
+    E_comparison(1, 1, 1, 0) += -0.375;
+
+    // F_comparison, mu = 3
+    F_comparison(0, 0, 0, 0) += 0.75;
+    F_comparison(0, 0, 1, 0) += 0.25;
+    F_comparison(1, 0, 0, 0) += 0.25;
+    F_comparison(1, 0, 1, 0) += 0.75;
+
+    F_comparison(0, 0, 0, 1) += 0.0;
+    F_comparison(0, 0, 1, 1) += 0.0;
+    F_comparison(1, 0, 0, 1) += 0.0;
+    F_comparison(1, 0, 1, 1) += 0.0;
+
+    F_comparison(0, 1, 0, 0) += 0.0;
+    F_comparison(0, 1, 1, 0) += 0.0;
+    F_comparison(1, 1, 0, 0) += 0.0;
+    F_comparison(1, 1, 1, 0) += 0.0;
+
+    F_comparison(0, 1, 0, 1) += 0.75;
+    F_comparison(0, 1, 1, 1) += 0.25;
+    F_comparison(1, 1, 0, 1) += 0.25;
+    F_comparison(1, 1, 1, 1) += 0.75;
+
+    REQUIRE(bool(node0->coefficients.E == E_comparison));
+    REQUIRE(bool(node0->coefficients.F == F_comparison));
+
+    node0->CalculateS(blas, tau);
+    node0->S -= S0_old;
+    REQUIRE(bool(S0_comparison == node0->S));
 }
