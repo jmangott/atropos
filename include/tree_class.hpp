@@ -1,6 +1,7 @@
 #ifndef TREE_CLASS_HPP
 #define TREE_CLASS_HPP
 
+#include <iostream>
 #include <vector>
 
 #include <generic/matrix.hpp>
@@ -139,12 +140,13 @@ struct cme_internal_node : cme_node, internal_node<double>
     : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
     , internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
-    , internal_coefficients(_grid.n_reactions, _r_in, _r_out)
+    , internal_coefficients(_r_in, _r_out)
     {}
     void Initialize(int ncid);
     template <Index id>
     void CalculateAB(const blas_ops &blas);
     void CalculateGH(const blas_ops &blas);
+    void CalculateQ(const blas_ops &blas, const double tau);
 };
 
 struct cme_external_node : cme_node, external_node<double>
@@ -155,7 +157,7 @@ struct cme_external_node : cme_node, external_node<double>
     : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
     , external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
-    , external_coefficients(_grid.n_reactions, _r_in)
+    , external_coefficients(_grid.n_reactions)
     {}
     void Initialize(int ncid);
     void CalculateCD(const blas_ops &blas);
@@ -166,13 +168,18 @@ struct cme_lr_tree
 {
     cme_internal_node * root;
 
+    friend std::ostream &operator<<(std::ostream &os, cme_lr_tree const& tree)
+    {
+        tree.PrintHelper(os, tree.root);
+        return os;
+    }
+
     private:
-        void PrintHelper(cme_node const * const node) const;
+        void PrintHelper(std::ostream &os, cme_node const * const node) const;
         void OrthogonalizeHelper(cme_internal_node * const node) const;
 
     public:
         void Read(const std::string fn);
-        void Print() const;
         void Orthogonalize() const;
 };
 

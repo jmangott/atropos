@@ -94,24 +94,18 @@ void cme_lr_tree::Read(const std::string fn)
     return;
 }
 
-void cme_lr_tree::PrintHelper(cme_node const * const node) const
+void cme_lr_tree::PrintHelper(std::ostream &os, cme_node const * const node) const
 {
     if (node->IsExternal())
     {
-        cout << "external_node, id: " << node->id << ", X.shape(): (" << ((cme_external_node*) node)->X.shape()[0] << "," << ((cme_external_node*) node)->X.shape()[1] << ")" << endl;
+        os << "external_node, id: " << node->id << ", X.shape(): (" << ((cme_external_node*) node)->X.shape()[0] << "," << ((cme_external_node*) node)->X.shape()[1] << ")\n";
     }
     else
     {
-        cout << "internal_node, id: " << node->id << ", rank_out: (" << ((cme_internal_node *)node)->RankOut()[0] << "," << ((cme_internal_node *)node)->RankOut()[1] << ")" << endl;
-        cme_lr_tree::PrintHelper(node->child[0]);
-        cme_lr_tree::PrintHelper(node->child[1]);
+        cme_lr_tree::PrintHelper(os, node->child[0]);
+        cme_lr_tree::PrintHelper(os, node->child[1]);
+        os << "internal_node, id: " << node->id << ", rank_out: (" << ((cme_internal_node *)node)->RankOut()[0] << "," << ((cme_internal_node *)node)->RankOut()[1] << ")\n";
     }
-}
-
-void cme_lr_tree::Print() const
-{
-    cme_lr_tree::PrintHelper(root);
-    return;
 }
 
 void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node) const
@@ -526,8 +520,7 @@ void cme_node::CalculateS(const blas_ops &blas, const double tau)
             {
                 for (Index l = 0; l < RankIn(); l++)
                 {
-                    S_dot(i, j) += tau * S(k, l) * coefficients.E(i, j, k, l);
-                    S_dot(i, j) -= tau * S(k, l) * coefficients.F(i, j, k, l);
+                    S_dot(i, j) += tau * (coefficients.E(i, j, k, l) - coefficients.F(i, j, k, l)) * S(k, l);
                 }
             }
         }
@@ -562,4 +555,69 @@ void cme_node::CalculateEF(const blas_ops &blas)
             }
         }
     }
+}
+
+void cme_internal_node::CalculateGH(const blas_ops &blas)
+{
+    std::fill(std::begin(internal_coefficients.G), std::end(internal_coefficients.G), 0.0);
+    std::fill(std::begin(internal_coefficients.H), std::end(internal_coefficients.H), 0.0);
+
+    multi_array<double, 3> A_bar_child0({grid.n_reactions, RankOut()[0], RankOut()[0]});
+    multi_array<double, 3> B_bar_child0({grid.n_reactions, RankOut()[0], RankOut()[0]});
+    multi_array<double, 3> A_bar_child1({grid.n_reactions, RankOut()[1], RankOut()[1]});
+    multi_array<double, 3> B_bar_child1({grid.n_reactions, RankOut()[1], RankOut()[1]});
+
+    CalculateAB_bar(child[0], A_bar_child0, B_bar_child0, blas);
+    CalculateAB_bar(child[1], A_bar_child1, B_bar_child1, blas);
+
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        for (Index i = 0; i < RankIn(); ++i)
+        {
+            for (Index j = 0; j < RankIn(); ++j)
+            {
+                for (Index i0 = 0; i0 < RankOut()[0]; ++i0)
+                {
+                    for (Index j0 = 0; j0 < RankOut()[0]; ++j0)
+                    {
+                        for (Index i1 = 0; i1 < RankOut()[1]; ++i1)
+                        {
+                            for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
+                            {
+                                internal_coefficients.G(i, i0, i1, j, j0, j1) += coefficients.A(mu, i, j) * A_bar_child0(mu, i0, j0) * A_bar_child1(mu, i1, j1);
+                                internal_coefficients.H(i, i0, i1, j, j0, j1) += coefficients.B(mu, i, j) * B_bar_child0(mu, i0, j0) * B_bar_child1(mu, i1, j1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void cme_internal_node::CalculateQ(const blas_ops &blas, const double tau)
+{
+    multi_array<double, 3> Q_dot(Q.shape());
+    std::fill(std::begin(Q_dot), std::end(Q_dot), 0.0);
+
+    for (Index i = 0; i < RankIn(); ++i)
+    {
+        for (Index j = 0; j < RankIn(); ++j)
+        {
+            for (Index i0 = 0; i0 < RankOut()[0]; ++i0)
+            {
+                for (Index j0 = 0; j0 < RankOut()[0]; ++j0)
+                {
+                    for (Index i1 = 0; i1 < RankOut()[1]; ++i1)
+                    {
+                        for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
+                        {
+                            Q_dot(i0, i1, i) += tau * (internal_coefficients.G(i, i0, i1, j, j0, j1) - internal_coefficients.H(i, i0, i1, j, j0, j1)) * Q(j0, j1, j);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Q += Q_dot;
 }
