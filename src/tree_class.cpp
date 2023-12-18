@@ -532,7 +532,7 @@ void cme_node::CalculateS(const blas_ops &blas, const double tau)
             }
         }
     }
-    S += S_dot;
+    S -= S_dot;
 }
 
 void cme_node::CalculateEF(const blas_ops &blas)
