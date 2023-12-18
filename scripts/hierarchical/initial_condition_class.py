@@ -118,5 +118,5 @@ if __name__ == "__main__":
             initial_conditions.X[k][i] /= np.linalg.norm(initial_conditions.X[k][i])
 
     # Print tree and write it to a netCDF file
-    tree.printTree()
+    print(tree)
     tree.writeTree()

@@ -185,7 +185,7 @@ class Tree:
         if node.child[1]:
             self.__printTree(node.child[1])
 
-    def printTree(self):
+    def __str__(self):
         self.__printTree(self.root)
 
     @staticmethod
