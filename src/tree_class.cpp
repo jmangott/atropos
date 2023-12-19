@@ -355,6 +355,7 @@ cme_node* ReadHelpers::ReadNode(int ncid, const std::string id, cme_internal_nod
 }
 
 // TODO: Rename A_bar and B_bar
+// TODO: Reduce number of loops to 5
 void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas)
 {
     std::fill(std::begin(A_bar), std::end(A_bar), 0.0);
@@ -431,7 +432,7 @@ void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double,
     }
 }
 
-void cme_external_node::CalculateCD(const blas_ops &blas)
+void cme_external_node::CalculateCD()
 {
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
@@ -450,7 +451,7 @@ void cme_external_node::CalculateCD(const blas_ops &blas)
 }
 
 // TODO: Make this more efficient by using coefficients A and B instead of C and D and multiply the propensity in a separate loop
-void cme_external_node::CalculateK(const blas_ops &blas, const double tau)
+void cme_external_node::CalculateK(const double tau)
 {
     multi_array<double, 2> prod_KC(X.shape());
     multi_array<double, 2> prod_KC_shift(X.shape());
@@ -504,7 +505,7 @@ void cme_external_node::CalculateK(const blas_ops &blas, const double tau)
     X += K_dot;
 }
 
-void cme_node::CalculateS(const blas_ops &blas, const double tau)
+void cme_node::CalculateS(const double tau)
 {
     multi_array<double, 2> S_dot(S.shape());
     set_zero(S_dot);
@@ -528,7 +529,7 @@ void cme_node::CalculateS(const blas_ops &blas, const double tau)
     S -= S_dot;
 }
 
-void cme_node::CalculateEF(const blas_ops &blas)
+void cme_node::CalculateEF(const blas_ops& blas)
 {
     std::fill(std::begin(coefficients.E), std::end(coefficients.E), 0.0);
     std::fill(std::begin(coefficients.F), std::end(coefficients.F), 0.0);
@@ -557,7 +558,8 @@ void cme_node::CalculateEF(const blas_ops &blas)
     }
 }
 
-void cme_internal_node::CalculateGH(const blas_ops &blas)
+// TODO: Reduce number of loops to 5
+void cme_internal_node::CalculateGH(const blas_ops& blas)
 {
     std::fill(std::begin(internal_coefficients.G), std::end(internal_coefficients.G), 0.0);
     std::fill(std::begin(internal_coefficients.H), std::end(internal_coefficients.H), 0.0);
@@ -595,7 +597,8 @@ void cme_internal_node::CalculateGH(const blas_ops &blas)
     }
 }
 
-void cme_internal_node::CalculateQ(const blas_ops &blas, const double tau)
+// TODO: Reduce number of loops to 4
+void cme_internal_node::CalculateQ(const double tau)
 {
     multi_array<double, 3> Q_dot(Q.shape());
     std::fill(std::begin(Q_dot), std::end(Q_dot), 0.0);

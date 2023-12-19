@@ -128,8 +128,8 @@ struct cme_node : virtual node<double>
     , grid(_grid)
     , coefficients(_grid.n_reactions, _r_in)
     {}
-    void CalculateS(const blas_ops &blas, const double tau);
-    void CalculateEF(const blas_ops &blas);
+    void CalculateS(const double tau);
+    void CalculateEF(const blas_ops& blas);
 };
 
 struct cme_internal_node : cme_node, internal_node<double>
@@ -146,7 +146,7 @@ struct cme_internal_node : cme_node, internal_node<double>
     template <Index id>
     void CalculateAB(const blas_ops &blas);
     void CalculateGH(const blas_ops &blas);
-    void CalculateQ(const blas_ops &blas, const double tau);
+    void CalculateQ(const double tau);
 };
 
 struct cme_external_node : cme_node, external_node<double>
@@ -160,8 +160,8 @@ struct cme_external_node : cme_node, external_node<double>
     , external_coefficients(_grid.n_reactions)
     {}
     void Initialize(int ncid);
-    void CalculateCD(const blas_ops &blas);
-    void CalculateK(const blas_ops &blas, const double tau);
+    void CalculateCD();
+    void CalculateK(const double tau);
 };
 
 struct cme_lr_tree
@@ -228,7 +228,8 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
 
     CalculateAB_bar(child[id_c], A_bar, B_bar, blas);
 
-    // TODO: reduce number of loops
+    // TODO: reduce number of loops: precalculate A*A_bar
+    // and calculate A*A_bar(mu, ic=i1*i, jc=j1*j) * G(ic, i0) * G(jc, j0) (only 5 loops needed)
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         for (Index i0 = 0; i0 < RankOut()[id]; ++i0)

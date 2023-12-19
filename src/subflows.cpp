@@ -23,14 +23,14 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
         cme_external_node *child_node = (cme_external_node *)node->child[id];
 
         // Compute coefficients C and D
-        child_node->CalculateCD(blas);
+        child_node->CalculateCD();
 
         // Compute K = X * S
         multi_array<double, 2> tmp_x(child_node->X);
         blas.matmul(tmp_x, child_node->S, child_node->X);
 
         // K step
-        child_node->CalculateK(blas, tau);
+        child_node->CalculateK(tau);
 
         // Perform the QR decomposition K = X * S
         std::function<double(double *, double *)> ip_x;
@@ -56,11 +56,12 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
         ip_child = inner_product_from_const_weight(1.0, prod(child_node->RankOut()));
         Matrix::Matricize(child_node->Q, Cmat_child, 2);
         gs(Cmat_child, child_node->S, ip_child);
+        Matrix::Tensorize(Cmat_child, child_node->Q, 2);
     }
 
     // Integrate S
     node->child[id]->CalculateEF(blas);
-    node->child[id]->CalculateS(blas, tau);
+    node->child[id]->CalculateS(tau);
 
     // Set C^n = (S^(n+id))^T * G^n
     multi_array<double, 2> Gmat({node->RankIn() * node->RankOut()[id_c], node->RankOut()[id]});
@@ -77,5 +78,5 @@ template void SubflowPhi<1>(cme_internal_node * const node, const blas_ops &blas
 void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const double tau)
 {
     node->CalculateGH(blas);
-    node->CalculateQ(blas, tau);
+    node->CalculateQ(tau);
 }
