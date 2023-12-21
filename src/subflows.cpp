@@ -10,7 +10,7 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
     std::function<double(double *, double *)> ip;
     ip = inner_product_from_const_weight(1.0, node->RankIn() * node->RankOut()[id_c]);
 
-    // Compute QR decomposition C^n = (S^(n+id))^T * G^n
+    // Compute QR decomposition C^n = G^n * (S^(n+id))^T
     Matrix::Matricize(node->Q, Qmat, id);
     gs(Qmat, node->child[id]->S, ip);
     Matrix::Tensorize(Qmat, node->G, id);
@@ -63,7 +63,7 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
     node->child[id]->CalculateEF(blas);
     node->child[id]->CalculateS(tau);
 
-    // Set C^n = (S^(n+id))^T * G^n
+    // Set C^n = G^n * (S^(n+id))^T
     multi_array<double, 2> Gmat({node->RankIn() * node->RankOut()[id_c], node->RankOut()[id]});
     Matrix::Matricize(node->G, Gmat, id);
     set_zero(Qmat);
