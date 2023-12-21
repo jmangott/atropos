@@ -394,7 +394,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     // Recalculate the coefficients A, B, C and D
     root->CalculateAB<0>(blas);
-    node0->CalculateCD(blas);
+    node0->CalculateCD();
 
     for (Index mu = 0; mu < node0->grid.n_reactions; ++mu)
     {
@@ -413,7 +413,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     multi_array<double, 2> tmp(node0->X);
     blas.matmul(tmp, node0->S, node0->X);
-    node0->CalculateK(blas, tau);
+    node0->CalculateK(tau);
 
     REQUIRE(bool(K0_comparison == node0->X));
 
@@ -613,7 +613,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     REQUIRE(bool(node0->coefficients.E == E_comparison));
     REQUIRE(bool(node0->coefficients.F == F_comparison));
 
-    node0->CalculateS(blas, tau);
+    node0->CalculateS(tau);
     node0->S -= S0_old;
     REQUIRE(bool(S0_comparison == node0->S));
 }
