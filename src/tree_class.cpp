@@ -3,14 +3,10 @@
 template<>
 void internal_node<double>::Initialize(int ncid)
 {
-    int retval;
-
     // read Q
     int id_Q;
-    if ((retval = nc_inq_varid(ncid, "Q", &id_Q)))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_get_var_double(ncid, id_Q, Q.data())))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_varid(ncid, "Q", &id_Q));
+    NETCDF_CHECK(nc_get_var_double(ncid, id_Q, Q.data()));
 
     return;
 }
@@ -39,14 +35,10 @@ void cme_internal_node::Initialize(int ncid)
 template<>
 void external_node<double>::Initialize(int ncid)
 {
-    int retval;
-
     // read X
     int id_X;
-    if ((retval = nc_inq_varid(ncid, "X", &id_X)))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_get_var_double(ncid, id_X, X.data())))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_varid(ncid, "X", &id_X));
+    NETCDF_CHECK(nc_get_var_double(ncid, id_X, X.data()));
 
     return;
 }
@@ -67,33 +59,117 @@ void cme_external_node::Initialize(int ncid)
     return;
 }
 
+template<>
+void internal_node<double>::Write(int ncid, int id_r_in, std::array<int, 2> id_r_out) const
+{
+    int varid_Q;
+
+    int dimids_Q[3] = {id_r_out[0], id_r_out[1], id_r_in};
+    NETCDF_CHECK(nc_def_var(ncid, "Q", NC_DOUBLE, 3, dimids_Q, &varid_Q));
+    NETCDF_CHECK(nc_put_var_double(ncid, varid_Q, Q.data()));
+}
+
+template<>
+void external_node<double>::Write(int ncid, int id_r_in, int id_dx) const
+{
+    int varid_X;
+
+    int dimids_X[2] = {id_r_in, id_dx};
+    NETCDF_CHECK(nc_def_var(ncid, "X", NC_DOUBLE, 2, dimids_X, &varid_X));
+    NETCDF_CHECK(nc_put_var_double(ncid, varid_X, X.data()));
+}
+
 void cme_lr_tree::Read(const std::string fn)
 {
-    int ncid, retval;
+    int ncid, grp_ncid;
 
-    if ((retval = nc_open(fn.c_str(), NC_NOWRITE, &ncid)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_open(fn.c_str(), NC_NOWRITE, &ncid));
 
     grid_parms grid = ReadHelpers::ReadGridParms(ncid);
     std::array<Index, 2> r_out = ReadHelpers::ReadRankOut(ncid);
     root = new cme_internal_node("root", nullptr, grid, 1, r_out, 1);
     root->Initialize(ncid);
 
-    int grp_ncid;
-
-    if ((retval = nc_inq_ncid(ncid, "0", &grp_ncid)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_ncid(ncid, "0", &grp_ncid));
     root->child[0] = ReadHelpers::ReadNode(grp_ncid, "0", root, root->RankOut()[0]);
 
-    if ((retval = nc_inq_ncid(ncid, "1", &grp_ncid)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_ncid(ncid, "1", &grp_ncid));
     root->child[1] = ReadHelpers::ReadNode(grp_ncid, "1", root, root->RankOut()[1]);
 
-    if ((retval = nc_close(ncid)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_close(ncid));
     return;
 }
 
+void cme_lr_tree::Write(const std::string fn, const double t, const double tau) const
+{
+    int ncid;
+
+    NETCDF_CHECK(nc_create(fn.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
+
+    int varid_tt, varid_tau;
+    NETCDF_CHECK(nc_def_var(ncid, "t", NC_DOUBLE, 0, 0, &varid_tt));
+    NETCDF_CHECK(nc_put_var_double(ncid, varid_tt, &t));
+    NETCDF_CHECK(nc_def_var(ncid, "tau", NC_DOUBLE, 0, 0, &varid_tau));
+    NETCDF_CHECK(nc_put_var_double(ncid, varid_tau, &tau));
+
+    WriteHelpers::WriteNode(ncid, root);
+
+    NETCDF_CHECK(nc_close(ncid));
+}
+
+void WriteHelpers::WriteGridParms(int ncid, const grid_parms grid)
+{
+    // Dimensions
+    int id_d, id_dx;
+    NETCDF_CHECK(nc_def_dim(ncid, "d", grid.d, &id_d));
+    NETCDF_CHECK(nc_def_dim(ncid, "dx", grid.dx, &id_dx));
+
+    std::vector<long long> n(std::begin(grid.n), std::end(grid.n));
+    std::vector<long long> binsize(std::begin(grid.binsize), std::end(grid.binsize));
+
+    int varid_n, varid_binsize, varid_liml;
+    NETCDF_CHECK(nc_def_var(ncid, "n", NC_INT64, 1, &id_d, &varid_n));
+    NETCDF_CHECK(nc_put_var_longlong(ncid, varid_n, n.data()));
+    NETCDF_CHECK(nc_def_var(ncid, "binsize", NC_INT64, 1, &id_d, &varid_binsize));
+    NETCDF_CHECK(nc_put_var_longlong(ncid, varid_binsize, binsize.data()));
+    NETCDF_CHECK(nc_def_var(ncid, "liml", NC_DOUBLE, 1, &id_d, &varid_liml));
+    NETCDF_CHECK(nc_put_var_double(ncid, varid_liml, grid.liml.data()));
+}
+
+void WriteHelpers::WriteNode(int ncid, cme_node const * const node)
+{
+    int id_r_in;
+    NETCDF_CHECK(nc_def_dim(ncid, "r_in", node->RankIn(), &id_r_in));
+    WriteHelpers::WriteGridParms(ncid, node->grid);
+
+    if (node->IsExternal())
+    {
+        cme_external_node* this_node = (cme_external_node*) node;
+
+        int id_dx;
+        NETCDF_CHECK(nc_inq_dimid(ncid, "dx", &id_dx));
+        this_node->Write(ncid, id_r_in, id_dx);
+    }
+    else
+    {
+        cme_internal_node *this_node = (cme_internal_node *)node;
+
+        // Write r_out
+        std::array<int, 2> id_r_out;
+        NETCDF_CHECK(nc_def_dim(ncid, "r_out_0", this_node->RankOut()[0], &id_r_out[0]));
+        NETCDF_CHECK(nc_def_dim(ncid, "r_out_1", this_node->RankOut()[1], &id_r_out[1]));
+
+        this_node->Write(ncid, id_r_in, id_r_out);
+
+        int grp_ncid0, grp_ncid1;
+        NETCDF_CHECK(nc_def_grp(ncid, this_node->child[0]->id.c_str(), &grp_ncid0));
+        NETCDF_CHECK(nc_def_grp(ncid, this_node->child[1]->id.c_str(), &grp_ncid1));
+        WriteNode(grp_ncid0, this_node->child[0]);
+        WriteNode(grp_ncid1, this_node->child[1]);
+    }
+}
+
+// TODO: write virtual print functions and use them in this function
 void cme_lr_tree::PrintHelper(std::ostream &os, cme_node const * const node) const
 {
     if (node->IsExternal())
@@ -108,9 +184,8 @@ void cme_lr_tree::PrintHelper(std::ostream &os, cme_node const * const node) con
     }
 }
 
-void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node) const
+void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node, const blas_ops &blas) const
 {
-    blas_ops blas;
     std::function<double(double *, double *)> ip0;
     std::function<double(double *, double *)> ip1;
     multi_array<double, 2> R0({node->RankOut()[0], node->RankOut()[0]});
@@ -130,7 +205,7 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node) const
         cme_external_node *node_left = (cme_external_node *)node->child[0];
         cme_internal_node *node_right = (cme_internal_node *)node->child[1];
 
-        OrthogonalizeHelper(node_right);
+        OrthogonalizeHelper(node_right, blas);
 
         ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
         ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
@@ -143,7 +218,7 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node) const
         cme_internal_node *node_left = (cme_internal_node *)node->child[0];
         cme_external_node *node_right = (cme_external_node *)node->child[1];
 
-        OrthogonalizeHelper(node_left);
+        OrthogonalizeHelper(node_left, blas);
 
         ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
         ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
@@ -156,8 +231,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node) const
         cme_internal_node *node_left = (cme_internal_node *)node->child[0];
         cme_internal_node *node_right = (cme_internal_node *)node->child[1];
 
-        OrthogonalizeHelper(node_left);
-        OrthogonalizeHelper(node_right);
+        OrthogonalizeHelper(node_left, blas);
+        OrthogonalizeHelper(node_right, blas);
 
         ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
         ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
@@ -165,11 +240,18 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node) const
         R1 = node_right->Orthogonalize(ip1, blas);
     }
 
-    for (int j = node->n_basisfunctions; j < node->RankOut()[1]; ++j)
+    for (int j = node->child[0]->n_basisfunctions; j < node->RankOut()[0]; ++j)
     {
         for (int i = 0; i < node->RankOut()[0]; ++i)
         {
             R0(i, j) = 0.0;
+        }
+    }
+
+    for (int j = node->child[1]->n_basisfunctions; j < node->RankOut()[1]; ++j)
+    {
+        for (int i = 0; i < node->RankOut()[1]; ++i)
+        {
             R1(i, j) = 0.0;
         }
     }
@@ -198,28 +280,65 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node) const
     }
 }
 
-void cme_lr_tree::Orthogonalize() const
+void cme_lr_tree::Orthogonalize(const blas_ops& blas) const
 {
-    OrthogonalizeHelper(root);
+    OrthogonalizeHelper(root, blas);
 };
+
+std::vector<double> cme_lr_tree::NormalizeHelper(cme_node const * const node) const
+{
+    std::vector<double> x_sum(node->RankIn(), 0.0);
+    if (node->IsExternal())
+    {
+        cme_external_node* this_node = (cme_external_node*) node;
+        for (Index i = 0; i < this_node->RankIn(); ++i)
+        {
+            for (Index x = 0; x < this_node->ProblemSize(); ++x)
+            {
+                x_sum[i] += this_node->X(x, i) * this_node->grid.h_mult;
+            }
+        }
+    }
+    else
+    {
+        cme_internal_node* this_node = (cme_internal_node*) node;
+        std::vector<double> x0_sum(this_node->RankOut()[0]), x1_sum(this_node->RankOut()[1]);
+        x0_sum = NormalizeHelper(this_node->child[0]);
+        x1_sum = NormalizeHelper(this_node->child[1]);
+
+        for (Index i = 0; i < this_node->RankIn(); ++i)
+        {
+            for (Index i0 = 0; i0 < this_node->RankOut()[0]; ++i0)
+            {
+                for (Index i1 = 0; i1 < this_node->RankOut()[1]; ++i1)
+                {
+                    x_sum[i] += this_node->Q(i0, i1, i) * x0_sum[i0] * x1_sum[i1];
+                }
+            }
+        }
+    }
+    return x_sum;
+}
+
+double cme_lr_tree::Normalize() const
+{
+    std::vector<double> norm(1); 
+    norm = NormalizeHelper(root);
+    root->Q /= norm[0];
+    return norm[0];
+}
 
 grid_parms ReadHelpers::ReadGridParms(int ncid)
 {
-    int retval;
-
     // read dimensions
     int id_d, id_n_reactions;
-    if ((retval = nc_inq_dimid(ncid, "d", &id_d)))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_inq_dimid(ncid, "n_reactions", &id_n_reactions)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_dimid(ncid, "d", &id_d));
+    NETCDF_CHECK(nc_inq_dimid(ncid, "n_reactions", &id_n_reactions));
 
     size_t d_t, n_reactions_t;
     char tmp[NC_MAX_NAME + 1];
-    if ((retval = nc_inq_dim(ncid, id_d, tmp, &d_t)))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_inq_dim(ncid, id_n_reactions, tmp, &n_reactions_t)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_dim(ncid, id_d, tmp, &d_t));
+    NETCDF_CHECK(nc_inq_dim(ncid, id_n_reactions, tmp, &n_reactions_t));
 
     Index d = (Index)d_t;
     Index n_reactions = (Index)n_reactions_t;
@@ -227,30 +346,20 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
     // read variables
     int id_n, id_binsize, id_liml, id_dep, id_nu;
 
-    if ((retval = nc_inq_varid(ncid, "n", &id_n)))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_inq_varid(ncid, "binsize", &id_binsize)))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_inq_varid(ncid, "liml", &id_liml)))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_inq_varid(ncid, "dep", &id_dep)))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_inq_varid(ncid, "nu", &id_nu)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_varid(ncid, "n", &id_n));
+    NETCDF_CHECK(nc_inq_varid(ncid, "binsize", &id_binsize));
+    NETCDF_CHECK(nc_inq_varid(ncid, "liml", &id_liml));
+    NETCDF_CHECK(nc_inq_varid(ncid, "dep", &id_dep));
+    NETCDF_CHECK(nc_inq_varid(ncid, "nu", &id_nu));
 
     grid_parms grid(d, n_reactions);
     multi_array<signed char, 2> dep_int({n_reactions, d});
 
-    if ((retval = nc_get_var_long(ncid, id_n, grid.n.data())))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_get_var_long(ncid, id_binsize, grid.binsize.data())))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_get_var_double(ncid, id_liml, grid.liml.data())))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_get_var_schar(ncid, id_dep, dep_int.data())))
-        NETCDF_ERROR(retval);
-    if ((retval = nc_get_var_long(ncid, id_dep, grid.nu.data())))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_get_var_long(ncid, id_n, grid.n.data()));
+    NETCDF_CHECK(nc_get_var_long(ncid, id_binsize, grid.binsize.data()));
+    NETCDF_CHECK(nc_get_var_double(ncid, id_liml, grid.liml.data()));
+    NETCDF_CHECK(nc_get_var_schar(ncid, id_dep, dep_int.data()));
+    NETCDF_CHECK(nc_get_var_long(ncid, id_dep, grid.nu.data()));
 
     std::copy(dep_int.begin(), dep_int.end(), grid.dep.begin());
     grid.Initialize();
@@ -262,17 +371,13 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
 // (which guarantees that the rank is equal for both childs)
 std::array<Index, 2> ReadHelpers::ReadRankOut(int ncid)
 {
-    int retval;
-
     // read rank
     int id_r;
-    if ((retval = nc_inq_dimid(ncid, "r_out", &id_r)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_dimid(ncid, "r_out", &id_r));
 
     size_t r_t;
     char tmp[NC_MAX_NAME + 1];
-    if ((retval = nc_inq_dim(ncid, id_r, tmp, &r_t)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_dim(ncid, id_r, tmp, &r_t));
 
     std::array<Index, 2> r_out = {(Index) r_t, (Index) r_t};
     return r_out;
@@ -280,48 +385,38 @@ std::array<Index, 2> ReadHelpers::ReadRankOut(int ncid)
 
 Index ReadHelpers::ReadNBasisfunctions(int ncid)
 {
-    int retval;
-
     // read number of basisfunctions
     int id_n_basisfunctions;
-    if ((retval = nc_inq_dimid(ncid, "n_basisfunctions", &id_n_basisfunctions)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_dimid(ncid, "n_basisfunctions", &id_n_basisfunctions));
 
     size_t n_basisfunctions_t;
     char tmp[NC_MAX_NAME + 1];
-    if ((retval = nc_inq_dim(ncid, id_n_basisfunctions, tmp, &n_basisfunctions_t)))
-        NETCDF_ERROR(retval);
+    NETCDF_CHECK(nc_inq_dim(ncid, id_n_basisfunctions, tmp, &n_basisfunctions_t));
 
     return (Index)n_basisfunctions_t;
 }
 
 std::vector<std::vector<double>> ReadHelpers::ReadPropensity(int ncid, const Index n_reactions)
 {
-    int retval;
     std::vector<std::vector<double>> result(n_reactions);
 
     for (Index mu = 0; mu < n_reactions; ++mu)
     {
         // read dimension dx_{mu}
         int id_dx_dep;
-        if ((retval = nc_inq_dimid(ncid, ("dx_" + std::to_string(mu)).c_str(), &id_dx_dep)))
-            NETCDF_ERROR(retval);
+        NETCDF_CHECK(nc_inq_dimid(ncid, ("dx_" + std::to_string(mu)).c_str(), &id_dx_dep));
 
         size_t dx_dep_t;
         char tmp[NC_MAX_NAME + 1];
-        if ((retval = nc_inq_dim(ncid, id_dx_dep, tmp, &dx_dep_t)))
-            NETCDF_ERROR(retval);
+        NETCDF_CHECK(nc_inq_dim(ncid, id_dx_dep, tmp, &dx_dep_t));
 
         result[mu].resize(dx_dep_t);
 
         // read propensity
         int id_propensity;
 
-        if ((retval = nc_inq_varid(ncid, ("propensity_" + std::to_string(mu)).c_str(), &id_propensity)))
-            NETCDF_ERROR(retval);
-
-        if ((retval = nc_get_var_double(ncid, id_propensity, result[mu].data())))
-            NETCDF_ERROR(retval);
+        NETCDF_CHECK(nc_inq_varid(ncid, ("propensity_" + std::to_string(mu)).c_str(), &id_propensity));
+        NETCDF_CHECK(nc_get_var_double(ncid, id_propensity, result[mu].data()));
     }
 
     return result;

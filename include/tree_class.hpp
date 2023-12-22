@@ -83,6 +83,8 @@ struct internal_node : virtual node<T>
 
     void Initialize(int ncid);
 
+    void Write(int ncid, int id_r_in, std::array<int, 2> id_r_out) const;
+
     multi_array<T, 2> Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas);
 };
 
@@ -112,6 +114,8 @@ struct external_node : virtual node<T>
     }
 
     void Initialize(int ncid);
+
+    void Write(int ncid, int id_r_in, int id_dx) const;
 
     multi_array<T, 2> Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas);
 };
@@ -176,12 +180,21 @@ struct cme_lr_tree
 
     private:
         void PrintHelper(std::ostream &os, cme_node const * const node) const;
-        void OrthogonalizeHelper(cme_internal_node * const node) const;
+        void OrthogonalizeHelper(cme_internal_node * const node, const blas_ops &blas) const;
+        std::vector<double> NormalizeHelper(cme_node const * const node) const;
 
     public:
         void Read(const std::string fn);
-        void Orthogonalize() const;
+        void Write(const std::string, const double t, const double tau) const;
+        void Orthogonalize(const blas_ops &blas) const;
+        double Normalize() const;
 };
+
+namespace WriteHelpers
+{
+    void WriteGridParms(int ncid, const grid_parms grid);
+    void WriteNode(int ncid, cme_node const * const node);
+}
 
 namespace ReadHelpers
 {
