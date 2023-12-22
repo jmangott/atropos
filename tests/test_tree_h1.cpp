@@ -15,7 +15,7 @@
 
 TEST_CASE("tree_h1", "[tree_h1]")
 {
-
+    blas_ops blas;
     Index r = 2;
     Index n_basisfunctions = 1;
     Index n_reactions = 4;
@@ -181,7 +181,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     // Check if the probability distribution remains the same under orthogonalization
     std::fill(std::begin(p_ortho), std::end(p_ortho), 0.0);
-    tree.Orthogonalize();
+    tree.Orthogonalize(blas);
 
     for (Index i = 0; i < r; ++i)
     {
@@ -242,7 +242,6 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     REQUIRE(bool(p == p_ortho));
 
-    blas_ops blas;
     gram_schmidt gs(&blas);
 
     double tau = 1.0;
