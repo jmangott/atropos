@@ -168,15 +168,20 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
         }
     }
 
-    double norm = std::accumulate(std::begin(p), std::end(p), 0.0);
-    p /= norm;
+    double norm_comparison = std::accumulate(std::begin(p), std::end(p), 0.0);
 
-    // Normalize Q
-    tree.root->Q /= norm;
+    p /= norm_comparison;
+
+    // Normalize tree
+    double norm = tree.Normalize();
+
+    REQUIRE_THAT(norm, Catch::Matchers::WithinRel(norm_comparison));
 
     // Check if the probability distribution remains the same under orthogonalization
     std::fill(std::begin(p_ortho), std::end(p_ortho), 0.0);
-    tree.Orthogonalize();
+
+    blas_ops blas;
+    tree.Orthogonalize(blas);
 
     for (Index i = 0; i < r; ++i)
     {
@@ -209,8 +214,6 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     REQUIRE(bool(p == p_ortho));
 
     // Check if the Xs and Qs are orthonormal
-    blas_ops blas;
-
     multi_array<double, 2> X00_ortho({r0, r0}), X01_ortho({r0, r0}), X1_ortho({r, r}), Q_ortho({1, 1}), Q0_ortho({r, r});
     set_zero(X00_ortho);
     set_zero(X01_ortho);
