@@ -16,7 +16,7 @@
 #include "grid_class.hpp"
 
 // Print progress bar
-void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::time_point start_time, double norm);
+void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::_V2::system_clock::time_point start_time, const double norm);
 
 // Print diagnostic information
 void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, bool second_order, Index n_substeps);
