@@ -29,12 +29,12 @@ class InternalNode(Node):
         self.r_in = _r_in
         self.r_out = _r_out
         self.Q = np.zeros((self.r_in, self.r_out, self.r_out), order="C")
-        self.S = np.zeros((self.r_out, self.r_out))
 
 class ExternalNode(Node):
     def __init__(self, _parent: InternalNode, _id: Id, _grid: GridParms, _species_limits: list):
         super().__init__(_id, _grid, _species_limits)
         self.parent = _parent
+        self.r_in = self.parent.r_out
         self.X = np.zeros((self.parent.r_out, self.grid.dx))
 
 class Tree:
@@ -174,26 +174,26 @@ class Tree:
         self.__calculatePropensity(self.root, self.reaction_system)
         self.__buildTree(self.root, self.partition_str, r_out_iter)
 
-    def __printTree(self, node: Node):
-        print(type(node), "id:", node.id, "n:", node.grid, "species_limits:", node.species_limits, end=" ")
+    def __printTree(self, node: Node, os: str) -> str:
+        os = " ".join([os, str(type(node)), "id:", str(node.id), "n:", str(node.grid), "species_limits:", str(node.species_limits)])
         if isinstance(node, ExternalNode):
-            print("X.shape:", node.X.shape)
+            os = " ".join([os, "X.shape:", str(node.X.shape), "\n"])
         else:
-            print("Q.shape:", node.Q.shape)
+            os = " ".join([os, "Q.shape:", str(node.Q.shape), "\n"])
         if node.child[0]:
-            self.__printTree(node.child[0])
+            os = self.__printTree(node.child[0], os)
         if node.child[1]:
-            self.__printTree(node.child[1])
+            os = self.__printTree(node.child[1], os)
+        return os
 
-    def __str__(self):
-        self.__printTree(self.root)
+    def __str__(self) -> str:
+        return self.__printTree(self.root, "")
 
     @staticmethod
     def __createInternalDataset(node: InternalNode):
         ds = xr.Dataset(
             {                
                 "Q": (["n_basisfunctions", "r_out", "r_out"], node.Q),
-                "S": (["r_out", "r_out"], node.S),
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"], node.grid.binsize),
                 "liml": (["d"], node.grid.liml),
