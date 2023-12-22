@@ -1,32 +1,59 @@
-#include "tree_class.hpp"
+#include <filesystem>
+
 #include "coeff_class.hpp"
+#include "io_functions.hpp"
+#include "index_functions.hpp"
+#include "integration_parameters.hpp"
+#include "integrators.hpp"
+#include "matrix.hpp"
+#include "tree_class.hpp"
 
 int main()
 {
-    Index d = 3;
-    multi_array<Index, 1> n({d});
-    n(0) = 1;
-    n(1) = 2;
-    n(2) = 3;
-    multi_array<Index, 1> binsize({d});
-    binsize(0) = 1;
-    binsize(1) = 2;
-    binsize(2) = 3;
-    multi_array<double, 1> liml({d});
-    liml(0) = 0.0;
-    liml(1) = 0.0;
-    liml(2) = 0.0;
-    grid_parms grid(d, n, binsize, liml);
-    root<coeff> root_node(1);
-    internal_node<coeff> child_node(&root_node, 2);
-    external_node<coeff> child_child_node(&child_node, grid);
-    root_node.left = &child_node;
-    cout << root_node.rank() << " " << child_node.rank() << endl;
-    root_node.left->left = &child_child_node;
-    cout << dynamic_cast<external_node<coeff>*>(root_node.left->left)->grid.d << endl;
-    cout << dynamic_cast<internal_node<coeff>*>(root_node.left)->rank() << endl;
+    double t = 0.0;
+    blas_ops blas;
+    cme_lr_tree tree;
+    const Index kNsteps = ceil(kTstar / Tau); // Number of time steps
 
-    // cout << child_node.parent->rank() << endl;
-    // cout << root_node.left->rank() << endl;
+    tree.Read("input/input.nc");
+    cout << tree;
+    tree.Orthogonalize(blas);
+    double norm = tree.Normalize();
+    cout << "Norm: " << norm << endl; 
+
+    // Check if folder in ../output/ exists, otherwise create folder
+    std::stringstream fname;
+    fname << "output/" << kFilename;
+    std::filesystem::create_directory(fname.str());
+
+    // Store initial values
+    fname.str("");
+    fname << "output/" << kFilename << "/output_t0.nc";
+    tree.Write(fname.str(), t, Tau);
+
+    auto start_time(std::chrono::high_resolution_clock::now());
+
+    for (Index ts = 0; ts < kNsteps; ++ts)
+    {
+        if (kTstar - t < Tau)
+            Tau = kTstar - t;
+
+        TTNIntegrator(tree.root, blas, Tau);
+        norm = tree.Normalize();
+
+        t += Tau;
+
+        // Print progress bar
+        PrintProgressBar(ts, kNsteps, start_time, norm);
+
+        // Write snapshot
+        if ((ts + 1) % kSnapshot == 0 || (ts + 1) == kNsteps)
+        {
+            fname.str("");
+            fname << "output/" << kFilename << "/output_t" << ts + 1 << ".nc";
+            tree.Write(fname.str(), t, Tau);
+        }
+    }
+
     return 0;
 }
