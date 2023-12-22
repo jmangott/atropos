@@ -5,7 +5,7 @@ using std::endl;
 
 // TODO: output width is not always the same
 // TODO: calculate `time_left` with a moving mean (of the last n steps)
-void PrintProgressBar(Index ts, Index kNsteps, std::chrono::_V2::system_clock::time_point start_time, double norm)
+void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::_V2::system_clock::time_point start_time, const double norm)
 {
     int bar_width = 30;
     double progress = (ts + 1.0) / kNsteps;
