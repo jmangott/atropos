@@ -615,4 +615,118 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node0->CalculateS(tau);
     node0->S -= S0_old;
     REQUIRE(bool(S0_comparison == node0->S));
+
+    root->Q = Q;
+    node0->X = X0;
+    node1->X = X1;
+
+    TTNIntegrator(tree.root, blas, tau);
+
+    std::fill(std::begin(E_comparison), std::end(E_comparison), 0.0);
+    std::fill(std::begin(F_comparison), std::end(F_comparison), 0.0);
+
+    // Test the relation G(i0, k1, i) * G(j0, l1, j) * g(i, i0, i1, j, j0, j1) = e(i1, k1, j1, l1)
+    for (Index i = 0; i < root->RankIn(); ++i)
+    {
+        for (Index j = 0; j < root->RankIn(); ++j)
+        {
+            for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
+            {
+                for (Index j0 = 0; j0 < root->RankOut()[0]; ++j0)
+                {
+                    for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1)
+                    {
+                        for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
+                        {
+                            for (Index k1 = 0; k1 < root->RankOut()[1]; ++k1)
+                            {
+                                for (Index l1 = 0; l1 < root->RankOut()[1]; ++l1)
+                                {
+                                    E_comparison(i1, k1, j1, l1) += root->internal_coefficients.G(i, i0, i1, j, j0, j1) * root->G(i0, k1, i) * root->G(j0, l1, j);
+                                    F_comparison(i1, k1, j1, l1) += root->internal_coefficients.H(i, i0, i1, j, j0, j1) * root->G(i0, k1, i) * root->G(j0, l1, j);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    REQUIRE(bool(node1->coefficients.E == E_comparison));
+    REQUIRE(bool(node1->coefficients.F == F_comparison));
+
+    // Test the relation S_dot(i1, j1) = Q_dot(i0, i1, i) * G(i0, j1, i)
+    root->Q = Q;
+    node0->X = X0;
+    node1->X = X1;
+    tau = 0.001;
+
+    SubflowPhi<0>(tree.root, blas, tau);
+
+    // Perform the L step manually
+    multi_array<double, 2> Qmat({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
+    std::function<double(double *, double *)> ip;
+    ip = inner_product_from_const_weight(1.0, root->RankIn() * root->RankOut()[0]);
+
+    // Compute QR decomposition C^n = G^n * (S^(n+id))^T
+    Matrix::Matricize(root->Q, Qmat, 1);
+    gs(Qmat, root->child[1]->S, ip);
+    Matrix::Tensorize(Qmat, root->G, 1);
+    transpose_inplace(root->child[1]->S);
+
+    root->CalculateAB<1>(blas);
+
+    // Compute coefficients C and D
+    node1->CalculateCD();
+
+    // Compute K = X * S
+    multi_array<double, 2> tmp_x(node1->X);
+    blas.matmul(tmp_x, node1->S, node1->X);
+
+    // K step
+    node1->CalculateK(tau);
+
+    // Perform the QR decomposition K = X * S
+    std::function<double(double *, double *)> ip_x;
+    ip_x = inner_product_from_const_weight(node1->grid.h_mult, node1->grid.dx);
+    gs(node1->X, node1->S, ip_x);
+
+    // Integrate S
+    multi_array<double, 2> deltaS(node1->S);
+
+    root->child[1]->CalculateEF(blas);
+    root->child[1]->CalculateS(tau);
+
+    // Set C^n = G^n * (S^(n+id))^T
+    multi_array<double, 2> Gmat({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
+    Matrix::Matricize(root->G, Gmat, 1);
+    set_zero(Qmat);
+    blas.matmul_transb(Gmat, deltaS, Qmat);
+    Matrix::Tensorize(Qmat, root->Q, 1);
+
+    multi_array<double, 3> deltaQ(root->Q);
+
+    SubflowPsi(tree.root, blas, tau);
+    deltaS -= node1->S;
+    deltaQ -= root->Q;
+
+    multi_array<double, 2> deltaQG({node1->RankIn(), node1->RankIn()});
+    set_zero(deltaQG);
+
+    for (Index i = 0; i < root->RankIn(); ++i)
+    {
+        for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
+        {
+            for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1)
+            {
+                for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
+                {
+                    deltaQG(i1, j1) -= deltaQ(i0, i1, i) * root->G(i0, j1, i);
+                }
+            }
+        }
+    }
+
+    REQUIRE(bool(deltaQG == deltaS));
 }
