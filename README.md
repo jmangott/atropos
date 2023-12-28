@@ -246,6 +246,6 @@ cmake --build build
 The corresponding SSA solution can be generated with the `ssa_lp.ipynb` notebook. Afterwards, the output can be visualized with the `output_lp.ipynb` notebook.
 
 ## References
-[^fn1]: Lubich. C., Oseledets, I.: "A projector-splitting integrator for dynamical low-rank approximation", BIT Numerical Mathematics **54** (2014)
+[^fn1]: Lubich, C., Oseledets, I.: "A projector-splitting integrator for dynamical low-rank approximation", BIT Numerical Mathematics **54** (2014)
 
 [^fn2]: Cassini, F., Einkemmer, L.: "Efficient 6D Vlasov simulation using the dynamical low-rank framework Ensign", Computer Physics Communications **280** (2022)
