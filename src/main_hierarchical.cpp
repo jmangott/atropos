@@ -19,7 +19,7 @@ int main()
     cout << tree;
     tree.Orthogonalize(blas);
     double norm = tree.Normalize();
-    cout << "Norm: " << norm << endl; 
+    cout << "Norm: " << norm << endl;
 
     // Check if folder in ../output/ exists, otherwise create folder
     std::stringstream fname;
