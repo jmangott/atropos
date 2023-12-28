@@ -359,7 +359,7 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
     NETCDF_CHECK(nc_get_var_long(ncid, id_binsize, grid.binsize.data()));
     NETCDF_CHECK(nc_get_var_double(ncid, id_liml, grid.liml.data()));
     NETCDF_CHECK(nc_get_var_schar(ncid, id_dep, dep_int.data()));
-    NETCDF_CHECK(nc_get_var_long(ncid, id_dep, grid.nu.data()));
+    NETCDF_CHECK(nc_get_var_long(ncid, id_nu, grid.nu.data()));
 
     std::copy(dep_int.begin(), dep_int.end(), grid.dep.begin());
     grid.Initialize();
