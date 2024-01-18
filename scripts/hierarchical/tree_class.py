@@ -28,14 +28,14 @@ class InternalNode(Node):
         self.parent = _parent
         self.r_in = _r_in
         self.r_out = _r_out
-        self.Q = np.zeros((self.r_in, self.r_out, self.r_out), order="C")
+        self.Q = np.zeros((self.r_out, self.r_out, self.r_in))
 
 class ExternalNode(Node):
     def __init__(self, _parent: InternalNode, _id: Id, _grid: GridParms, _species_limits: list):
         super().__init__(_id, _grid, _species_limits)
         self.parent = _parent
         self.r_in = self.parent.r_out
-        self.X = np.zeros((self.parent.r_out, self.grid.dx))
+        self.X = np.zeros((self.grid.dx, self.r_in))
 
 class Tree:
     def __init__(self,
@@ -193,7 +193,7 @@ class Tree:
     def __createInternalDataset(node: InternalNode):
         ds = xr.Dataset(
             {                
-                "Q": (["n_basisfunctions", "r_out", "r_out"], node.Q),
+                "Q": (["n_basisfunctions", "r_out", "r_out"], node.Q.T),
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"], node.grid.binsize),
                 "liml": (["d"], node.grid.liml),
@@ -209,7 +209,7 @@ class Tree:
     def __createExternalDataset(node: ExternalNode):
         ds = xr.Dataset(
             {
-                "X": (["n_basisfunctions", "dx"], node.X),
+                "X": (["n_basisfunctions", "dx"], node.X.T),
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"], node.grid.binsize),
                 "liml": (["d"], node.grid.liml),

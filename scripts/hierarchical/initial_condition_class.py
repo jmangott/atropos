@@ -18,24 +18,24 @@ class InitialCondition:
         nb = next(n_basisfunctions_iter)
 
         if isinstance(node.child[0], ExternalNode) and isinstance(node.child[1], ExternalNode):
-            node.child[0].X.resize((nb, node.child[0].grid.dx), refcheck=False)
-            node.child[1].X.resize((nb, node.child[1].grid.dx), refcheck=False)
+            node.child[0].X.resize((node.child[0].grid.dx, nb), refcheck=False)
+            node.child[1].X.resize((node.child[1].grid.dx, nb), refcheck=False)
 
         elif isinstance(node.child[0], ExternalNode) and isinstance(node.child[1], InternalNode):
-            node.child[0].X.resize((nb, node.child[0].grid.dx), refcheck=False)
-            node.child[1].Q.resize((nb, node.child[1].r_out, node.child[1].r_out), refcheck=False)
+            node.child[0].X.resize((node.child[0].grid.dx, nb), refcheck=False)
+            node.child[1].Q.resize((node.child[1].r_out, node.child[1].r_out, nb), refcheck=False)
 
             self.__setNodeData(node.child[1], n_basisfunctions_iter)
 
         elif isinstance(node.child[0], InternalNode) and isinstance(node.child[1], ExternalNode):
-            node.child[0].Q.resize((nb, node.child[0].r_out, node.child[0].r_out), refcheck=False)
-            node.child[1].X.resize((nb, node.child[1].grid.dx), refcheck=False)
+            node.child[0].Q.resize((node.child[0].r_out, node.child[0].r_out, nb), refcheck=False)
+            node.child[1].X.resize((node.child[1].grid.dx, nb), refcheck=False)
 
             self.__setNodeData(node.child[0], n_basisfunctions_iter)
 
         else:
-            node.child[0].Q.resize((nb, node.child[0].r_out, node.child[0].r_out), refcheck=False)
-            node.child[1].Q.resize((nb, node.child[1].r_out, node.child[1].r_out), refcheck=False)
+            node.child[0].Q.resize((node.child[0].r_out, node.child[0].r_out, nb), refcheck=False)
+            node.child[1].Q.resize((node.child[1].r_out, node.child[1].r_out, nb), refcheck=False)
 
             self.__setNodeData(node.child[0], n_basisfunctions_iter)
             self.__setNodeData(node.child[1], n_basisfunctions_iter)
