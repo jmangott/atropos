@@ -63,8 +63,8 @@ template<>
 void internal_node<double>::Write(int ncid, int id_r_in, std::array<int, 2> id_r_out) const
 {
     int varid_Q;
-
-    int dimids_Q[3] = {id_r_out[0], id_r_out[1], id_r_in};
+    // NOTE: netCDF stores arrays in row-major order (but Ensign column-major order)
+    int dimids_Q[3] = {id_r_in, id_r_out[1], id_r_out[0]};
     NETCDF_CHECK(nc_def_var(ncid, "Q", NC_DOUBLE, 3, dimids_Q, &varid_Q));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_Q, Q.data()));
 }
@@ -73,7 +73,7 @@ template<>
 void external_node<double>::Write(int ncid, int id_r_in, int id_dx) const
 {
     int varid_X;
-
+    // NOTE: netCDF stores arrays in row-major order (but Ensign column-major order)
     int dimids_X[2] = {id_r_in, id_dx};
     NETCDF_CHECK(nc_def_var(ncid, "X", NC_DOUBLE, 2, dimids_X, &varid_X));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_X, X.data()));
@@ -546,17 +546,18 @@ void cme_external_node::CalculateCD()
 }
 
 // TODO: Make this more efficient by using coefficients A and B instead of C and D and multiply the propensity in a separate loop
-void cme_external_node::CalculateK(const double tau)
+
+multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node)
 {
-    multi_array<double, 2> prod_KC(X.shape());
-    multi_array<double, 2> prod_KC_shift(X.shape());
-    multi_array<double, 2> prod_KD(X.shape());
-    multi_array<double, 2> K_dot(X.shape());
+    multi_array<double, 2> prod_KC(K.shape());
+    multi_array<double, 2> prod_KC_shift(K.shape());
+    multi_array<double, 2> prod_KD(K.shape());
+    multi_array<double, 2> K_dot(K.shape());
     set_zero(K_dot);
 
-    std::vector<Index> vec_index(grid.d);
+    std::vector<Index> vec_index(node->grid.d);
 
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
     {
         set_zero(prod_KC);
         set_zero(prod_KD);
@@ -574,30 +575,30 @@ void cme_external_node::CalculateK(const double tau)
 #ifdef __OPENMP__
 #pragma omp for schedule(static, chunk_size)
 #endif
-            for (Index i = 0; i < grid.dx; ++i)
+            for (Index i = 0; i < node->grid.dx; ++i)
             {
-                alpha = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(grid.n_dep[mu]), std::begin(grid.idx_dep[mu]), std::end(grid.idx_dep[mu]));
-                IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
+                alpha = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(node->grid.n_dep[mu]), std::begin(node->grid.idx_dep[mu]), std::end(node->grid.idx_dep[mu]));
+                IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
 
                 // Calculate matrix-vector multiplication of C2*K and D2*K
-                for (Index j = 0; j < RankIn(); ++j)
+                for (Index j = 0; j < node->RankIn(); ++j)
                 {
-                    for (Index l = 0; l < RankIn(); ++l)
+                    for (Index l = 0; l < node->RankIn(); ++l)
                     {
-                        prod_KC(i, j) += tau * X(i, l) * external_coefficients.C[mu](alpha, j, l);
-                        prod_KD(i, j) += tau * X(i, l) * external_coefficients.D[mu](alpha, j, l);
+                        prod_KC(i, j) += K(i, l) * node->external_coefficients.C[mu](alpha, j, l);
+                        prod_KD(i, j) += K(i, l) * node->external_coefficients.D[mu](alpha, j, l);
                     }
                 }
             }
         }
         // Shift prod_KC
-        Matrix::ShiftRows<1>(prod_KC_shift, prod_KC, grid, mu);
+        Matrix::ShiftRows<1>(prod_KC_shift, prod_KC, node->grid, mu);
 
         // Calculate k_dot = shift(C * K) - D * K
         K_dot += prod_KC_shift;
         K_dot -= prod_KD;
     }
-    X += K_dot;
+    return K_dot;
 }
 
 void cme_node::CalculateS(const double tau)

@@ -42,7 +42,7 @@ struct node
         assert(n_basisfunctions <= _r_in);
     }
 
-    virtual ~node() {}
+    virtual ~node() = default;
 
     virtual bool IsInternal() const = 0;
     virtual bool IsExternal() const = 0;
@@ -66,12 +66,12 @@ struct internal_node : virtual node<T>
     , G({_r_out[0], _r_out[1], _r_in})
     {}
     
-    bool IsInternal() const
+    bool IsInternal() const override
     {
         return true;
     }
 
-    bool IsExternal() const
+    bool IsExternal() const override
     {
         return false;
     }
@@ -81,7 +81,7 @@ struct internal_node : virtual node<T>
         return array<Index, 2>({Q.shape()[0], Q.shape()[1]});
     }
 
-    void Initialize(int ncid);
+    void Initialize(int ncid) override;
 
     void Write(int ncid, int id_r_in, std::array<int, 2> id_r_out) const;
 
@@ -98,12 +98,12 @@ struct external_node : virtual node<T>
     , X({_dx, _r_in})
     {}
     
-    bool IsInternal() const
+    bool IsInternal() const override
     {
         return false;
     }
 
-    bool IsExternal() const
+    bool IsExternal() const override
     {
         return true;
     }
@@ -113,7 +113,7 @@ struct external_node : virtual node<T>
         return X.shape()[0];
     }
 
-    void Initialize(int ncid);
+    void Initialize(int ncid) override;
 
     void Write(int ncid, int id_r_in, int id_dx) const;
 
@@ -146,7 +146,7 @@ struct cme_internal_node : cme_node, internal_node<double>
     , internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
     , internal_coefficients(_r_in, _r_out)
     {}
-    void Initialize(int ncid);
+    void Initialize(int ncid) override;
     template <Index id>
     void CalculateAB(const blas_ops &blas);
     void CalculateGH(const blas_ops &blas);
@@ -163,10 +163,11 @@ struct cme_external_node : cme_node, external_node<double>
     , external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
     , external_coefficients(_grid.n_reactions)
     {}
-    void Initialize(int ncid);
+    void Initialize(int ncid) override;
     void CalculateCD();
-    void CalculateK(const double tau);
 };
+
+multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node);
 
 struct cme_lr_tree
 {
