@@ -95,6 +95,9 @@ find_package(Threads REQUIRED)
 # fftw
 set(FFTW_LIBRARIES "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3_omp.a")
 
+# Eigen
+find_package(Eigen3 3.4 REQUIRED)
+
 # NetCDF
 find_package(NetCDF)
 if(${NETCDF_FOUND})
