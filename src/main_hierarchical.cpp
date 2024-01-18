@@ -4,14 +4,16 @@
 #include "io_functions.hpp"
 #include "index_functions.hpp"
 #include "integration_parameters.hpp"
-#include "integrators.hpp"
 #include "matrix.hpp"
+#include "print_functions.hpp"
+#include "subflows.hpp"
 #include "tree_class.hpp"
 
 int main()
 {
     double t = 0.0;
     blas_ops blas;
+    implicit_euler method;
     cme_lr_tree tree;
     const Index kNsteps = ceil(kTstar / Tau); // Number of time steps
 
@@ -38,7 +40,7 @@ int main()
         if (kTstar - t < Tau)
             Tau = kTstar - t;
 
-        TTNIntegrator(tree.root, blas, Tau);
+        TTNIntegrator(tree.root, blas, Tau, method);
         norm = tree.Normalize();
 
         t += Tau;

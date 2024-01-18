@@ -16,6 +16,7 @@
 TEST_CASE("tree_h2", "[tree_h2]")
 {
     blas_ops blas;
+    explicit_euler method;
     Index r = 3, r0 = 2;
     Index n_basisfunctions = 1, n_basisfunctions0 = 1;
     Index n_reactions = 6;
@@ -392,7 +393,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
     Matrix::Tensorize(Qmat, G0_comparison, 0);
 
     double tau = 1.0;
-    SubflowPhi<0>(root, blas, tau);
+    SubflowPhi<0>(root, blas, tau, method);
 
     multi_array<double, 3> A0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
     multi_array<double, 3> B0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});

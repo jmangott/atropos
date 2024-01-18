@@ -16,6 +16,7 @@
 TEST_CASE("tree_h1", "[tree_h1]")
 {
     blas_ops blas;
+    explicit_euler method;
     Index r = 2;
     Index n_basisfunctions = 1;
     Index n_reactions = 4;
@@ -245,7 +246,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     gram_schmidt gs(&blas);
 
     double tau = 1.0;
-    SubflowPhi<0>(root, blas, tau);
+    SubflowPhi<0>(root, blas, tau, method);
 
     multi_array<double, 3> A0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
     multi_array<double, 3> B0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
@@ -412,7 +413,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     multi_array<double, 2> tmp(node0->X);
     blas.matmul(tmp, node0->S, node0->X);
-    node0->CalculateK(tau);
+    const auto K_step_rhs0 = [node0] (const multi_array<double, 2> &K) { return CalculateKDot(K, node0); };
+    method.integrate(node0->X, K_step_rhs0, tau);
 
     REQUIRE(bool(K0_comparison == node0->X));
 
@@ -620,7 +622,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node0->X = X0;
     node1->X = X1;
 
-    TTNIntegrator(tree.root, blas, tau);
+    TTNIntegrator(tree.root, blas, tau, method);
 
     std::fill(std::begin(E_comparison), std::end(E_comparison), 0.0);
     std::fill(std::begin(F_comparison), std::end(F_comparison), 0.0);
@@ -662,7 +664,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node1->X = X1;
     tau = 0.001;
 
-    SubflowPhi<0>(tree.root, blas, tau);
+    SubflowPhi<0>(tree.root, blas, tau, method);
 
     // Perform the L step manually
     multi_array<double, 2> Qmat({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
@@ -685,7 +687,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
     blas.matmul(tmp_x, node1->S, node1->X);
 
     // K step
-    node1->CalculateK(tau);
+    const auto K_step_rhs1 = [node1](const multi_array<double, 2> &K) { return CalculateKDot(K, node1); };
+    method.integrate(node1->X, K_step_rhs1, tau);
 
     // Perform the QR decomposition K = X * S
     std::function<double(double *, double *)> ip_x;
