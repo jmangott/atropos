@@ -36,6 +36,7 @@ P(t,x) \approx \sum_{i,j=1}^r X_i^1(t,x_{(1)})\,S_{ij}(t)\,X_i^2(t,x_{(2)})
 with rank $`r`$, low-rank factors $`X_i^1(t,x_{(1)})`$ and $`X_i^2(t,x_{(2)})`$ and coupling coefficients $`S_{ij}(t)`$. The rank is usually a small number.
 
 `kinetic-cme` makes use of the low-rank framework `Ensign`.[^fn2]
+**Caution:** As `Ensign` stores arrays in column-major (Fortran) order, it is assumed that input arrays also follow this convention.
 
 ## Requirements
 - CMake (3.22.1 or later)
