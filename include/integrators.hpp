@@ -37,6 +37,4 @@ void IntegrateFirstOrder(lr2<double> &lr_sol, const std::vector<multi_array<doub
 // Perform integration for one timestep `tau` with Strang splitting and explicit Euler with substeps
 void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 2>> &w_x_dep, std::vector<multi_array<double, 3>> &c_coeff1, std::vector<multi_array<double, 3>> &d_coeff1, std::vector<multi_array<double, 3>> &c_coeff2, std::vector<multi_array<double, 3>> &d_coeff2, multi_array<double, 4> &e_coeff, multi_array<double, 4> &f_coeff, const vector<Index> sigma1, const vector<Index> sigma2, mysys &mysystem, grid_info &grid, partition_info<1> &partition1, partition_info<2> &partition2, std::function<double(double *, double *)> ip_xx1, std::function<double(double *, double *)> ip_xx2, blas_ops &blas, double tau, Index n_substeps, double &norm);
 
-void TTNIntegrator(cme_internal_node *node, const blas_ops &blas, const double tau);
-
 #endif

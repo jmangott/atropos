@@ -1,7 +1,7 @@
 #include "subflows.hpp"
 
 template <Index id>
-void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const double tau)
+void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const double tau, const integration_method &method)
 {
     Index id_c = (id == 0) ? 1 : 0;
 
@@ -30,7 +30,8 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
         blas.matmul(tmp_x, child_node->S, child_node->X);
 
         // K step
-        child_node->CalculateK(tau);
+        const auto K_step_rhs = [child_node](const multi_array<double, 2> &K) { return CalculateKDot(K, child_node); };
+        method.integrate(child_node->X, K_step_rhs, tau);
 
         // Perform the QR decomposition K = X * S
         std::function<double(double *, double *)> ip_x;
@@ -49,7 +50,7 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
         blas.matmul(Qmat_child, child_node->S, Cmat_child);
         Matrix::Tensorize(Cmat_child, child_node->Q, 2);
 
-        TTNIntegrator(child_node, blas, tau);
+        TTNIntegrator(child_node, blas, tau, method);
 
         // Compute QR decomposition C^(n+id) = Q^(n+id) * S^(n+id)
         std::function<double(double *, double *)> ip_child;
@@ -71,12 +72,19 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
     Matrix::Tensorize(Qmat, node->Q, id);
 }
 
-template void SubflowPhi<0>(cme_internal_node * const node, const blas_ops &blas, const double tau);
+template void SubflowPhi<0>(cme_internal_node * const node, const blas_ops &blas, const double tau, const integration_method &method);
 
-template void SubflowPhi<1>(cme_internal_node * const node, const blas_ops &blas, const double tau);
+template void SubflowPhi<1>(cme_internal_node * const node, const blas_ops &blas, const double tau, const integration_method &method);
 
 void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const double tau)
 {
     node->CalculateGH(blas);
     node->CalculateQ(tau);
+}
+
+void TTNIntegrator(cme_internal_node *node, const blas_ops &blas, const double tau, const integration_method &method)
+{
+    SubflowPhi<0>(node, blas, tau, method);
+    SubflowPhi<1>(node, blas, tau, method);
+    SubflowPsi(node, blas, tau);
 }
