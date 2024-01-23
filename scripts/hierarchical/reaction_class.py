@@ -1,7 +1,6 @@
 """
 Contains the `Reaction` class for a single reaction of the reaction network and the `ReactionSystem` class for a reaction system consisting of multiple reactions.
 """
-
 import numpy as np
 
 class Reaction:
