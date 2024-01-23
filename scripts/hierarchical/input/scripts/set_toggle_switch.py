@@ -1,8 +1,11 @@
 import numpy as np 
 
-from initial_condition_class import *
+from scripts.hierarchical.grid_class import GridParms
+from scripts.hierarchical.initial_condition_class import InitialCondition
+from scripts.hierarchical.tree_class import Tree
+from scripts.index_functions import incrVecIndex, vecIndexToState
 
-import models.toggle_switch as model
+import scripts.hierarchical.models.toggle_switch as model
 
 # Partition string
 partition_str = "(0)(1)"
@@ -43,10 +46,9 @@ p0_mat = p0.reshape((tree.root.child[0].grid.dx, tree.root.child[1].grid.dx), or
 u, s, vh = np.linalg.svd(p0_mat, full_matrices=False)
 
 # Use only the first `r` singular values
-# Transpose x1 and x2, as Ensign works with column-major order arrays
-x0 = u[:, :tree.root.r_out].T
+x0 = u[:, :tree.root.r_out]
 s = np.diag(s[:tree.root.r_out])
-x1 = vh[:tree.root.r_out, :]
+x1 = vh[:tree.root.r_out, :].T
 
 # Number of basisfunctions
 n_basisfunctions = r_out
@@ -54,7 +56,7 @@ n_basisfunctions = r_out
 # Low-rank initial conditions
 initial_conditions = InitialCondition(tree, n_basisfunctions)
 
-initial_conditions.Q[0][0, :, :] = s
+initial_conditions.Q[0][:, :, 0] = s
 
 initial_conditions.X[0][:] = x0
 initial_conditions.X[1][:] = x1
