@@ -5,5 +5,13 @@ setup(name='kinetic-cme-scripts',
       description='Scripts for generating input files and plotting output files',
       py_modules = ['scripts.index_functions', 
                     'scripts.input.parameters_helper',
-                    'scripts.input.input_helper']
+                    'scripts.input.input_helper',
+                    'scripts.hierarchical.models.bax',
+                    'scripts.hierarchical.models.lambda_phage',
+                    'scripts.hierarchical.models.toggle_switch',
+                    'scripts.hierarchical.id_class',
+                    'scripts.hierarchical.initial_condition_class',
+                    'scripts.hierarchical.grid_class',
+                    'scripts.hierarchical.reaction_class',
+                    'scripts.hierarchical.tree_class']
       )
