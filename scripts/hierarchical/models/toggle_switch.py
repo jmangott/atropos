@@ -1,4 +1,4 @@
-from reaction_class import *
+from scripts.hierarchical.reaction_class import Reaction, ReactionSystem
 
 kB = 0.4
 kC = 0.05
