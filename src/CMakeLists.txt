@@ -25,6 +25,7 @@ add_dependencies(${EXENAME2} Ensign)
 set_source_files_properties(${ENSIGN_FILES} PROPERTIES GENERATED TRUE)
 
 target_include_directories(${EXENAME2} PRIVATE ${HEADER_FILES})
+target_include_directories(${EXENAME2} PRIVATE "${ENSIGN_BUILD_DIR}/extern/cxxopts/src/cxxopts/include")
 
 target_link_libraries(${EXENAME2} ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES} Eigen3::Eigen)
 

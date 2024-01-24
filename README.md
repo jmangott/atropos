@@ -7,6 +7,7 @@
     - [Intel MKL](#intel-mkl)
     - [OpenMP](#openmp)
     - [Python environment](#python-environment)
+  - [Run the program](#run-the-program)
   - [Input](#input)
     - [Integrators](#integrators)
     - [Preparing input data](#preparing-input-data)
@@ -20,7 +21,7 @@
 ```math
 \partial_t{P}(t,x) = \sum_{\mu = 1}^{M}\left(a_\mu(x-\nu_\mu)P(t,x-\nu_\mu) - a_\mu(x)P(t,x)\right)
 ```
-with the projector-splitting integrator for Tree-Tensor networks.[^fn1]
+with the projector-splitting integrator for Tree Tensor networks.[^fn1]
 
 $`P(t,x)\,\mathrm{d}t`$ is the probability of finding a population number of $`x = (x_1, \dots, x_N)`$ molecules of species $`S_1, \dots, S_N`$ in the time interval $`[t,\,t + \mathrm{d}t]`$.
 The CME describes the time evolution of this probability distribution $`P(t,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x-\nu_\mu)`$ can be interpreted as transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
@@ -62,6 +63,7 @@ cmake --build build
 ```
 
 The generated executable `hierarchical-cme` can be found in `bin`.
+
 To enable compiler options for debugging, use `-DCMAKE_BUILD_TYPE=Debug` instead.
 Unit tests for C++ files are provided in the `tests` folder, and for Python files in the `scripts/tests` folder. They can be run with 
 ```shell
@@ -114,6 +116,18 @@ In order to generate reference solutions for the example problems, the PySB pack
 conda install -c alubbock pysb
 ```
 All scripts and notebooks have to be executed from the project root. When using a IDE, make sure to adjust the settings accordingly. In Microsoft Visual Studio Code one has to set "Notebook File Root" to `{workspaceFolder}` to run the notebooks.
+
+## Run the program
+`hierarchical-cme` has to be run with
+```
+  ./bin/hierarchical-cme [OPTION...]
+```
+and expects the following command line arguments:
+- `-o`, `--output`: Name of the output folder, stored in `output/`
+- `-s`, `--snapshot`: Number of steps between two snapshots
+- `-t`, `--tau`: Time step size
+- `-f`, `--tfinal`: Final integration time
+- `-h`, `--help`: Print usage
 
 ## Input
 Input netCDF files have to be stored as `input/input.nc` and can be generated with the input scripts provided in `scripts`.
