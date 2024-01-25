@@ -43,8 +43,7 @@ set(BIN ${CMAKE_SOURCE_DIR}/bin)
 # Define the exectuable name #
 ##############################
 
-set(EXENAME1 kinetic-cme)
-set(EXENAME2 hierarchical-cme)
+set(EXENAME hierarchical-cme)
 
 ############################################
 # Find external packages and set libraries #
@@ -131,17 +130,11 @@ set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
                      ${ENSIGN_SRC_DIR}/src/generic/netcdf.cpp)
 
 set(SRC_FILES ${SRC}/grid_class.cpp
-              ${SRC}/index_functions.cpp
-              ${SRC}/integrators.cpp
-              ${SRC}/io_functions.cpp
               ${SRC}/matrix.cpp
               ${SRC}/print_functions.cpp
-              ${SRC}/reaction_class.cpp
-              ${SRC}/s_step_functions.cpp
               ${SRC}/subflows.cpp
               ${SRC}/timer_class.cpp
-              ${SRC}/tree_class.cpp
-              ${SRC}/weight_functions.cpp)
+              ${SRC}/tree_class.cpp)
 
 ########################
 # Include header files #

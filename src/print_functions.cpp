@@ -1,8 +1,5 @@
 #include "print_functions.hpp"
 
-using std::cout;
-using std::endl;
-
 // TODO: output width is not always the same
 // TODO: calculate `time_left` with a moving mean (of the last n steps)
 void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::_V2::system_clock::time_point start_time, const double norm)
@@ -49,30 +46,30 @@ void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::_V
 
 
 // TODO: memory requirement
-void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, bool second_order, Index n_substeps)
-{
-    cout << "DIAGNOSTICS" << endl;
-    cout << "-----------" << endl;
-    cout << "Memory requirement: "
-         << 8.0 * grid.dx1 * grid.r / 1.0e9
-         << " GB (X1), "
-         << 8.0 * grid.dx2 * grid.r / 1.0e9
-         << " GB (X2)" << endl;
-    cout << "Min, max propensity: " << min_prop << ", " << max_prop << endl;
-    cout << "Time step size: " << tau << endl;
-    if (second_order)
-    {
-        cout << "[Second-order method]: " << n_substeps << " substeps" << endl;
-    }
-    else
-    {
-        cout << "[First-order method]" << endl;
-    }
-#ifdef __OPENMP__
-    cout << "[OpenMP activated]: OMP_NUM_THREADS=" << omp_get_max_threads() << endl;
-#else
-    cout << "[OpenMP not activated]" << endl;
-#endif
-    cout << "-----------" << endl;
-    cout << endl;
-}
+// void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, bool second_order, Index n_substeps)
+// {
+//     cout << "DIAGNOSTICS" << endl;
+//     cout << "-----------" << endl;
+//     cout << "Memory requirement: "
+//          << 8.0 * grid.dx1 * grid.r / 1.0e9
+//          << " GB (X1), "
+//          << 8.0 * grid.dx2 * grid.r / 1.0e9
+//          << " GB (X2)" << endl;
+//     cout << "Min, max propensity: " << min_prop << ", " << max_prop << endl;
+//     cout << "Time step size: " << tau << endl;
+//     if (second_order)
+//     {
+//         cout << "[Second-order method]: " << n_substeps << " substeps" << endl;
+//     }
+//     else
+//     {
+//         cout << "[First-order method]" << endl;
+//     }
+// #ifdef __OPENMP__
+//     cout << "[OpenMP activated]: OMP_NUM_THREADS=" << omp_get_max_threads() << endl;
+// #else
+//     cout << "[OpenMP not activated]" << endl;
+// #endif
+//     cout << "-----------" << endl;
+//     cout << endl;
+// }

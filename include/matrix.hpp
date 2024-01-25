@@ -8,8 +8,6 @@
 
 #include "index_functions.hpp"
 
-// TODO: Write tests for these functions
-
 namespace Matrix
 {
     template <class InputIt, class OutputIt>

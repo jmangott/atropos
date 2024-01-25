@@ -13,12 +13,10 @@
 #include <omp.h>
 #endif
 
-#include "grid_class.hpp"
-
 // Print progress bar
 void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::_V2::system_clock::time_point start_time, const double norm);
 
 // Print diagnostic information
-void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, bool second_order, Index n_substeps);
+// void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, bool second_order, Index n_substeps);
 
 #endif

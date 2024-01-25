@@ -16,10 +16,13 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
     Matrix::Tensorize(Qmat, node->G, id);
     transpose_inplace(node->child[id]->S);
 
+    get_time::start("CalculateAB");
     node->CalculateAB<id>(blas);
+    get_time::stop("CalculateAB");
 
     if (node->child[id]->IsExternal())
     {
+        get_time::start("External");
         cme_external_node *child_node = (cme_external_node *)node->child[id];
 
         // Compute coefficients C and D
@@ -31,15 +34,19 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
 
         // K step
         const auto K_step_rhs = [child_node](const multi_array<double, 2> &K) { return CalculateKDot(K, child_node); };
+        get_time::start("Integrate");
         method.integrate(child_node->X, K_step_rhs, tau);
+        get_time::stop("Integrate");
 
         // Perform the QR decomposition K = X * S
         std::function<double(double *, double *)> ip_x;
         ip_x = inner_product_from_const_weight(child_node->grid.h_mult, child_node->grid.dx);
         gs(child_node->X, child_node->S, ip_x);
+        get_time::stop("External");
     }
     else
     {
+        get_time::start("Internal");
         cme_internal_node *child_node = (cme_internal_node *)node->child[id];
 
         // Set C^(n+i) = Q^(n+id) * S^(n+id)
@@ -58,9 +65,11 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
         Matrix::Matricize(child_node->Q, Cmat_child, 2);
         gs(Cmat_child, child_node->S, ip_child);
         Matrix::Tensorize(Cmat_child, child_node->Q, 2);
+        get_time::stop("Internal");
     }
 
     // Integrate S
+    get_time::start("S");
     node->child[id]->CalculateEF(blas);
     node->child[id]->CalculateS(tau);
 
@@ -70,6 +79,7 @@ void SubflowPhi(cme_internal_node * const node, const blas_ops &blas, const doub
     set_zero(Qmat);
     blas.matmul_transb(Gmat, node->child[id]->S, Qmat);
     Matrix::Tensorize(Qmat, node->Q, id);
+    get_time::stop("S");
 }
 
 template void SubflowPhi<0>(cme_internal_node * const node, const blas_ops &blas, const double tau, const integration_method &method);
@@ -84,7 +94,15 @@ void SubflowPsi(cme_internal_node * const node, const blas_ops &blas, const doub
 
 void TTNIntegrator(cme_internal_node *node, const blas_ops &blas, const double tau, const integration_method &method)
 {
+    get_time::start("SubflowPhi<0>");
     SubflowPhi<0>(node, blas, tau, method);
+    get_time::stop("SubflowPhi<0>");
+
+    get_time::start("SubflowPhi<1>");
     SubflowPhi<1>(node, blas, tau, method);
+    get_time::stop("SubflowPhi<1>");
+
+    get_time::start("SubflowPsi");
     SubflowPsi(node, blas, tau);
+    get_time::stop("SubflowPsi");
 }

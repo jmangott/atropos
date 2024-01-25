@@ -13,9 +13,9 @@
 
 #include "coeff_class.hpp"
 #include "grid_class.hpp"
-#include "io_functions.hpp"
 #include "netcdf_error.hpp"
 #include "matrix.hpp"
+#include "timer_class.hpp"
 
 // General classes for the hierarchical DLR approximation
 // TODO: introduce a template parameter `N` for arbitrary many outgoing legs
