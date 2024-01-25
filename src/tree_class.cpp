@@ -127,13 +127,15 @@ void WriteHelpers::WriteGridParms(int ncid, const grid_parms grid)
     std::vector<long long> n(std::begin(grid.n), std::end(grid.n));
     std::vector<long long> binsize(std::begin(grid.binsize), std::end(grid.binsize));
 
-    int varid_n, varid_binsize, varid_liml;
+    int varid_n, varid_binsize, varid_liml, varid_species;
     NETCDF_CHECK(nc_def_var(ncid, "n", NC_INT64, 1, &id_d, &varid_n));
     NETCDF_CHECK(nc_put_var_longlong(ncid, varid_n, n.data()));
     NETCDF_CHECK(nc_def_var(ncid, "binsize", NC_INT64, 1, &id_d, &varid_binsize));
     NETCDF_CHECK(nc_put_var_longlong(ncid, varid_binsize, binsize.data()));
     NETCDF_CHECK(nc_def_var(ncid, "liml", NC_DOUBLE, 1, &id_d, &varid_liml));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_liml, grid.liml.data()));
+    NETCDF_CHECK(nc_def_var(ncid, "species", NC_INT, 1, &id_d, &varid_species));
+    NETCDF_CHECK(nc_put_var_int(ncid, varid_liml, grid.species.data()));
 }
 
 void WriteHelpers::WriteNode(int ncid, cme_node const * const node)
@@ -169,18 +171,28 @@ void WriteHelpers::WriteNode(int ncid, cme_node const * const node)
     }
 }
 
+using Species = const std::vector<int>;
+
+std::ostream &operator<<(std::ostream &os, Species &species)
+{
+    os << '[';
+    std::copy(std::begin(species), std::end(species), std::ostream_iterator<int>(os, ", "));
+    os << "\b\b]"; // use two backspace characters '\b' to overwrite final ", "
+    return os;
+}
+
 // TODO: write virtual print functions and use them in this function
 void cme_lr_tree::PrintHelper(std::ostream &os, cme_node const * const node) const
 {
     if (node->IsExternal())
     {
-        os << "external_node, id: " << node->id << ", X.shape(): (" << ((cme_external_node*) node)->X.shape()[0] << "," << ((cme_external_node*) node)->X.shape()[1] << ")\n";
+        os << "external_node, id: " << node->id << ", species: " << node->grid.species << ", X.shape(): (" << ((cme_external_node*) node)->X.shape()[0] << "," << ((cme_external_node*) node)->X.shape()[1] << ")\n";
     }
     else
     {
         cme_lr_tree::PrintHelper(os, node->child[0]);
         cme_lr_tree::PrintHelper(os, node->child[1]);
-        os << "internal_node, id: " << node->id << ", rank_out: (" << ((cme_internal_node *)node)->RankOut()[0] << "," << ((cme_internal_node *)node)->RankOut()[1] << ")\n";
+        os << "internal_node, id: " << node->id << ", species: " << node->grid.species << ", rank_out: (" << ((cme_internal_node *)node)->RankOut()[0] << "," << ((cme_internal_node *)node)->RankOut()[1] << ")\n";
     }
 }
 
@@ -344,13 +356,14 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
     Index n_reactions = (Index)n_reactions_t;
 
     // read variables
-    int id_n, id_binsize, id_liml, id_dep, id_nu;
+    int id_n, id_binsize, id_liml, id_dep, id_nu, id_species;
 
     NETCDF_CHECK(nc_inq_varid(ncid, "n", &id_n));
     NETCDF_CHECK(nc_inq_varid(ncid, "binsize", &id_binsize));
     NETCDF_CHECK(nc_inq_varid(ncid, "liml", &id_liml));
     NETCDF_CHECK(nc_inq_varid(ncid, "dep", &id_dep));
     NETCDF_CHECK(nc_inq_varid(ncid, "nu", &id_nu));
+    NETCDF_CHECK(nc_inq_varid(ncid, "species", &id_species));
 
     grid_parms grid(d, n_reactions);
     multi_array<signed char, 2> dep_int({n_reactions, d});
@@ -360,8 +373,9 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
     NETCDF_CHECK(nc_get_var_double(ncid, id_liml, grid.liml.data()));
     NETCDF_CHECK(nc_get_var_schar(ncid, id_dep, dep_int.data()));
     NETCDF_CHECK(nc_get_var_long(ncid, id_nu, grid.nu.data()));
+    NETCDF_CHECK(nc_get_var_int(ncid, id_species, grid.species.data()));
 
-    std::copy(dep_int.begin(), dep_int.end(), grid.dep.begin());
+    std::copy(std::begin(dep_int), std::end(dep_int), std::begin(grid.dep));
     grid.Initialize();
 
     return grid;
@@ -549,6 +563,7 @@ void cme_external_node::CalculateCD()
 
 multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node)
 {
+    get_time::start("CalculateKDot");
     multi_array<double, 2> prod_KC(K.shape());
     multi_array<double, 2> prod_KC_shift(K.shape());
     multi_array<double, 2> prod_KD(K.shape());
@@ -598,6 +613,7 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
         K_dot += prod_KC_shift;
         K_dot -= prod_KD;
     }
+    get_time::stop("CalculateKDot");
     return K_dot;
 }
 

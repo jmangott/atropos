@@ -5,7 +5,7 @@ import numpy.typing as npt
 from scripts.hierarchical.reaction_class import ReactionSystem
 
 class GridParms:
-    def __init__(self, _n: npt.NDArray[np.int_], _binsize: npt.NDArray[np.int_], _liml: npt.NDArray[np.float_], _dep: npt.NDArray[np.bool_] = None, _nu: npt.NDArray[np.int_] = None):
+    def __init__(self, _n: npt.NDArray[np.int_], _binsize: npt.NDArray[np.int_], _liml: npt.NDArray[np.float_], _species: npt.NDArray[np.int_] = None, _dep: npt.NDArray[np.bool_] = None, _nu: npt.NDArray[np.int_] = None):
         if np.any(np.not_equal([_binsize.size, _liml.size], _n.size)):
             raise Exception("Input arrays must be of equal length")
         
@@ -15,6 +15,14 @@ class GridParms:
         self.n = _n
         self.binsize = _binsize
         self.liml = _liml
+        self.species = _species
+
+        if _species is None:
+            self.species = np.arange(self.d(), dtype="int")
+        else:
+            if _species.size != _n.size:
+                raise Exception("Input arrays must be of equal length")
+            self.species = _species
 
         # These values have to be set according to a given reaction system,
         # this is done with the `initialize` method
@@ -50,8 +58,9 @@ class GridParms:
         self.n = self.n[permutation]
         self.binsize = self.binsize[permutation]
         self.liml = self.liml[permutation]
+        self.species = self.species[permutation]
         self.dep = self.dep[permutation, :]
         self.nu = self.nu[permutation, :]
 
     def __str__(self):
-        return "[" + ", ".join([str(ele) for ele in self.n]) + "]"
+        return str(self.n)

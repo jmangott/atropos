@@ -16,24 +16,23 @@ from scripts.hierarchical.reaction_class import ReactionSystem
 from scripts.index_functions import incrVecIndex
 
 class Node:
-    def __init__(self, _id: Id, _grid: GridParms, _species: list):
+    def __init__(self, _id: Id, _grid: GridParms):
         self.child = [None] * 2
         self.id = _id
         self.grid = _grid
-        self.species = _species
         self.propensity = []
 
 class InternalNode(Node):
-    def __init__(self, _parent: 'InternalNode', _id: Id, _grid: GridParms, _species_limits: list, _r_in: int, _r_out: int):
-        super().__init__(_id, _grid, _species_limits)
+    def __init__(self, _parent: 'InternalNode', _id: Id, _grid: GridParms, _r_in: int, _r_out: int):
+        super().__init__(_id, _grid)
         self.parent = _parent
         self.r_in = _r_in
         self.r_out = _r_out
         self.Q = np.zeros((self.r_out, self.r_out, self.r_in))
 
 class ExternalNode(Node):
-    def __init__(self, _parent: InternalNode, _id: Id, _grid: GridParms, _species_limits: list):
-        super().__init__(_id, _grid, _species_limits)
+    def __init__(self, _parent: InternalNode, _id: Id, _grid: GridParms):
+        super().__init__(_id, _grid)
         self.parent = _parent
         self.r_in = self.parent.r_out
         self.X = np.zeros((self.grid.dx(), self.r_in))
@@ -94,7 +93,7 @@ class Tree:
         self.r_out = _r_out
         self.grid.initialize(self.reaction_system)
         self.grid.permute(species)
-        self.root = InternalNode(None, Id(""), self.grid, species, 1, self.r_out[0])
+        self.root = InternalNode(None, Id(""), self.grid, 1, self.r_out[0])
 
     @staticmethod
     def __parsingHelper(input_str):
@@ -137,26 +136,24 @@ class Tree:
 
         partition_str0 = partition_str[1:i]
         partition_str1 = partition_str[i+2:-1]
-        species0 = self.__removeBrackets(partition_str0)
-        species1 = self.__removeBrackets(partition_str1)
-        p0_size = species0.size
+        p0_size = self.__removeBrackets(partition_str0).size
 
         grid0 = GridParms(
-            node.grid.n[:p0_size], node.grid.binsize[:p0_size], node.grid.liml[:p0_size], node.grid.dep[:p0_size, :], node.grid.nu[:p0_size, :])
+            node.grid.n[:p0_size], node.grid.binsize[:p0_size], node.grid.liml[:p0_size], node.grid.species[:p0_size], node.grid.dep[:p0_size, :], node.grid.nu[:p0_size, :])
         grid1 = GridParms(
-            node.grid.n[p0_size:], node.grid.binsize[p0_size:], node.grid.liml[p0_size:], node.grid.dep[p0_size:, :], node.grid.nu[p0_size:, :])
-        
+            node.grid.n[p0_size:], node.grid.binsize[p0_size:], node.grid.liml[p0_size:], node.grid.species[p0_size:], node.grid.dep[p0_size:, :], node.grid.nu[p0_size:, :])
+                
         if (partition_str0[0] == "("):
-            node.child[0] = InternalNode(node, node.id + 0, grid0, species0, node.r_out, next(r_out_iter))
+            node.child[0] = InternalNode(node, node.id + 0, grid0, node.r_out, next(r_out_iter))
             self.__buildTree(node.child[0], partition_str0, r_out_iter)
         else:
-            node.child[0] = ExternalNode(node, node.id + 0, grid0, species0)
+            node.child[0] = ExternalNode(node, node.id + 0, grid0)
 
         if (partition_str1[0] == "("):
-            node.child[1] = InternalNode(node, node.id + 1, grid1, species1, node.r_out, next(r_out_iter))
+            node.child[1] = InternalNode(node, node.id + 1, grid1, node.r_out, next(r_out_iter))
             self.__buildTree(node.child[1], partition_str1, r_out_iter)
         else:
-            node.child[1] = ExternalNode(node, node.id + 1, grid1, species1)
+            node.child[1] = ExternalNode(node, node.id + 1, grid1)
 
         self.__calculatePropensity(node.child[0], self.reaction_system)
         self.__calculatePropensity(node.child[1], self.reaction_system)
@@ -166,11 +163,11 @@ class Tree:
     def __calculatePropensity(node: Node, reaction_system: ReactionSystem):
         node.propensity = [None] * reaction_system.size()
         for mu, reaction in enumerate(reaction_system.reactions):
-            n_dep = np.array([n for i, n in enumerate(node.grid.n) if node.grid.dep[i, mu]], dtype="int")
+            n_dep = node.grid.n[node.grid.dep[:, mu]]
             dx_dep = np.prod(n_dep)
             node.propensity[mu] = np.ones(dx_dep)
             vec_index = np.zeros(n_dep.size)
-            reactants = [reactant for reactant in node.species if reactant in reaction.propensity.keys()]
+            reactants = [reactant for reactant in node.grid.species if reactant in reaction.propensity.keys()]
             for i in range(dx_dep):
                 for j, reactant in enumerate(reactants):
                     node.propensity[mu][i] *= reaction.propensity[reactant](vec_index[j])
@@ -182,7 +179,7 @@ class Tree:
         self.__buildTree(self.root, self.partition_str, r_out_iter)
 
     def __printTree(self, node: Node, os: str) -> str:
-        os = " ".join([os, str(type(node)), "id:", str(node.id), "n:", str(node.grid), "species:", str(node.species)])
+        os = " ".join([os, str(type(node)), "id:", str(node.id), "n:", str(node.grid), "species:", str(node.grid.species)])
         if isinstance(node, ExternalNode):
             os = " ".join([os, "X.shape:", str(node.X.shape), "\n"])
         else:
@@ -204,6 +201,7 @@ class Tree:
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"], node.grid.binsize),
                 "liml": (["d"], node.grid.liml),
+                "species": (["d"], node.grid.species),
                 "dep": (["d", "n_reactions"], node.grid.dep),
                 "nu": (["d", "n_reactions"], node.grid.nu)
             }
@@ -220,6 +218,7 @@ class Tree:
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"], node.grid.binsize),
                 "liml": (["d"], node.grid.liml),
+                "species": (["d"], node.grid.species),
                 "dep": (["d", "n_reactions"], node.grid.dep),
                 "nu": (["d", "n_reactions"], node.grid.nu)
             }

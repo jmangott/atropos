@@ -48,6 +48,7 @@ struct grid_parms
     std::vector<double> liml;
     multi_array<bool, 2> dep;
     multi_array<Index, 2> nu;
+    std::vector<int> species;
 
     Index dx = 1;
     double h_mult = 1.0;
@@ -63,13 +64,14 @@ struct grid_parms
     , liml(_d)
     , dep({_n_reactions, _d})
     , nu({_n_reactions, _d})
+    , species(_d)
     , dx_dep(_n_reactions)
     , shift(_n_reactions)
     , idx_dep(_n_reactions)
     , n_dep(_n_reactions)
     {};
 
-    grid_parms(std::vector<Index> _n, std::vector<Index> _binsize, std::vector<double> _liml, multi_array<bool, 2> _dep, multi_array<Index, 2> _nu)
+    grid_parms(std::vector<Index> _n, std::vector<Index> _binsize, std::vector<double> _liml, multi_array<bool, 2> _dep, multi_array<Index, 2> _nu, std::vector<int> _species)
     : d(_n.size())
     , n_reactions(_dep.shape()[0])
     , n(_n)
@@ -77,6 +79,7 @@ struct grid_parms
     , liml(_liml)
     , dep(_dep)
     , nu(_nu)
+    , species(_species)
     , dx_dep(n_reactions)
     , shift(n_reactions)
     , idx_dep(n_reactions)
