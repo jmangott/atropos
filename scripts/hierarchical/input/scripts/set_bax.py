@@ -9,12 +9,6 @@ from scripts.index_functions import incrVecIndex
 
 import scripts.hierarchical.models.bax as model
 
-def tensorUnfold(tensor, mode):
-    """
-    Cf. https://stackoverflow.com/questions/49970141/using-numpy-reshape-to-perform-3rd-rank-tensor-unfold-operation
-    """
-    return np.reshape(np.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1), order="F")
-
 # Partition string
 # partition_str = "(0 1 2 3 4)(5 6 7 8 9 10)"
 # partition_str = "((0 1)(2 3 4))((5 6 7 8)(9 10))"

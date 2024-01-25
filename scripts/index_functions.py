@@ -47,3 +47,11 @@ def incrVecIndex(vec_index: np.ndarray, interval: np.ndarray, dim: int) -> None:
     if (dim > 0):
         vec_index[dim - 1] += 1
     return
+
+
+@njit
+def tensorUnfold(tensor, mode):
+    """
+    Cf. https://stackoverflow.com/questions/49970141/using-numpy-reshape-to-perform-3rd-rank-tensor-unfold-operation
+    """
+    return np.reshape(np.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1), order="F")

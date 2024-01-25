@@ -5,15 +5,9 @@ from scipy.special import factorial
 from scripts.hierarchical.grid_class import GridParms
 from scripts.hierarchical.initial_condition_class import InitialCondition
 from scripts.hierarchical.tree_class import Tree
-from scripts.index_functions import incrVecIndex, vecIndexToState
+from scripts.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
 
 import scripts.hierarchical.models.lambda_phage as model
-
-def tensorUnfold(tensor, mode):
-    """
-    Cf. https://stackoverflow.com/questions/49970141/using-numpy-reshape-to-perform-3rd-rank-tensor-unfold-operation
-    """
-    return np.reshape(np.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1), order="F")
 
 # Partition string
 partition_str = "((0 1)(2 4))(3)"
