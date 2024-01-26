@@ -254,7 +254,7 @@ class Tree:
             os.makedirs("input")
 
         ds = self.__createInternalDataset(self.root)
-
         dt = DataTree(name=str(self.root.id), data=ds)
         self.__writeTree(self.root, dt)
+        dt.attrs["partition_str"] = self.partition_str
         dt.to_netcdf(fname)

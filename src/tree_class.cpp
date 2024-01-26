@@ -84,7 +84,7 @@ void cme_lr_tree::Read(const std::string fn)
     int ncid, grp_ncid;
 
     NETCDF_CHECK(nc_open(fn.c_str(), NC_NOWRITE, &ncid));
-
+    partition_str = ReadHelpers::ReadPartitionStr(ncid);
     grid_parms grid = ReadHelpers::ReadGridParms(ncid);
     std::array<Index, 2> r_out = ReadHelpers::ReadRankOut(ncid);
     root = new cme_internal_node("root", nullptr, grid, 1, r_out, 1);
@@ -105,6 +105,7 @@ void cme_lr_tree::Write(const std::string fn, const double t, const double tau) 
     int ncid;
 
     NETCDF_CHECK(nc_create(fn.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
+    WriteHelpers::WritePartitionStr(ncid, partition_str);
 
     int varid_tt, varid_tau;
     NETCDF_CHECK(nc_def_var(ncid, "t", NC_DOUBLE, 0, 0, &varid_tt));
@@ -115,6 +116,12 @@ void cme_lr_tree::Write(const std::string fn, const double t, const double tau) 
     WriteHelpers::WriteNode(ncid, root);
 
     NETCDF_CHECK(nc_close(ncid));
+}
+
+void WriteHelpers::WritePartitionStr(int ncid, const std::string partition_str)
+{
+    size_t len = partition_str.size() + 1;
+    NETCDF_CHECK(nc_put_att_text(ncid, NC_GLOBAL, "partition_str", len, partition_str.data()));
 }
 
 void WriteHelpers::WriteGridParms(int ncid, const grid_parms grid)
@@ -338,6 +345,17 @@ double cme_lr_tree::Normalize() const
     norm = NormalizeHelper(root);
     root->Q /= norm[0];
     return norm[0];
+}
+
+std::string ReadHelpers::ReadPartitionStr(int ncid)
+{
+    size_t partition_str_len;
+    NETCDF_CHECK(nc_inq_attlen(ncid, NC_GLOBAL, "partition_str", &partition_str_len));
+
+    std::string partition_str(partition_str_len, '\0');
+    NETCDF_CHECK(nc_get_att_text(ncid, NC_GLOBAL, "partition_str", partition_str.data()));
+
+    return partition_str;
 }
 
 grid_parms ReadHelpers::ReadGridParms(int ncid)
