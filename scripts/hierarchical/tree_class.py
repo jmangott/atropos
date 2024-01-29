@@ -20,38 +20,45 @@ class Node:
         self.child = [None] * 2
         self.id = _id
         self.grid = _grid
-        self.propensity = []
+
 
 class InternalNode(Node):
-    def __init__(self, _parent: 'InternalNode', _id: Id, _grid: GridParms, _r_in: int, _r_out: int):
+    def __init__(self, _parent: 'InternalNode', _id: Id, _grid: GridParms):
         super().__init__(_id, _grid)
         self.parent = _parent
-        self.r_in = _r_in
-        self.r_out = _r_out
-        self.Q = np.zeros((self.r_out, self.r_out, self.r_in))
+        self.Q = np.zeros((0, 0, 0))
+
+    def rankIn(self):
+        return self.Q.shape[-1]
+
+    def rankOut(self):
+        return self.Q.shape[0]
 
 class ExternalNode(Node):
     def __init__(self, _parent: InternalNode, _id: Id, _grid: GridParms):
         super().__init__(_id, _grid)
         self.parent = _parent
-        self.r_in = self.parent.r_out
-        self.X = np.zeros((self.grid.dx(), self.r_in))
+        self.X = np.zeros((0, 0))
+        self.propensity = []
+
+    def rankIn(self):
+        return self.X.shape[-1]
 
 
 """
-The `tree` class stores the initial condition for the hierarchical DLR approximation of the chemical master equation. Note that the input for the grid parameters (`_grid`) must follow the same ordering convention for the species as the reaction system (`_reaction_system`), but the partition string for dividing the reaction networks allows also permutation.
+The `tree` class stores the initial condition for the hierarchical DLR approximation of the chemical master equation. Note that the input for the grid parameters (`_grid`) must follow the same ordering convention for the species as the reaction system (`_reaction_system`), when initializing the tree via the `initialize` method, but the partition string for dividing the reaction networks allows also permutation.
 """
 class Tree:
+    # TODO: Move the `_grid` dependency to `initialize` method
     def __init__(self,
-                 _reaction_system: ReactionSystem,
                  _partition_str: str,
-                 _grid: GridParms,
-                 _r_out: npt.NDArray[np.int_]):
+                 _grid: GridParms
+                ):
 
         # Test whether `_partition_str` is a valid input string
         p = self.__removeBrackets(_partition_str)
         
-        species = np.copy(p)  # Create a deep copy of `p` before sorting it
+        self.species = np.copy(p)  # Create a deep copy of `p` before sorting it
         p.sort()
 
         p_diff = np.diff(p)
@@ -76,24 +83,14 @@ class Tree:
             raise Exception(
                 "Dimensions of `_partition_str` and `_grid.d` do not match")
 
-        # Calculate the number of internal nodes
-        self.n_internal_nodes = self.__countInternalNodes(_partition_str, 1)
+        self.n_internal_nodes = 1  # 1 is for the root node
+        self.n_external_nodes = 0
 
-        # Test whether the dimension of `_r` is equal to n_internal_nodes
-        if _r_out.size != self.n_internal_nodes:
-            raise Exception(
-                "`_r_out.size` must be equal to the number of internal nodes")
-        
-        # Calculate the number of external nodes
-        self.n_external_nodes = len(regex.findall(r"\(\d+(?:\s\d)*\)", _partition_str)) + 1
-
-        self.reaction_system = _reaction_system
+        self.reaction_system = None
         self.partition_str = _partition_str
         self.grid = copy.deepcopy(_grid)
-        self.r_out = _r_out
-        self.grid.initialize(self.reaction_system)
-        self.grid.permute(species)
-        self.root = InternalNode(None, Id(""), self.grid, 1, self.r_out[0])
+        self.root = InternalNode(None, Id(""), self.grid.permute(self.species))
+        self.__build(self.root, self.partition_str)
 
     @staticmethod
     def __parsingHelper(input_str):
@@ -111,24 +108,9 @@ class Tree:
         n = np.array([int(ele) for ele in n])
         return n
 
-    def __countInternalNodes(self, partition_str, n):
+    def __build(self, node: InternalNode, partition_str):
         sigma = 0
-        for i, ele in enumerate(partition_str):
-            sigma += self.__parsingHelper(ele)
-            if sigma == 0:
-                break
-
-        partition_str0 = partition_str[1:i]
-        partition_str1 = partition_str[i+2:-1]
-
-        if (partition_str0[0] == "("):
-            n = self.__countInternalNodes(partition_str0, n + 1)
-        if (partition_str1[0] == "("):
-            n = self.__countInternalNodes(partition_str1, n + 1)
-        return n
-
-    def __buildTree(self, node, partition_str, r_out_iter):
-        sigma = 0
+        i = 0
         for i, ele in enumerate(partition_str):
             sigma += self.__parsingHelper(ele)
             if sigma == 0:
@@ -139,28 +121,30 @@ class Tree:
         p0_size = self.__removeBrackets(partition_str0).size
 
         grid0 = GridParms(
-            node.grid.n[:p0_size], node.grid.binsize[:p0_size], node.grid.liml[:p0_size], node.grid.species[:p0_size], node.grid.dep[:p0_size, :], node.grid.nu[:p0_size, :])
+            node.grid.n[:p0_size], node.grid.binsize[:p0_size], node.grid.liml[:p0_size], node.grid.species[:p0_size])
         grid1 = GridParms(
-            node.grid.n[p0_size:], node.grid.binsize[p0_size:], node.grid.liml[p0_size:], node.grid.species[p0_size:], node.grid.dep[p0_size:, :], node.grid.nu[p0_size:, :])
+            node.grid.n[p0_size:], node.grid.binsize[p0_size:], node.grid.liml[p0_size:], node.grid.species[p0_size:])
                 
         if (partition_str0[0] == "("):
-            node.child[0] = InternalNode(node, node.id + 0, grid0, node.r_out, next(r_out_iter))
-            self.__buildTree(node.child[0], partition_str0, r_out_iter)
+            node.child[0] = InternalNode(node, node.id + 0, grid0)
+            self.__build(node.child[0], partition_str0)
+            self.n_internal_nodes += 1
         else:
             node.child[0] = ExternalNode(node, node.id + 0, grid0)
+            self.n_external_nodes += 1
 
         if (partition_str1[0] == "("):
-            node.child[1] = InternalNode(node, node.id + 1, grid1, node.r_out, next(r_out_iter))
-            self.__buildTree(node.child[1], partition_str1, r_out_iter)
+            node.child[1] = InternalNode(node, node.id + 1, grid1)
+            self.__build(node.child[1], partition_str1)
+            self.n_internal_nodes += 1
         else:
             node.child[1] = ExternalNode(node, node.id + 1, grid1)
+            self.n_external_nodes += 1
 
-        self.__calculatePropensity(node.child[0], self.reaction_system)
-        self.__calculatePropensity(node.child[1], self.reaction_system)
         return
 
     @staticmethod
-    def __calculatePropensity(node: Node, reaction_system: ReactionSystem):
+    def __calculatePropensity(node: ExternalNode, reaction_system: ReactionSystem):
         node.propensity = [None] * reaction_system.size()
         for mu, reaction in enumerate(reaction_system.reactions):
             n_dep = node.grid.n[node.grid.dep[:, mu]]
@@ -172,49 +156,65 @@ class Tree:
                 for j, reactant in enumerate(reactants):
                     node.propensity[mu][i] *= reaction.propensity[reactant](vec_index[j])
                 incrVecIndex(vec_index, n_dep, n_dep.size)
+    
+    def __initialize(self, node: Node, reaction_system: ReactionSystem):
+        p0_size = node.parent.child[0].grid.d()
 
-    def buildTree(self):
-        r_out_iter = iter(self.r_out[1:])
-        self.__calculatePropensity(self.root, self.reaction_system)
-        self.__buildTree(self.root, self.partition_str, r_out_iter)
+        idx = node.parent.child.index(node)
+        if idx == 0:
+            sl = slice(0,p0_size)
+        elif idx == 1:
+            sl = slice(p0_size, node.parent.grid.d())
 
-    def __printTree(self, node: Node, os: str) -> str:
+        node.grid = GridParms(
+            node.parent.grid.n[sl], node.parent.grid.binsize[sl], node.parent.grid.liml[sl], node.parent.grid.species[sl], node.parent.grid.dep[sl, :], node.parent.grid.nu[sl, :])
+
+        if isinstance(node, InternalNode):
+            next_r_out = next(self.__r_out_iter)
+            node.Q.resize((next_r_out, next_r_out, node.parent.rankOut()))
+            self.__initialize(node.child[0], reaction_system)
+            self.__initialize(node.child[1], reaction_system)
+
+        if isinstance(node, ExternalNode):
+            node.X.resize((node.grid.dx(), node.parent.rankOut()))
+            self.__calculatePropensity(node, reaction_system)
+
+        return
+
+    def initialize(self, reaction_system: ReactionSystem, r_out: npt.NDArray[np.int_]):
+        # Test whether the dimension of `_r` is equal to n_internal_nodes
+        if r_out.size != self.n_internal_nodes:
+            print(r_out.size, self.n_internal_nodes)
+            raise Exception(
+                "`r_out.size` must be equal to the number of internal nodes")
+
+        self.grid.initialize(reaction_system)
+        self.root.grid = self.grid.permute(self.species)
+        self.__r_out_iter = iter(r_out)
+        next_r_out = next(self.__r_out_iter)
+        self.root.Q.resize((next_r_out, next_r_out, 1))
+        self.__initialize(self.root.child[0], reaction_system)
+        self.__initialize(self.root.child[1], reaction_system)
+
+    def __print(self, node: Node, os: str) -> str:
         os = " ".join([os, str(type(node)), "id:", str(node.id), "n:", str(node.grid), "species:", str(node.grid.species)])
         if isinstance(node, ExternalNode):
             os = " ".join([os, "X.shape:", str(node.X.shape), "\n"])
-        else:
+        elif isinstance(node, InternalNode):
             os = " ".join([os, "Q.shape:", str(node.Q.shape), "\n"])
         if node.child[0]:
-            os = self.__printTree(node.child[0], os)
+            os = self.__print(node.child[0], os)
         if node.child[1]:
-            os = self.__printTree(node.child[1], os)
+            os = self.__print(node.child[1], os)
         return os
 
     def __str__(self) -> str:
-        return self.__printTree(self.root, "")
+        return self.__print(self.root, "")
 
     @staticmethod
-    def __createInternalDataset(node: InternalNode):
-        ds = xr.Dataset(
-            {                
-                "Q": (["n_basisfunctions", "r_out", "r_out"], node.Q.T),
-                "n": (["d"], node.grid.n),
-                "binsize": (["d"], node.grid.binsize),
-                "liml": (["d"], node.grid.liml),
-                "species": (["d"], node.grid.species),
-                "dep": (["d", "n_reactions"], node.grid.dep),
-                "nu": (["d", "n_reactions"], node.grid.nu)
-            }
-        )
-        for mu, propensity in enumerate(node.propensity):
-            ds["propensity_{}".format(mu)] = (["dx_{}".format(mu)], propensity)
-        return ds
-
-    @staticmethod
-    def __createExternalDataset(node: ExternalNode):
+    def __createDataset(node: Node):
         ds = xr.Dataset(
             {
-                "X": (["n_basisfunctions", "dx"], node.X.T),
                 "n": (["d"], node.grid.n),
                 "binsize": (["d"], node.grid.binsize),
                 "liml": (["d"], node.grid.liml),
@@ -223,38 +223,38 @@ class Tree:
                 "nu": (["d", "n_reactions"], node.grid.nu)
             }
         )
-        for mu, propensity in enumerate(node.propensity):
-            ds["propensity_{}".format(mu)] = (["dx_{}".format(mu)], propensity)
         return ds
 
-    def __writeTree(self, node: Node, parent_dt: DataTree):
-        if isinstance(node.child[0], ExternalNode):
-            ds = self.__createExternalDataset(node.child[0])
-            DataTree(name=str(node.child[0].id),
+    def __write(self, node: Node, parent_dt: DataTree):
+        if isinstance(node, ExternalNode):
+            ds = self.__createDataset(node)
+            ds["X"] = (["n_basisfunctions", "dx"], node.X.T)
+            for mu, propensity in enumerate(node.propensity):
+                ds["propensity_{}".format(mu)] = (["dx_{}".format(mu)], propensity)
+            DataTree(name=str(node.id),
                      parent=parent_dt, data=ds)
-        else:
-            ds = self.__createInternalDataset(node.child[0])
-            dt = DataTree(name=str(node.child[0].id),
-                          parent=parent_dt, data=ds)
-            self.__writeTree(node.child[0], dt)
 
-        if isinstance(node.child[1], ExternalNode):
-            ds = self.__createExternalDataset(node.child[1])
-            DataTree(name=str(node.child[1].id),
-                     parent=parent_dt, data=ds)
-        else:
-            ds = self.__createInternalDataset(node.child[1])
-            dt = DataTree(name=str(node.child[1].id),
+        elif isinstance(node, InternalNode):
+            ds = self.__createDataset(node)
+            ds["Q"] = (["n_basisfunctions", "r_out", "r_out"], node.Q.T)
+            dt = DataTree(name=str(node.id),
                           parent=parent_dt, data=ds)
-            self.__writeTree(node.child[1], dt)
+            self.__write(node.child[0], dt)
+            self.__write(node.child[1], dt)
+
         return
 
-    def writeTree(self, fname: str = "input/input.nc"):
+    def write(self, fname: str = "input/input.nc"):
         if not os.path.exists("input"):
             os.makedirs("input")
 
-        ds = self.__createInternalDataset(self.root)
+        # Undo permutation of grid for root only
+        self.grid.permute(self.species)
+
+        ds = self.__createDataset(self.root)
+        ds["Q"] = (["n_basisfunctions", "r_out", "r_out"], self.root.Q.T)
         dt = DataTree(name=str(self.root.id), data=ds)
-        self.__writeTree(self.root, dt)
         dt.attrs["partition_str"] = self.partition_str
+        self.__write(self.root.child[0], dt)
+        self.__write(self.root.child[1], dt)
         dt.to_netcdf(fname)
