@@ -21,40 +21,43 @@ class BaxTestCase(unittest.TestCase):
     def test_r_out1(self):
         self.r_out = np.array([4, 5, 6])
         with self.assertRaises(Exception):
-            bax_tree = Tree(bax_model, self.partition_str, self.grid, self.r_out)
+            bax_tree = Tree(self.partition_str, self.grid)
+            bax_tree.initialize(bax_model, self.r_out)
 
     def test_r_out2(self):
         self.r_out = np.array([4, 5, 6, 7, 8])
         with self.assertRaises(Exception):
-            bax_tree = Tree(bax_model, self.partition_str, self.grid, self.r_out)
+            bax_tree = Tree(self.partition_str, self.grid)
+            bax_tree.initialize(bax_model, self.r_out)
 
     def test_partition_str1(self):
         self.partition_str = "(1 11 2)((((3 6)(4 7))(5 8))(9 10))"
         with self.assertRaises(Exception):
-            bax_tree = Tree(bax_model, self.partition_str, self.grid, self.r_out)
+            bax_tree = Tree(self.partition_str, self.grid)
 
     def test_partition_str2(self):
         self.partition_str = "(1 11 2)(((3 6)(4 7))(5 8))(9 10))"
         with self.assertRaises(Exception):
-            bax_tree = Tree(bax_model, self.partition_str, self.grid, self.r_out)
+            bax_tree = Tree(self.partition_str, self.grid)
 
     def test_partition_str3(self):
         self.partition_str = "(0 1 2)((((3 6)(4 7))(3 8))(9 10))"
         with self.assertRaises(Exception):
-            bax_tree = Tree(bax_model, self.partition_str, self.grid, self.r_out)
+            bax_tree = Tree(self.partition_str, self.grid)
 
     def test_partition_str4(self):
         self.partition_str = "(0 1)((((2 6)(5 7))(3 8))(9 10))"
         with self.assertRaises(Exception):
-            bax_tree = Tree(bax_model, self.partition_str, self.grid, self.r_out)
+            bax_tree = Tree(self.partition_str, self.grid)
 
     def test_reaction_model(self):
         with self.assertRaises(Exception):
-            bax_tree = Tree(lp_model, self.partition_str, self.grid, self.r_out)
+            bax_tree = Tree(self.partition_str, self.grid)
+            bax_tree.initialize(lp_model, self.r_out)
 
     def test_bax_tree_partition(self):
-        bax_tree = Tree(bax_model, self.partition_str, self.grid, self.r_out)
-        bax_tree.buildTree()
+        bax_tree = Tree(self.partition_str, self.grid)
+        bax_tree.initialize(bax_model, self.r_out)
         
         self.assertEqual(bax_tree.root.grid.dx(), np.prod(self.grid.n))
 
@@ -80,10 +83,6 @@ class BaxTestCase(unittest.TestCase):
         propensity[5] = bax_model.reactions[5].propensity[3](np.arange(self.grid.n[3]))
 
         propensity[6] = bax_model.reactions[6].propensity[3](np.arange(self.grid.n[3]))
-    
-        propensity[7] = bax_model.reactions[7].propensity[4](np.arange(self.grid.n[4]))
-
-        propensity[8] = bax_model.reactions[8].propensity[4](np.arange(self.grid.n[4]))
 
         propensity[10] = bax_model.reactions[10].propensity[3](np.arange(self.grid.n[3]))
 
@@ -91,13 +90,7 @@ class BaxTestCase(unittest.TestCase):
 
         propensity[12] = bax_model.reactions[12].propensity[6](np.arange(self.grid.n[6]))
 
-        propensity[13] = bax_model.reactions[13].propensity[4](np.arange(self.grid.n[4]))
-
-        propensity[14] = bax_model.reactions[14].propensity[7](np.arange(self.grid.n[7]))
-
-        propensity[15] = bax_model.reactions[15].propensity[7](np.arange(self.grid.n[7]))
-
-        for i, prop in enumerate(bax_tree.root.child[1].child[0].child[0].propensity):
+        for i, prop in enumerate(bax_tree.root.child[1].child[0].child[0].child[0].propensity):
             self.assertTrue(np.all(prop == propensity[i]))
 
         self.dep = np.zeros((4, self.n_reactions), dtype="bool")
@@ -127,8 +120,8 @@ class LambdaPhageTestCase(unittest.TestCase):
         self.r_out = np.array([4, 5])
 
     def test_lp_partition(self):
-        lp_tree = Tree(lp_model, self.partition_str, self.grid, self.r_out)
-        lp_tree.buildTree()
+        lp_tree = Tree(self.partition_str, self.grid)
+        lp_tree.initialize(lp_model, self.r_out)
 
         self.assertTrue(np.all(lp_tree.root.grid.n == self.grid.n[[4, 0, 1, 2, 3]]))
 
@@ -163,14 +156,6 @@ class LambdaPhageTestCase(unittest.TestCase):
 
         for i, prop01 in enumerate(lp_tree.root.child[0].child[1].propensity):
             self.assertTrue(np.all(prop01 == propensity01[i]))
-
-        propensity0 = [np.array([1.0])] * self.n_reactions
-
-        for i in range(self.n_reactions):
-            propensity0[i] = np.kron(propensity01[i], propensity00[i])
-
-        for i, prop0 in enumerate(lp_tree.root.child[0].propensity):
-            self.assertTrue(np.all(prop0 == propensity0[i]))
 
 if __name__ == "__main__":
     unittest.main()
