@@ -55,12 +55,26 @@ class GridParms:
             self.nu[:, mu] = reaction.nu
 
     def permute(self, permutation: npt.NDArray[np.int_]):
-        self.n = self.n[permutation]
-        self.binsize = self.binsize[permutation]
-        self.liml = self.liml[permutation]
-        self.species = self.species[permutation]
-        self.dep = self.dep[permutation, :]
-        self.nu = self.nu[permutation, :]
+        
+        n = self.n[permutation]
+        binsize = self.binsize[permutation]
+        liml = self.liml[permutation]
+
+        if self.species is not None:
+            species = self.species[permutation]
+        else:
+            species = self.species
+
+        if self.dep is not None: 
+            dep = self.dep[permutation, :]
+        else:
+            dep = self.dep
+
+        if self.nu is not None: 
+            nu = self.nu[permutation, :] 
+        else: nu = self.nu
+
+        return GridParms(n, binsize, liml, species, dep, nu)
 
     def __str__(self):
         return str(self.n)
