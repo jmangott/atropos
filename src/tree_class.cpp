@@ -1,5 +1,7 @@
 #include "tree_class.hpp"
 
+// TODO: Add cast functions `to_internal_node`, `to_external_node`
+
 template<>
 void internal_node<double>::Initialize(int ncid)
 {
@@ -14,9 +16,6 @@ void internal_node<double>::Initialize(int ncid)
 void cme_internal_node::Initialize(int ncid)
 {
     internal_node::Initialize(ncid);
-
-    // read propensity
-    coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
 
     // initialize A, B, E and F for the root
     if (parent == nullptr)
@@ -48,7 +47,7 @@ void cme_external_node::Initialize(int ncid)
     external_node::Initialize(ncid);
 
     // read propensity
-    coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
+    external_coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
 
     // resize C and D coefficients
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
@@ -506,7 +505,7 @@ void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double,
             {
                 Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(child_node->grid.n_dep[mu]), std::begin(child_node->grid.idx_dep[mu]), std::end(child_node->grid.idx_dep[mu]));
 
-                weight(alpha) = child_node->coefficients.propensity[mu][alpha_dep] * child_node->grid.h_mult;
+                weight(alpha) = child_node->external_coefficients.propensity[mu][alpha_dep] * child_node->grid.h_mult;
                 IndexFunction::IncrVecIndex(std::begin(child_node->grid.n), std::begin(vec_index), std::end(vec_index));
             }
             coeff(X_shift, child_node->X, weight, tmp_A_bar, blas);
@@ -569,8 +568,8 @@ void cme_external_node::CalculateCD()
             {
                 for (Index j = 0; j < RankIn(); ++j)
                 {
-                    external_coefficients.C[mu](alpha, i, j) = coefficients.propensity[mu][alpha] * coefficients.A(mu, i, j);
-                    external_coefficients.D[mu](alpha, i, j) = coefficients.propensity[mu][alpha] * coefficients.B(mu, i, j);
+                    external_coefficients.C[mu](alpha, i, j) = external_coefficients.propensity[mu][alpha] * coefficients.A(mu, i, j);
+                    external_coefficients.D[mu](alpha, i, j) = external_coefficients.propensity[mu][alpha] * coefficients.B(mu, i, j);
                 }
             }
         }

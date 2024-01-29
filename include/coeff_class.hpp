@@ -11,13 +11,11 @@
 
 struct cme_coeff
 {
-    std::vector<std::vector<double>> propensity;
     multi_array<double, 3> A, B;
     multi_array<double, 4> E, F;
 
     cme_coeff(const Index _n_reactions, const Index _r_in)
-    : propensity(_n_reactions) 
-    , A({_n_reactions, _r_in, _r_in})
+    : A({_n_reactions, _r_in, _r_in})
     , B({_n_reactions, _r_in, _r_in})
     , E({_r_in, _r_in, _r_in, _r_in})
     , F({_r_in, _r_in, _r_in, _r_in})
@@ -36,10 +34,12 @@ struct cme_internal_coeff
 
 struct cme_external_coeff
 {
+    std::vector<std::vector<double>> propensity;
     std::vector<multi_array<double, 3>> C, D;
 
     cme_external_coeff(const Index _n_reactions)
-    : C(_n_reactions)
+    : propensity(_n_reactions)
+    , C(_n_reactions)
     , D(_n_reactions)
     {}
 };
