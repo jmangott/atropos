@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     get_time::start("main");
 
     double t = 0.0;
-    double dm;
+    double dm = 0.0;
     double dm_max = 0.0;
     blas_ops blas;
     implicit_euler method;
