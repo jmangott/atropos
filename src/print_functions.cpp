@@ -51,10 +51,10 @@ void PrintDiagnostics(const integration_method &method, const std::chrono::nanos
     std::cout << "DIAGNOSTICS\n";
     std::cout << "-----------\n";
     std::cout << "Time elapsed: "
-        << hrs << "h "
-        << mins << "mins "
-        << secs << "s "
-        << ms << "ms\n";
+        << hrs.count() << "h "
+        << mins.count() << "mins "
+        << secs.count() << "s "
+        << ms.count() << "ms\n";
     std::cout << "Integration method: " << method.get_name() << "\n";
     std::cout << "Time step size: " << tau << "\n";
     std::cout << "max(norm - 1.0): " << dm_max << "\n";
