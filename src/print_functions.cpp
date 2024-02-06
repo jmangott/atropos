@@ -2,7 +2,7 @@
 
 // TODO: output width is not always the same
 // TODO: calculate `time_left` with a moving mean (of the last n steps)
-void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::_V2::system_clock::time_point start_time, const double norm)
+void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::system_clock::time_point t_start, const double norm)
 {
     int bar_width = 30;
     double progress = (ts + 1.0) / kNsteps;
@@ -10,8 +10,8 @@ void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::_V
     string time_unit;
     string progress_bar(bar_width, ' ');
 
-    auto end_time(std::chrono::high_resolution_clock::now());
-    auto duration(std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time));
+    auto t_stop(std::chrono::high_resolution_clock::now());
+    auto duration(std::chrono::duration_cast<std::chrono::seconds>(t_stop - t_start));
     // time_per_step = duration.count() / (ts + 1.0);
     auto time_per_step = duration / (ts + 1.0);
     auto time_left = time_per_step * (kNsteps - 1.0 - ts);
@@ -33,43 +33,36 @@ void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::_V
         time_per_step_count = time_per_step.count() / 60.0;
     }
 
-    auto hours = std::chrono::duration_cast<std::chrono::hours>(time_left);
-    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_left - hours);
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time_left - hours - minutes);
+    const auto [hrs, mins, secs, ms] = ChronoBurst(time_left);
 
-    std::fill(progress_bar.begin(), progress_bar.begin() + pos, '#');
-    std::fill(progress_bar.begin() + pos, progress_bar.end(), '-');
+    std::fill(std::begin(progress_bar), std::begin(progress_bar) + pos, '#');
+    std::fill(std::begin(progress_bar) + pos, std::end(progress_bar), '-');
 
-    printf("[%*s], step: %ti/%ti, time per step: %.2f%*s, time left: %2.2lli:%2.2lli:%2.2lli, progress: %4.2f%%, |norm(P)-1|: %3.2e\r", bar_width, progress_bar.c_str(), ts + 1, kNsteps, time_per_step_count, (int)time_unit.size(), time_unit.c_str(), hours.count(), minutes.count(), seconds.count(), progress * 100, std::abs(norm - 1.0));
+    printf("[%*s], step: %ti/%ti, time per step: %.2f%*s, time left: %2.2lli:%2.2lli:%2.2lli, progress: %4.2f%%, |norm(P)-1|: %3.2e\r", bar_width, progress_bar.c_str(), ts + 1, kNsteps, time_per_step_count, (int)time_unit.size(), time_unit.c_str(), hrs.count(), mins.count(), secs.count(), progress * 100, std::abs(norm - 1.0));
     fflush(stdout);
 }
 
 
 // TODO: memory requirement
-// void PrintDiagnostics(grid_info grid, double min_prop, double max_prop, double tau, bool second_order, Index n_substeps)
-// {
-//     cout << "DIAGNOSTICS" << endl;
-//     cout << "-----------" << endl;
-//     cout << "Memory requirement: "
-//          << 8.0 * grid.dx1 * grid.r / 1.0e9
-//          << " GB (X1), "
-//          << 8.0 * grid.dx2 * grid.r / 1.0e9
-//          << " GB (X2)" << endl;
-//     cout << "Min, max propensity: " << min_prop << ", " << max_prop << endl;
-//     cout << "Time step size: " << tau << endl;
-//     if (second_order)
-//     {
-//         cout << "[Second-order method]: " << n_substeps << " substeps" << endl;
-//     }
-//     else
-//     {
-//         cout << "[First-order method]" << endl;
-//     }
-// #ifdef __OPENMP__
-//     cout << "[OpenMP activated]: OMP_NUM_THREADS=" << omp_get_max_threads() << endl;
-// #else
-//     cout << "[OpenMP not activated]" << endl;
-// #endif
-//     cout << "-----------" << endl;
-//     cout << endl;
-// }
+void PrintDiagnostics(const integration_method &method, const std::chrono::nanoseconds t_elapsed, const double tau, const double dm_max)
+{
+    const auto [hrs, mins, secs, ms] = ChronoBurst(t_elapsed);
+
+    std::cout << "DIAGNOSTICS\n";
+    std::cout << "-----------\n";
+    std::cout << "Time elapsed: "
+        << hrs << "h "
+        << mins << "mins "
+        << secs << "s "
+        << ms << "ms\n";
+    std::cout << "Integration method: " << method.get_name() << "\n";
+    std::cout << "Time step size: " << tau << "\n";
+    std::cout << "max(norm - 1.0): " << dm_max << "\n";
+#ifdef __OPENMP__
+    cout << "[OpenMP activated]: OMP_NUM_THREADS=" << omp_get_max_threads() << "\n";
+#else
+    std::cout << "[OpenMP not activated]\n";
+#endif
+    std::cout << "-----------\n";
+    std::cout << endl;
+}
