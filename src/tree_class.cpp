@@ -99,18 +99,20 @@ void cme_lr_tree::Read(const std::string fn)
     return;
 }
 
-void cme_lr_tree::Write(const std::string fn, const double t, const double tau) const
+void cme_lr_tree::Write(const std::string fn, const double t, const double tau, const double dm) const
 {
     int ncid;
 
     NETCDF_CHECK(nc_create(fn.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
     WriteHelpers::WritePartitionStr(ncid, partition_str);
 
-    int varid_tt, varid_tau;
+    int varid_tt, varid_tau, varid_dm;
     NETCDF_CHECK(nc_def_var(ncid, "t", NC_DOUBLE, 0, 0, &varid_tt));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_tt, &t));
     NETCDF_CHECK(nc_def_var(ncid, "tau", NC_DOUBLE, 0, 0, &varid_tau));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_tau, &tau));
+    NETCDF_CHECK(nc_def_var(ncid, "dm", NC_DOUBLE, 0, 0, &varid_dm));
+    NETCDF_CHECK(nc_put_var_double(ncid, varid_tau, &dm));
 
     WriteHelpers::WriteNode(ncid, root);
 

@@ -187,7 +187,7 @@ struct cme_lr_tree
 
     public:
         void Read(const std::string fn);
-        void Write(const std::string, const double t, const double tau) const;
+        void Write(const std::string, const double t, const double tau, const double dm) const;
         void Orthogonalize(const blas_ops &blas) const;
         double Normalize() const;
 };
