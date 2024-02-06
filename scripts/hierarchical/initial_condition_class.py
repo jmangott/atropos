@@ -14,7 +14,7 @@ class InitialCondition:
         2. apply OC
         3. right node
 
-    These arrays can be conveniently set to obey the initial conditions. For setting up the low-rank factors, the grid objects of the external nodes are also provided as an array (`grid_external_nodes`).
+    These arrays can be conveniently set to obey the initial conditions. For setting up the low-rank factors, the external nodes are also accessible via the array `external_nodes`.
     """
 
     def __setNodeData(self, node: Node, nb: int):
