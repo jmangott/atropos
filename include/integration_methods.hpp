@@ -26,6 +26,7 @@ struct integration_method
     integration_method() = default;
     virtual ~integration_method() = default;
     virtual void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const = 0;
+    virtual std::string get_name() const = 0;
 };
 
 struct explicit_euler : integration_method
@@ -35,6 +36,11 @@ struct explicit_euler : integration_method
     void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const override
     {
         arr += rhs(arr) * tau;
+    }
+
+    std::string get_name() const override
+    {
+        return "explicit_euler";
     }
 };
 
@@ -130,6 +136,11 @@ struct implicit_euler : integration_method
         x = gmres.solve(b);
 
         Eigen::Map<Eigen::VectorXd>(arr.data(), x.size()) = x;
+    }
+
+    std::string get_name() const override
+    {
+        return "implicit_euler";
     }
 };
 
