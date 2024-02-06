@@ -13,7 +13,7 @@ import xarray as xr
 from scripts.hierarchical.grid_class import GridParms
 from scripts.hierarchical.id_class import Id
 from scripts.hierarchical.reaction_class import ReactionSystem
-from scripts.index_functions import incrVecIndex
+from scripts.index_functions import incrVecIndex, vecIndexToCombIndex
 
 class Node:
     def __init__(self, _id: Id, _grid: GridParms):
@@ -184,7 +184,6 @@ class Tree:
     def initialize(self, reaction_system: ReactionSystem, r_out: npt.NDArray[np.int_]):
         # Test whether the dimension of `_r` is equal to n_internal_nodes
         if r_out.size != self.n_internal_nodes:
-            print(r_out.size, self.n_internal_nodes)
             raise Exception(
                 "`r_out.size` must be equal to the number of internal nodes")
 
@@ -258,3 +257,20 @@ class Tree:
         self.__write(self.root.child[0], dt)
         self.__write(self.root.child[1], dt)
         dt.to_netcdf(fname)
+
+    def __calculateObservables(self, node: Node, slice: npt.NDArray[np.int_]):
+        if isinstance(node, ExternalNode):
+            node.X_sum = np.sum(node.X, axis=0)
+            node.X_slice = node.X[vecIndexToCombIndex(slice[node.grid.species], node.grid.n), :]
+        elif isinstance(node, InternalNode):
+            self.__calculateObservables(node.child[0], slice)
+            self.__calculateObservables(node.child[1], slice)
+            node.X_sum = np.einsum("i,ijk,j", node.child[0].X_sum, node.Q, node.child[1].X_sum)
+            node.X_slice = np.einsum("i,ijk,j", node.child[0].X_slice, node.Q, node.child[1].X_slice)
+
+    def calculateObservables(self, slice: npt.NDArray[np.int_]):
+        if slice.size != self.root.grid.d():
+            raise Exception(
+                "`slice.size` must be equal to the number of dimensions of the root node")
+        self.__calculateObservables(self.root.child[0], slice)
+        self.__calculateObservables(self.root.child[1], slice)
