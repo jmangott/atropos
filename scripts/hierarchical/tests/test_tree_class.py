@@ -5,6 +5,7 @@ from scripts.hierarchical.models.bax import reaction_system as bax_model
 from scripts.hierarchical.models.lambda_phage import reaction_system as lp_model
 from scripts.hierarchical.tree_class import Tree
 from scripts.hierarchical.grid_class import GridParms
+from scripts.hierarchical.initial_condition_class import InitialCondition
 
 class BaxTestCase(unittest.TestCase):
     def setUp(self):
@@ -156,6 +157,28 @@ class LambdaPhageTestCase(unittest.TestCase):
 
         for i, prop01 in enumerate(lp_tree.root.child[0].child[1].propensity):
             self.assertTrue(np.all(prop01 == propensity01[i]))
+        
+    def test_slice_vec(self):
+        lp_tree = Tree(self.partition_str, self.grid)
+        with self.assertRaises(Exception):
+            lp_tree.calculateObservables(np.ones(10))
+
+    def test_calculate_observables(self):
+        lp_tree = Tree(self.partition_str, self.grid)
+        lp_tree.initialize(lp_model, self.r_out)
+        initial_condition = InitialCondition(lp_tree, np.ones(self.r_out.size, dtype="int"))
+        for node in initial_condition.external_nodes:
+            node.X = np.ones((node.grid.dx(), 1))
+
+        for Q in initial_condition.Q:
+            Q[0, 0, 0] = 1.0
+
+        lp_tree.calculateObservables(np.array([0, 0, 0, 0, 0]))
+        self.assertTrue(lp_tree.root.child[0].X_slice == 1.0)
+        self.assertTrue(lp_tree.root.child[1].X_slice == 1.0)
+        self.assertTrue(lp_tree.root.child[0].child[0].X_sum == self.grid.n[4])
+        self.assertTrue(lp_tree.root.child[0].child[1].X_sum == self.grid.n[0] * self.grid.n[1])
+        self.assertTrue(lp_tree.root.child[1].X_sum == self.grid.n[2] * self.grid.n[3])
 
 if __name__ == "__main__":
     unittest.main()
