@@ -29,16 +29,16 @@ class GridParms:
         self.dep = _dep
         self.nu = _nu
     
-    def dx(self):
-        return np.prod(self.n)
+    def dx(self) -> int:
+        return np.prod(self.n, dtype="int")
 
-    def h_mult(self):
-        return np.prod(self.binsize)
+    def h_mult(self) -> float:
+        return np.prod(self.binsize, dtype="float")
     
-    def d(self):
+    def d(self) -> int:
         return self.n.size
     
-    def n_reactions(self):
+    def n_reactions(self) -> int:
         return self.dep.shape[1]
 
     def initialize(self, reaction_system: ReactionSystem):
