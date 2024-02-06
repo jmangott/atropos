@@ -1,4 +1,4 @@
-from scripts.hierarchical.reaction_class import Reaction, ReactionSystem
+from scripts.reaction_class import Reaction, ReactionSystem
 
 kA0 = 0.5
 kA1 = 1.0

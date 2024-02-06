@@ -1,5 +1,5 @@
 import numpy as np
-from scripts.hierarchical.reaction_class import Reaction, ReactionSystem
+from scripts.reaction_class import Reaction, ReactionSystem
 
 kA0 = 0.0002
 kA1 = 0.001

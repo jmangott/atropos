@@ -2,7 +2,7 @@
 import numpy as np
 import numpy.typing as npt
 
-from scripts.hierarchical.tree_class import Tree, Node, ExternalNode, InternalNode
+from scripts.tree_class import Tree, Node, ExternalNode, InternalNode
 
 # TODO: Q should have shape (n_basisfunctions, child(n_basisfunctions), child(n_basisfunctions))
 

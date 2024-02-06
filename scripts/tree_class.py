@@ -10,9 +10,9 @@ import regex
 from typing import Union
 import xarray as xr
 
-from scripts.hierarchical.grid_class import GridParms
-from scripts.hierarchical.id_class import Id
-from scripts.hierarchical.reaction_class import ReactionSystem
+from scripts.grid_class import GridParms
+from scripts.id_class import Id
+from scripts.reaction_class import ReactionSystem
 from scripts.index_functions import incrVecIndex, vecIndexToCombIndex
 
 class Node:

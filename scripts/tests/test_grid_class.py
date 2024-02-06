@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
-from scripts.hierarchical.models.lambda_phage import reaction_system as lp_model
-from scripts.hierarchical.grid_class import GridParms
+from scripts.models.lambda_phage import reaction_system as lp_model
+from scripts.grid_class import GridParms
 
 class GridTestCase(unittest.TestCase):
     def setUp(self):

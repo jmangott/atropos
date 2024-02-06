@@ -2,7 +2,7 @@
 import numpy as np
 import numpy.typing as npt
 
-from scripts.hierarchical.reaction_class import ReactionSystem
+from scripts.reaction_class import ReactionSystem
 
 class GridParms:
     def __init__(self, _n: npt.NDArray[np.int_], _binsize: npt.NDArray[np.int_], _liml: npt.NDArray[np.float_], _species: npt.NDArray[np.int_] = None, _dep: npt.NDArray[np.bool_] = None, _nu: npt.NDArray[np.int_] = None):

@@ -1,11 +1,11 @@
 import numpy as np
 import unittest
 
-from scripts.hierarchical.models.bax import reaction_system as bax_model
-from scripts.hierarchical.models.lambda_phage import reaction_system as lp_model
-from scripts.hierarchical.tree_class import Tree
-from scripts.hierarchical.grid_class import GridParms
-from scripts.hierarchical.initial_condition_class import InitialCondition
+from scripts.models.bax import reaction_system as bax_model
+from scripts.models.lambda_phage import reaction_system as lp_model
+from scripts.tree_class import Tree
+from scripts.grid_class import GridParms
+from scripts.initial_condition_class import InitialCondition
 
 class BaxTestCase(unittest.TestCase):
     def setUp(self):

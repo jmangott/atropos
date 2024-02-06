@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import factorial
 
-from scripts.hierarchical.grid_class import GridParms
-from scripts.hierarchical.initial_condition_class import InitialCondition
-from scripts.hierarchical.tree_class import Tree
+from scripts.grid_class import GridParms
+from scripts.initial_condition_class import InitialCondition
+from scripts.tree_class import Tree
 from scripts.index_functions import incrVecIndex
 
 import scripts.hierarchical.models.bax as model

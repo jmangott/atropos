@@ -1,8 +1,8 @@
 import numpy as np 
 
-from scripts.hierarchical.grid_class import GridParms
-from scripts.hierarchical.initial_condition_class import InitialCondition
-from scripts.hierarchical.tree_class import Tree
+from scripts.grid_class import GridParms
+from scripts.initial_condition_class import InitialCondition
+from scripts.tree_class import Tree
 from scripts.index_functions import incrVecIndex, vecIndexToState
 
 import scripts.hierarchical.models.toggle_switch as model

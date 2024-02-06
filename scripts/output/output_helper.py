@@ -11,8 +11,8 @@ if not os.path.exists("plots"):
     os.makedirs("plots")
 
 from scripts.index_functions import incrVecIndex, vecIndexToCombIndex
-from scripts.hierarchical.grid_class import GridParms
-from scripts.hierarchical.tree_class import Tree, Node, ExternalNode, InternalNode
+from scripts.grid_class import GridParms
+from scripts.tree_class import Tree, Node, ExternalNode, InternalNode
 
 # Update Matplotlib settings
 plt.rcParams.update({
