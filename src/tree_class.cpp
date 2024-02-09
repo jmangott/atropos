@@ -22,8 +22,8 @@ void cme_internal_node::Initialize(int ncid)
     {
         for (Index mu = 0; mu < grid.n_reactions; ++mu)
         {
-            coefficients.A(mu, 0, 0) = 1.0;
-            coefficients.B(mu, 0, 0) = 1.0;
+            coefficients.A[mu](0, 0) = 1.0;
+            coefficients.B[mu](0, 0) = 1.0;
         }
         coefficients.E(0, 0, 0, 0) = 1.0;
         coefficients.F(0, 0, 0, 0) = 1.0;
@@ -48,13 +48,6 @@ void cme_external_node::Initialize(int ncid)
 
     // read propensity
     external_coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
-
-    // resize C and D coefficients
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
-    {
-        external_coefficients.C[mu].resize({grid.dx_dep[mu], RankIn(), RankIn()});
-        external_coefficients.D[mu].resize({grid.dx_dep[mu], RankIn(), RankIn()});
-    }
     return;
 }
 
@@ -482,19 +475,18 @@ cme_node* ReadHelpers::ReadNode(int ncid, const std::string id, cme_internal_nod
     return child_node;
 }
 
-// TODO: Rename A_bar and B_bar
-// TODO: Reduce number of loops to 5
-void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas)
+void CalculateAB_bar(cme_node const * const child_node_init, std::vector<multi_array<double, 2>> &A_bar, std::vector<multi_array<double, 2>> &B_bar, const blas_ops &blas)
 {
-    std::fill(std::begin(A_bar), std::end(A_bar), 0.0);
-    std::fill(std::begin(B_bar), std::end(B_bar), 0.0);
+    for (Index mu = 0; mu < child_node_init->grid.n_reactions; ++mu)
+    {
+        set_zero(A_bar[mu]);
+        set_zero(B_bar[mu]);
+    }
 
     if (child_node_init->IsExternal())
     {
         cme_external_node *child_node = (cme_external_node *) child_node_init;
         multi_array<double, 2> X_shift({child_node->grid.dx, child_node->RankIn()});
-        multi_array<double, 2> tmp_A_bar({child_node->RankIn(), child_node->RankIn()});
-        multi_array<double, 2> tmp_B_bar({child_node->RankIn(), child_node->RankIn()});
         multi_array<double, 1> weight({child_node->grid.dx});
 
         for (Index mu = 0; mu < child_node->grid.n_reactions; ++mu)
@@ -503,6 +495,7 @@ void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double,
 
             std::vector<Index> vec_index(child_node->grid.d, 0);
 
+            // TODO: parallelize this loop
             for (Index alpha = 0; alpha < child_node->grid.dx; ++alpha)
             {
                 Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(child_node->grid.n_dep[mu]), std::begin(child_node->grid.idx_dep[mu]), std::end(child_node->grid.idx_dep[mu]));
@@ -510,30 +503,30 @@ void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double,
                 weight(alpha) = child_node->external_coefficients.propensity[mu][alpha_dep] * child_node->grid.h_mult;
                 IndexFunction::IncrVecIndex(std::begin(child_node->grid.n), std::begin(vec_index), std::end(vec_index));
             }
-            coeff(X_shift, child_node->X, weight, tmp_A_bar, blas);
-            coeff(child_node->X, child_node->X, weight, tmp_B_bar, blas);
-
-            for (Index i = 0; i < child_node->RankIn(); ++i)
-            {
-                for (Index j = 0; j < child_node->RankIn(); ++j)
-                {
-                    A_bar(mu, i, j) = tmp_A_bar(i, j);
-                    B_bar(mu, i, j) = tmp_B_bar(i, j);
-                }
-            }
+            coeff(X_shift, child_node->X, weight, A_bar[mu], blas);
+            coeff(child_node->X, child_node->X, weight, B_bar[mu], blas);
         }
     }
     else
     {
         cme_internal_node *child_node = (cme_internal_node *)child_node_init;
-        multi_array<double, 3> A_bar_child0({child_node->grid.n_reactions, child_node->RankOut()[0], child_node->RankOut()[0]});
-        multi_array<double, 3> B_bar_child0({child_node->grid.n_reactions, child_node->RankOut()[0], child_node->RankOut()[0]});
-        multi_array<double, 3> A_bar_child1({child_node->grid.n_reactions, child_node->RankOut()[1], child_node->RankOut()[1]});
-        multi_array<double, 3> B_bar_child1({child_node->grid.n_reactions, child_node->RankOut()[1], child_node->RankOut()[1]});
+        std::vector<multi_array<double, 2>> A_bar_child0(child_node->grid.n_reactions);
+        std::vector<multi_array<double, 2>> B_bar_child0(child_node->grid.n_reactions);
+        std::vector<multi_array<double, 2>> A_bar_child1(child_node->grid.n_reactions);
+        std::vector<multi_array<double, 2>> B_bar_child1(child_node->grid.n_reactions);
+
+        for (Index mu = 0; mu < child_node->grid.n_reactions; ++mu)
+        {
+            A_bar_child0[mu].resize({child_node->RankOut()[0], child_node->RankOut()[0]});
+            B_bar_child0[mu].resize({child_node->RankOut()[0], child_node->RankOut()[0]});
+            A_bar_child1[mu].resize({child_node->RankOut()[1], child_node->RankOut()[1]});
+            B_bar_child1[mu].resize({child_node->RankOut()[1], child_node->RankOut()[1]});
+        }
 
         CalculateAB_bar(child_node->child[0], A_bar_child0, B_bar_child0, blas);
         CalculateAB_bar(child_node->child[1], A_bar_child1, B_bar_child1, blas);
 
+        // TODO: remove number of loops
         for (Index mu = 0; mu < child_node->grid.n_reactions; ++mu)
         {
             for (Index i0 = 0; i0 < child_node->RankOut()[0]; ++i0)
@@ -548,8 +541,8 @@ void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double,
                             {
                                 for (Index j = 0; j < child_node->RankIn(); ++j)
                                 {
-                                    A_bar(mu, i, j) += child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * A_bar_child0(mu, i0, j0) * A_bar_child1(mu, i1, j1);
-                                    B_bar(mu, i, j) += child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * B_bar_child0(mu, i0, j0) * B_bar_child1(mu, i1, j1);
+                                    A_bar[mu](i, j) += child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * A_bar_child0[mu](i0, j0) * A_bar_child1[mu](i1, j1);
+                                    B_bar[mu](i, j) += child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * B_bar_child0[mu](i0, j0) * B_bar_child1[mu](i1, j1);
                                 }
                             }
                         }
@@ -560,43 +553,27 @@ void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double,
     }
 }
 
-void cme_external_node::CalculateCD()
-{
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
-    {
-        for (Index alpha = 0; alpha < grid.dx_dep[mu]; ++alpha)
-        {
-            for (Index i = 0; i < RankIn(); ++i)
-            {
-                for (Index j = 0; j < RankIn(); ++j)
-                {
-                    external_coefficients.C[mu](alpha, i, j) = external_coefficients.propensity[mu][alpha] * coefficients.A(mu, i, j);
-                    external_coefficients.D[mu](alpha, i, j) = external_coefficients.propensity[mu][alpha] * coefficients.B(mu, i, j);
-                }
-            }
-        }
-    }
-}
-
-// TODO: Make this more efficient by using coefficients A and B instead of C and D and multiply the propensity in a separate loop
-
-multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node)
+multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas)
 {
     get_time::start("CalculateKDot");
-    multi_array<double, 2> prod_KC(K.shape());
-    multi_array<double, 2> prod_KC_shift(K.shape());
-    multi_array<double, 2> prod_KD(K.shape());
+    multi_array<double, 2> KA(K.shape());
+    multi_array<double, 2> KB(K.shape());
+    multi_array<double, 2> aKA(K.shape());
+    multi_array<double, 2> aKB(K.shape());
+    multi_array<double, 2> aKA_shift(K.shape());
     multi_array<double, 2> K_dot(K.shape());
+    multi_array<double, 1> a_vec({K.shape()[0]});
     set_zero(K_dot);
 
     std::vector<Index> vec_index(node->grid.d);
 
     for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
-    {
-        set_zero(prod_KC);
-        set_zero(prod_KD);
+    {    
         std::fill(std::begin(vec_index), std::end(vec_index), 0);
+        blas.matmul_transb(K, node->coefficients.A[mu], KA);
+        blas.matmul_transb(K, node->coefficients.B[mu], KB);
 
+// TODO: improve parallelization
 #ifdef __OPENMP__
 #pragma omp parallel firstprivate(vec_index)
 #endif
@@ -611,53 +588,31 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
 #endif
             for (Index i = 0; i < node->grid.dx; ++i)
             {
-                alpha = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(node->grid.n_dep[mu]), std::begin(node->grid.idx_dep[mu]), std::end(node->grid.idx_dep[mu]));
+                alpha = IndexFunction::VecIndexToDepCombIndex
+                (
+                    std::begin(vec_index), 
+                    std::begin(node->grid.n_dep[mu]), 
+                    std::begin(node->grid.idx_dep[mu]), 
+                    std::end(node->grid.idx_dep[mu])
+                );
                 IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
 
-                // Calculate matrix-vector multiplication of C2*K and D2*K
-                for (Index j = 0; j < node->RankIn(); ++j)
-                {
-                    for (Index l = 0; l < node->RankIn(); ++l)
-                    {
-                        prod_KC(i, j) += K(i, l) * node->external_coefficients.C[mu](alpha, j, l);
-                        prod_KD(i, j) += K(i, l) * node->external_coefficients.D[mu](alpha, j, l);
-                    }
-                }
+                a_vec(i) = node->external_coefficients.propensity[mu][alpha];
             }
         }
+        ptw_mult_row(KA, a_vec, aKA);
+        ptw_mult_row(KB, a_vec, aKB);
         // Shift prod_KC
-        Matrix::ShiftRows<1>(prod_KC_shift, prod_KC, node->grid, mu);
+        get_time::start("ShiftKDot");
+        Matrix::ShiftRows<1>(aKA_shift, aKA, node->grid, mu);
+        get_time::stop("ShiftKDot");
 
         // Calculate k_dot = shift(C * K) - D * K
-        K_dot += prod_KC_shift;
-        K_dot -= prod_KD;
+        K_dot += aKA_shift;
+        K_dot -= aKB;
     }
     get_time::stop("CalculateKDot");
     return K_dot;
-}
-
-void cme_node::CalculateS(const double tau)
-{
-    multi_array<double, 2> S_dot(S.shape());
-    set_zero(S_dot);
-
-#ifdef __OPENMP__
-#pragma omp parallel for collapse(2)
-#endif
-    for (Index i = 0; i < RankIn(); i++)
-    {
-        for (Index j = 0; j < RankIn(); j++)
-        {
-            for (Index k = 0; k < RankIn(); k++)
-            {
-                for (Index l = 0; l < RankIn(); l++)
-                {
-                    S_dot(i, j) += tau * (coefficients.E(i, j, k, l) - coefficients.F(i, j, k, l)) * S(k, l);
-                }
-            }
-        }
-    }
-    S -= S_dot;
 }
 
 void cme_node::CalculateEF(const blas_ops& blas)
@@ -665,8 +620,14 @@ void cme_node::CalculateEF(const blas_ops& blas)
     std::fill(std::begin(coefficients.E), std::end(coefficients.E), 0.0);
     std::fill(std::begin(coefficients.F), std::end(coefficients.F), 0.0);
 
-    multi_array<double, 3> A_bar({grid.n_reactions, RankIn(), RankIn()});
-    multi_array<double, 3> B_bar({grid.n_reactions, RankIn(), RankIn()});
+    std::vector<multi_array<double, 2>> A_bar(grid.n_reactions);
+    std::vector<multi_array<double, 2>> B_bar(grid.n_reactions);
+
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        A_bar[mu].resize({RankIn(), RankIn()});
+        B_bar[mu].resize({RankIn(), RankIn()});
+    }
 
     CalculateAB_bar(this, A_bar, B_bar, blas);
 
@@ -680,8 +641,8 @@ void cme_node::CalculateEF(const blas_ops& blas)
                 {
                     for (Index l = 0; l < RankIn(); ++l)
                     {
-                        coefficients.E(i, j, k, l) += A_bar(mu, i, k) * coefficients.A(mu, j, l);
-                        coefficients.F(i, j, k, l) += B_bar(mu, i, k) * coefficients.B(mu, j, l);
+                        coefficients.E(i, j, k, l) += A_bar[mu](i, k) * coefficients.A[mu](j, l);
+                        coefficients.F(i, j, k, l) += B_bar[mu](i, k) * coefficients.B[mu](j, l);
                     }
                 }
             }
@@ -689,20 +650,52 @@ void cme_node::CalculateEF(const blas_ops& blas)
     }
 }
 
-// TODO: Reduce number of loops to 5
+multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node)
+{
+    multi_array<double, 2> S_dot(S.shape());
+    set_zero(S_dot);
+
+#ifdef __OPENMP__
+#pragma omp parallel for collapse(2)
+#endif
+    for (Index i = 0; i < node->RankIn(); i++)
+    {
+        for (Index j = 0; j < node->RankIn(); j++)
+        {
+            for (Index k = 0; k < node->RankIn(); k++)
+            {
+                for (Index l = 0; l < node->RankIn(); l++)
+                {
+                    S_dot(i, j) += (node->coefficients.E(i, j, k, l) - node->coefficients.F(i, j, k, l)) * S(k, l);
+                }
+            }
+        }
+    }
+    return S_dot;
+}
+
 void cme_internal_node::CalculateGH(const blas_ops& blas)
 {
     std::fill(std::begin(internal_coefficients.G), std::end(internal_coefficients.G), 0.0);
     std::fill(std::begin(internal_coefficients.H), std::end(internal_coefficients.H), 0.0);
 
-    multi_array<double, 3> A_bar_child0({grid.n_reactions, RankOut()[0], RankOut()[0]});
-    multi_array<double, 3> B_bar_child0({grid.n_reactions, RankOut()[0], RankOut()[0]});
-    multi_array<double, 3> A_bar_child1({grid.n_reactions, RankOut()[1], RankOut()[1]});
-    multi_array<double, 3> B_bar_child1({grid.n_reactions, RankOut()[1], RankOut()[1]});
+    std::vector<multi_array<double, 2>> A_bar_child0(grid.n_reactions);
+    std::vector<multi_array<double, 2>> B_bar_child0(grid.n_reactions);
+    std::vector<multi_array<double, 2>> A_bar_child1(grid.n_reactions);
+    std::vector<multi_array<double, 2>> B_bar_child1(grid.n_reactions);
+
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        A_bar_child0[mu].resize({RankOut()[0], RankOut()[0]}); 
+        B_bar_child0[mu].resize({RankOut()[0], RankOut()[0]}); 
+        A_bar_child1[mu].resize({RankOut()[1], RankOut()[1]}); 
+        B_bar_child1[mu].resize({RankOut()[1], RankOut()[1]}); 
+    }
 
     CalculateAB_bar(child[0], A_bar_child0, B_bar_child0, blas);
     CalculateAB_bar(child[1], A_bar_child1, B_bar_child1, blas);
 
+    // TODO: remove number of loops
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         for (Index i = 0; i < RankIn(); ++i)
@@ -717,8 +710,8 @@ void cme_internal_node::CalculateGH(const blas_ops& blas)
                         {
                             for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
                             {
-                                internal_coefficients.G(i, i0, i1, j, j0, j1) += coefficients.A(mu, i, j) * A_bar_child0(mu, i0, j0) * A_bar_child1(mu, i1, j1);
-                                internal_coefficients.H(i, i0, i1, j, j0, j1) += coefficients.B(mu, i, j) * B_bar_child0(mu, i0, j0) * B_bar_child1(mu, i1, j1);
+                                internal_coefficients.G(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.A[mu](i, j) * A_bar_child0[mu](i0, j0) * A_bar_child1[mu](i1, j1);
+                                internal_coefficients.H(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.B[mu](i, j) * B_bar_child0[mu](i0, j0) * B_bar_child1[mu](i1, j1);
                             }
                         }
                     }
@@ -728,30 +721,23 @@ void cme_internal_node::CalculateGH(const blas_ops& blas)
     }
 }
 
-// TODO: Reduce number of loops to 4
-void cme_internal_node::CalculateQ(const double tau)
+multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node)
 {
-    multi_array<double, 3> Q_dot(Q.shape());
+    multi_array<double, 2> Q_dot(Qmat.shape());
     std::fill(std::begin(Q_dot), std::end(Q_dot), 0.0);
 
-    for (Index i = 0; i < RankIn(); ++i)
+    for (Index i = 0; i < node->RankIn(); ++i)
     {
-        for (Index j = 0; j < RankIn(); ++j)
+        for (Index j = 0; j < node->RankIn(); ++j)
         {
-            for (Index i0 = 0; i0 < RankOut()[0]; ++i0)
+            for (Index i0 = 0; i0 < prod(node->RankOut()); ++i0)
             {
-                for (Index j0 = 0; j0 < RankOut()[0]; ++j0)
+                for (Index j0 = 0; j0 < prod(node->RankOut()); ++j0)
                 {
-                    for (Index i1 = 0; i1 < RankOut()[1]; ++i1)
-                    {
-                        for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
-                        {
-                            Q_dot(i0, i1, i) += tau * (internal_coefficients.G(i, i0, i1, j, j0, j1) - internal_coefficients.H(i, i0, i1, j, j0, j1)) * Q(j0, j1, j);
-                        }
-                    }
+                        Q_dot(i0, i) += (node->internal_coefficients.G(i, i0, j, j0) - node->internal_coefficients.H(i, i0, j, j0)) * Qmat(j0, j);
                 }
             }
         }
     }
-    Q += Q_dot;
+    return Q_dot;
 }

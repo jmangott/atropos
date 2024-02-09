@@ -167,7 +167,11 @@ struct cme_external_node : cme_node, external_node<double>
     void CalculateCD();
 };
 
-multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node);
+multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas);
+
+multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node);
+
+multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node);
 
 struct cme_lr_tree
 {
@@ -231,17 +235,22 @@ multi_array<T, 2> external_node<T>::Orthogonalize(std::function<T(T *, T *)> inn
 };
 
 // TODO: Is the propensity really needed for all nodes or only for the external ones?
-void CalculateAB_bar(cme_node const * const child_node_init, multi_array<double, 3> &A_bar, multi_array<double, 3> &B_bar, const blas_ops &blas);
+void CalculateAB_bar(cme_node const * const child_node_init, std::vector<multi_array<double, 2>> &A_bar, std::vector<multi_array<double, 2>> &B_bar, const blas_ops &blas);
 
 template <Index id>
 void cme_internal_node::CalculateAB(const blas_ops &blas)
 {
     const Index id_c = (id == 0) ? 1 : 0;
-    multi_array<double, 3> A_bar({grid.n_reactions, RankOut()[id_c], RankOut()[id_c]});
-    multi_array<double, 3> B_bar({grid.n_reactions, RankOut()[id_c], RankOut()[id_c]});
+    std::vector<multi_array<double, 2>> A_bar(grid.n_reactions);
+    std::vector<multi_array<double, 2>> B_bar(grid.n_reactions);
 
-    std::fill(std::begin(child[id]->coefficients.A), std::end(child[id]->coefficients.A), 0.0);
-    std::fill(std::begin(child[id]->coefficients.B), std::end(child[id]->coefficients.B), 0.0);
+    for (Index mu = 0; mu < child[id]->grid.n_reactions; ++mu)
+    {
+        A_bar[mu].resize({RankOut()[id_c], RankOut()[id_c]});
+        B_bar[mu].resize({RankOut()[id_c], RankOut()[id_c]});
+        set_zero(child[id]->coefficients.A[mu]);
+        set_zero(child[id]->coefficients.B[mu]);
+    }
 
     CalculateAB_bar(child[id_c], A_bar, B_bar, blas);
 
@@ -261,8 +270,8 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
                         {
                             for (Index j = 0; j < RankIn(); ++j)
                             {
-                                child[id]->coefficients.A(mu, i0, j0) += coefficients.A(mu, i, j) * G(i0, i1, i) * G(j0, j1, j) * A_bar(mu, i1, j1);
-                                child[id]->coefficients.B(mu, i0, j0) += coefficients.B(mu, i, j) * G(i0, i1, i) * G(j0, j1, j) * B_bar(mu, i1, j1);
+                                child[id]->coefficients.A[mu](i0, j0) += coefficients.A[mu](i, j) * G(i0, i1, i) * G(j0, j1, j) * A_bar[mu](i1, j1);
+                                child[id]->coefficients.B[mu](i0, j0) += coefficients.B[mu](i, j) * G(i0, i1, i) * G(j0, j1, j) * B_bar[mu](i1, j1);
                             }
                         }
                     }
