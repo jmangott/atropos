@@ -1,12 +1,14 @@
 #ifndef MATRIX_HPP
 #define MATRIX_HPP
 
+#include <algorithm>
 #include <cassert>
 
 #include <generic/storage.hpp>
 #include <lr/lr.hpp>
 
 #include "index_functions.hpp"
+#include "timer_class.hpp"
 
 namespace Matrix
 {
@@ -100,56 +102,44 @@ namespace Matrix
     void ShiftRows(multi_array<double, 2> &output_array, const multi_array<double, 2> &input_array, const grid_parms grid, const Index mu)
     {
         assert(output_array.shape() == input_array.shape());
+        set_zero(output_array);
 
         Index shift = inv * grid.shift[mu];
         Index n_rows = output_array.shape()[0];
         Index n_cols = output_array.shape()[1];
 
+        Index min_i = std::max((Index) 0, shift);
+        Index max_i = std::min(n_rows, n_rows + shift);
+
         // NOTE: Ensign stores matrices in column-major order
 
-        vector<Index> vec_index(grid.d);
-
+        std::vector<Index> vec_index(grid.d);
+        // TODO: parallelize loops
         for (Index j = 0; j < n_cols; ++j)
         {
-            std::fill(vec_index.begin(), vec_index.end(), 0);
-
-#ifdef __OPENMP__
-#pragma omp parallel firstprivate(vec_index)
-#endif
+            for (Index i = min_i; i < max_i; ++i)
             {
-#ifdef __OPENMP__
-                Index chunk_size = IndexFunction::SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(grid.n), grid.dx);
-#endif
+                output_array(i, j) = input_array(i - shift, j);
+            }
+        }
 
-#ifdef __OPENMP__
-#pragma omp for schedule(static, chunk_size)
-#endif
-                for (Index i = 0; i < n_rows; ++i)
+        IndexFunction::CombIndexToVecIndex(min_i, std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
+        for (Index i = min_i; i < max_i; ++i)
+        {
+            for (int k = 0; k < grid.d; ++k)
+            {
+                if (
+                    ((inv * grid.nu(mu, k) > 0) && (vec_index[k] - inv * grid.nu(mu, k) < 0)) ||
+                    ((inv * grid.nu(mu, k) < 0) && (vec_index[k] - inv * grid.nu(mu, k) >= grid.n[k])))
                 {
-                    if ((shift < 0 && i - shift < n_rows) || (shift >= 0 && i - shift >= 0))
-                    {
-                        output_array(i, j) = input_array(i - shift, j);
-                    }
-                    else
+                    for (Index j = 0; j < n_cols; ++j)
                     {
                         output_array(i, j) = 0.0;
-                        IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
-                        continue;
                     }
-
-                    for (int k = 0; k < grid.d; ++k)
-                    {
-                        if (
-                            ((inv * grid.nu(mu, k) > 0) && (vec_index[k] - inv * grid.nu(mu, k) < 0)) ||
-                            ((inv * grid.nu(mu, k) < 0) && (vec_index[k] - inv * grid.nu(mu, k) >= grid.n[k])))
-                        {
-                            output_array(i, j) = 0.0;
-                            break;
-                        }
-                    }
-                    IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
+                    break;
                 }
             }
+            IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
         }
     }
 }
