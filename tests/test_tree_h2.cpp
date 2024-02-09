@@ -24,24 +24,31 @@ TEST_CASE("tree_h2", "[tree_h2]")
     Index val_n00 = 2, val_n01 = 2, val_n1 = 3;
     double val_liml00 = 0.0, val_liml01 = 0.0, val_liml1 = 0.0;
     Index val_binsize00 = 1, val_binsize01 = 1, val_binsize1 = 1;
+    int val_species00 = 0, val_species01 = 1, val_species1 = 2;
 
-    vector<Index> n{val_n00, val_n01, val_n1};
-    vector<Index> n0{val_n00, val_n01};
-    vector<Index> n1{val_n1};
-    vector<Index> n00{val_n00};
-    vector<Index> n01{val_n01};
+    std::vector<Index> n{val_n00, val_n01, val_n1};
+    std::vector<Index> n0{val_n00, val_n01};
+    std::vector<Index> n1{val_n1};
+    std::vector<Index> n00{val_n00};
+    std::vector<Index> n01{val_n01};
 
-    vector<double> liml{val_liml00, val_liml01, val_liml1};
-    vector<double> liml0{val_liml00, val_liml01};
-    vector<double> liml1{val_liml1};
-    vector<double> liml00{val_liml00};
-    vector<double> liml01{val_liml01};
+    std::vector<double> liml{val_liml00, val_liml01, val_liml1};
+    std::vector<double> liml0{val_liml00, val_liml01};
+    std::vector<double> liml1{val_liml1};
+    std::vector<double> liml00{val_liml00};
+    std::vector<double> liml01{val_liml01};
 
-    vector<Index> binsize{val_binsize00, val_binsize01, val_binsize1};
-    vector<Index> binsize0{val_binsize00, val_binsize01};
-    vector<Index> binsize1{val_binsize1};
-    vector<Index> binsize00{val_binsize00};
-    vector<Index> binsize01{val_binsize01};
+    std::vector<Index> binsize{val_binsize00, val_binsize01, val_binsize1};
+    std::vector<Index> binsize0{val_binsize00, val_binsize01};
+    std::vector<Index> binsize1{val_binsize1};
+    std::vector<Index> binsize00{val_binsize00};
+    std::vector<Index> binsize01{val_binsize01};
+
+    std::vector<int> species{val_species00, val_species01, val_species1};
+    std::vector<int> species0{val_species00, val_species01};
+    std::vector<int> species1{val_species1};
+    std::vector<int> species00{val_species00};
+    std::vector<int> species01{val_species01};
 
     multi_array<bool, 2> dep({n_reactions, (Index)n.size()});
     multi_array<bool, 2> dep0({n_reactions, (Index)n0.size()});
@@ -109,11 +116,11 @@ TEST_CASE("tree_h2", "[tree_h2]")
     nu01(1, 0) = -1;
     nu01(4, 0) = 1;
 
-    grid_parms grid(n, binsize, liml, dep, nu);
-    grid_parms grid0(n0, binsize0, liml0, dep0, nu0);
-    grid_parms grid1(n1, binsize1, liml1, dep1, nu1);
-    grid_parms grid00(n00, binsize00, liml00, dep00, nu00);
-    grid_parms grid01(n01, binsize01, liml01, dep01, nu01);
+    grid_parms grid(n, binsize, liml, dep, nu, species);
+    grid_parms grid0(n0, binsize0, liml0, dep0, nu0, species0);
+    grid_parms grid1(n1, binsize1, liml1, dep1, nu1, species1);
+    grid_parms grid00(n00, binsize00, liml00, dep00, nu00, species00);
+    grid_parms grid01(n01, binsize01, liml01, dep01, nu01, species01);
     grid.Initialize();
     grid0.Initialize();
     grid1.Initialize();
@@ -211,31 +218,17 @@ TEST_CASE("tree_h2", "[tree_h2]")
     node00->X = X00;
     node01->X = X01;
 
-    root->coefficients.propensity = propensity;
-    node0->coefficients.propensity = propensity0;
-    node1->coefficients.propensity = propensity1;
-    node00->coefficients.propensity = propensity00;
-    node01->coefficients.propensity = propensity01;
+    node1->external_coefficients.propensity = propensity1;
+    node00->external_coefficients.propensity = propensity00;
+    node01->external_coefficients.propensity = propensity01;
 
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
-        root->coefficients.A(mu, 0, 0) = 1.0;
-        root->coefficients.B(mu, 0, 0) = 1.0;
+        root->coefficients.A[mu](0, 0) = 1.0;
+        root->coefficients.B[mu](0, 0) = 1.0;
     }
     root->coefficients.E(0, 0, 0, 0) = 1.0;
     root->coefficients.F(0, 0, 0, 0) = 1.0;
-
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
-    {
-        node00->external_coefficients.C[mu].resize({node00->grid.dx_dep[mu], node00->RankIn(), node00->RankIn()});
-        node00->external_coefficients.D[mu].resize({node00->grid.dx_dep[mu], node00->RankIn(), node00->RankIn()});
-
-        node01->external_coefficients.C[mu].resize({node01->grid.dx_dep[mu], node01->RankIn(), node01->RankIn()});
-        node01->external_coefficients.D[mu].resize({node01->grid.dx_dep[mu], node01->RankIn(), node01->RankIn()});
-
-        node1->external_coefficients.C[mu].resize({node1->grid.dx_dep[mu], node1->RankIn(), node1->RankIn()});
-        node1->external_coefficients.D[mu].resize({node1->grid.dx_dep[mu], node1->RankIn(), node1->RankIn()});
-    }
 
     root->child[0] = node0;
     root->child[1] = node1;
@@ -395,87 +388,103 @@ TEST_CASE("tree_h2", "[tree_h2]")
     double tau = 1.0;
     SubflowPhi<0>(root, blas, tau, method);
 
-    multi_array<double, 3> A0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
-    multi_array<double, 3> B0_comparison({node0->grid.n_reactions, node0->RankIn(), node0->RankIn()});
-    multi_array<double, 3> A00_comparison({node00->grid.n_reactions, node00->RankIn(), node00->RankIn()});
-    multi_array<double, 3> B00_comparison({node00->grid.n_reactions, node00->RankIn(), node00->RankIn()});
-    multi_array<double, 3> A1_bar_comparison({node1->grid.n_reactions, node1->RankIn(), node1->RankIn()});
-    multi_array<double, 3> B1_bar_comparison({node1->grid.n_reactions, node1->RankIn(), node1->RankIn()});
-    multi_array<double, 3> A01_bar_comparison({node01->grid.n_reactions, node01->RankIn(), node01->RankIn()});
-    multi_array<double, 3> B01_bar_comparison({node01->grid.n_reactions, node01->RankIn(), node01->RankIn()});
+    std::vector<multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
+    std::vector<multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
+    std::vector<multi_array<double, 2>> A00_comparison(node00->grid.n_reactions);
+    std::vector<multi_array<double, 2>> B00_comparison(node00->grid.n_reactions);
+    std::vector<multi_array<double, 2>> A1_bar_comparison(node1->grid.n_reactions);
+    std::vector<multi_array<double, 2>> B1_bar_comparison(node1->grid.n_reactions);
+    std::vector<multi_array<double, 2>> A01_bar_comparison(node01->grid.n_reactions);
+    std::vector<multi_array<double, 2>> B01_bar_comparison(node01->grid.n_reactions);
+
+    for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
+    {
+        A0_comparison[mu].resize({node0->RankIn(), node0->RankIn()});
+        B0_comparison[mu].resize({node0->RankIn(), node0->RankIn()});
+        A00_comparison[mu].resize({node00->RankIn(), node00->RankIn()});
+        B00_comparison[mu].resize({node00->RankIn(), node00->RankIn()});
+        A1_bar_comparison[mu].resize({node1->RankIn(), node1->RankIn()});
+        B1_bar_comparison[mu].resize({node1->RankIn(), node1->RankIn()});
+        A01_bar_comparison[mu].resize({node01->RankIn(), node01->RankIn()});
+        B01_bar_comparison[mu].resize({node01->RankIn(), node01->RankIn()});
+
+        set_zero(A0_comparison[mu]);
+        set_zero(B0_comparison[mu]);
+        set_zero(A00_comparison[mu]);
+        set_zero(B00_comparison[mu]);
+        set_zero(A1_bar_comparison[mu]);
+        set_zero(B1_bar_comparison[mu]);
+        set_zero(A01_bar_comparison[mu]);
+        set_zero(B01_bar_comparison[mu]);
+    }
 
     // Calculate A1_comparison and B1_comparison
-    std::fill(std::begin(A1_bar_comparison), std::end(A1_bar_comparison), 0.0);
-    std::fill(std::begin(B1_bar_comparison), std::end(B1_bar_comparison), 0.0);
-    
-    A1_bar_comparison(0, 0, 0) = 1.0;
-    A1_bar_comparison(0, 1, 1) = 1.0;
-    A1_bar_comparison(0, 2, 2) = 1.0;
-    A1_bar_comparison(1, 0, 0) = 1.0;
-    A1_bar_comparison(1, 1, 1) = 1.0;
-    A1_bar_comparison(1, 2, 2) = 1.0;
-    A1_bar_comparison(3, 0, 0) = 1.0;
-    A1_bar_comparison(3, 1, 1) = 1.0;
-    A1_bar_comparison(3, 2, 2) = 1.0;
-    A1_bar_comparison(4, 0, 0) = 1.0;
-    A1_bar_comparison(4, 1, 1) = 1.0;
-    A1_bar_comparison(4, 2, 2) = 1.0;
+    A1_bar_comparison[0](0, 0) = 1.0;
+    A1_bar_comparison[0](1, 1) = 1.0;
+    A1_bar_comparison[0](2, 2) = 1.0;
+    A1_bar_comparison[1](0, 0) = 1.0;
+    A1_bar_comparison[1](1, 1) = 1.0;
+    A1_bar_comparison[1](2, 2) = 1.0;
+    A1_bar_comparison[3](0, 0) = 1.0;
+    A1_bar_comparison[3](1, 1) = 1.0;
+    A1_bar_comparison[3](2, 2) = 1.0;
+    A1_bar_comparison[4](0, 0) = 1.0;
+    A1_bar_comparison[4](1, 1) = 1.0;
+    A1_bar_comparison[4](2, 2) = 1.0;
 
-    A1_bar_comparison(2, 0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 2.0 * std::exp(-2.0));
-    A1_bar_comparison(2, 0, 1) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
-    A1_bar_comparison(2, 0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (std::exp(-2.0) - 4.0) / sqrt(2.0);
-    A1_bar_comparison(2, 1, 0) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 - 2.0 * std::exp(-2.0));
-    A1_bar_comparison(2, 1, 1) =-0.5;
-    A1_bar_comparison(2, 1, 2) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (std::exp(-2.0) + 4.0) / sqrt(2.0);
-    A1_bar_comparison(2, 2, 0) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * (1.0 + 2.0 * std::exp(-2.0)) / sqrt(2.0);
-    A1_bar_comparison(2, 2, 1) =-1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * sqrt(1.0 + 0.5 * std::exp(-4.0)) / sqrt(2.0);
-    A1_bar_comparison(2, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * 0.5 * (std::exp(-2.0) - 4.0);
+    A1_bar_comparison[2](0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 2.0 * std::exp(-2.0));
+    A1_bar_comparison[2](0, 1) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
+    A1_bar_comparison[2](0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (std::exp(-2.0) - 4.0) / sqrt(2.0);
+    A1_bar_comparison[2](1, 0) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 - 2.0 * std::exp(-2.0));
+    A1_bar_comparison[2](1, 1) =-0.5;
+    A1_bar_comparison[2](1, 2) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (std::exp(-2.0) + 4.0) / sqrt(2.0);
+    A1_bar_comparison[2](2, 0) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * (1.0 + 2.0 * std::exp(-2.0)) / sqrt(2.0);
+    A1_bar_comparison[2](2, 1) =-1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * sqrt(1.0 + 0.5 * std::exp(-4.0)) / sqrt(2.0);
+    A1_bar_comparison[2](2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * 0.5 * (std::exp(-2.0) - 4.0);
 
-    A1_bar_comparison(5, 0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 0.5 * std::exp(-2.0));
-    A1_bar_comparison(5, 0, 1) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 - 0.5 * std::exp(-2.0));
-    A1_bar_comparison(5, 0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * (1.0 + 0.5 * std::exp(-2.0)) / sqrt(2.0);
-    A1_bar_comparison(5, 1, 0) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
-    A1_bar_comparison(5, 1, 1) =-0.5;
-    A1_bar_comparison(5, 1, 2) =-1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * sqrt(1.0 + 0.5 * std::exp(-4.0)) / sqrt(2.0);
-    A1_bar_comparison(5, 2, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (std::exp(-2.0) - 1.0) / sqrt(2.0);
-    A1_bar_comparison(5, 2, 1) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 + std::exp(-2.0)) / sqrt(2.0);
-    A1_bar_comparison(5, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * 0.5 * (std::exp(-2.0) - 1.0);
+    A1_bar_comparison[5](0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 0.5 * std::exp(-2.0));
+    A1_bar_comparison[5](0, 1) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 - 0.5 * std::exp(-2.0));
+    A1_bar_comparison[5](0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * (1.0 + 0.5 * std::exp(-2.0)) / sqrt(2.0);
+    A1_bar_comparison[5](1, 0) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
+    A1_bar_comparison[5](1, 1) =-0.5;
+    A1_bar_comparison[5](1, 2) =-1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * sqrt(1.0 + 0.5 * std::exp(-4.0)) / sqrt(2.0);
+    A1_bar_comparison[5](2, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (std::exp(-2.0) - 1.0) / sqrt(2.0);
+    A1_bar_comparison[5](2, 1) = 1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 + std::exp(-2.0)) / sqrt(2.0);
+    A1_bar_comparison[5](2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) * 0.5 * (std::exp(-2.0) - 1.0);
 
-    B1_bar_comparison(0, 0, 0) = 1.0;
-    B1_bar_comparison(0, 1, 1) = 1.0;
-    B1_bar_comparison(0, 2, 2) = 1.0;
-    B1_bar_comparison(1, 0, 0) = 1.0;
-    B1_bar_comparison(1, 1, 1) = 1.0;
-    B1_bar_comparison(1, 2, 2) = 1.0;
-    B1_bar_comparison(3, 0, 0) = 1.0;
-    B1_bar_comparison(3, 1, 1) = 1.0;
-    B1_bar_comparison(3, 2, 2) = 1.0;
-    B1_bar_comparison(4, 0, 0) = 1.0;
-    B1_bar_comparison(4, 1, 1) = 1.0;
-    B1_bar_comparison(4, 2, 2) = 1.0;
+    B1_bar_comparison[0](0, 0) = 1.0;
+    B1_bar_comparison[0](1, 1) = 1.0;
+    B1_bar_comparison[0](2, 2) = 1.0;
+    B1_bar_comparison[1](0, 0) = 1.0;
+    B1_bar_comparison[1](1, 1) = 1.0;
+    B1_bar_comparison[1](2, 2) = 1.0;
+    B1_bar_comparison[3](0, 0) = 1.0;
+    B1_bar_comparison[3](1, 1) = 1.0;
+    B1_bar_comparison[3](2, 2) = 1.0;
+    B1_bar_comparison[4](0, 0) = 1.0;
+    B1_bar_comparison[4](1, 1) = 1.0;
+    B1_bar_comparison[4](2, 2) = 1.0;
 
-    B1_bar_comparison(2, 0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 2.0 * std::exp(-4.0));
-    B1_bar_comparison(2, 0, 1) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
-    B1_bar_comparison(2, 1, 0) = B1_bar_comparison(2, 0, 1);
-    B1_bar_comparison(2, 0, 2) =-3.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) / sqrt(2);
-    B1_bar_comparison(2, 2, 0) = B1_bar_comparison(2, 0, 2);
-    B1_bar_comparison(2, 1, 1) = 0.5;
-    B1_bar_comparison(2, 1, 2) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * std::exp(-2.0) / sqrt(2.0);
-    B1_bar_comparison(2, 2, 1) = B1_bar_comparison(2, 1, 2);
-    B1_bar_comparison(2, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (0.5 * std::exp(-4.0) + 4.0);
+    B1_bar_comparison[2](0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.0 + 2.0 * std::exp(-4.0));
+    B1_bar_comparison[2](0, 1) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0));
+    B1_bar_comparison[2](1, 0) = B1_bar_comparison[2](0, 1);
+    B1_bar_comparison[2](0, 2) =-3.0 / (2.0 + std::exp(-4.0)) * std::exp(-2.0) / sqrt(2);
+    B1_bar_comparison[2](2, 0) = B1_bar_comparison[2](0, 2);
+    B1_bar_comparison[2](1, 1) = 0.5;
+    B1_bar_comparison[2](1, 2) =-1.0 / (2.0 + std::exp(-4.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) * std::exp(-2.0) / sqrt(2.0);
+    B1_bar_comparison[2](2, 1) = B1_bar_comparison[2](1, 2);
+    B1_bar_comparison[2](2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (0.5 * std::exp(-4.0) + 4.0);
 
-    B1_bar_comparison(5, 0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.5 + std::exp(-4.0) / 3.0);
-    B1_bar_comparison(5, 0, 1) = 1.0 / (2.0 + std::exp(-4.0)) * 0.5 * sqrt(1.0 + 0.5 * std::exp(-4.0));
-    B1_bar_comparison(5, 1, 0) = B1_bar_comparison(5, 0, 1);
-    B1_bar_comparison(5, 0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * 5.0 * std::exp(-2.0) / (6.0 * sqrt(2));
-    B1_bar_comparison(5, 2, 0) = B1_bar_comparison(5, 0, 2);
-    B1_bar_comparison(5, 1, 1) = 0.75;
-    B1_bar_comparison(5, 1, 2) = 1.0 / (2.0 + std::exp(-4.0)) * 0.5 * sqrt(1.0 + 0.5 * std::exp(-4.0)) * std::exp(-2.0) / sqrt(2.0);
-    B1_bar_comparison(5, 2, 1) = B1_bar_comparison(5, 1, 2);
-    B1_bar_comparison(5, 2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (0.75 * std::exp(-4.0) + 2.0 / 3.0);
+    B1_bar_comparison[5](0, 0) = 1.0 / (2.0 + std::exp(-4.0)) * (1.5 + std::exp(-4.0) / 3.0);
+    B1_bar_comparison[5](0, 1) = 1.0 / (2.0 + std::exp(-4.0)) * 0.5 * sqrt(1.0 + 0.5 * std::exp(-4.0));
+    B1_bar_comparison[5](1, 0) = B1_bar_comparison[5](0, 1);
+    B1_bar_comparison[5](0, 2) = 1.0 / (2.0 + std::exp(-4.0)) * 5.0 * std::exp(-2.0) / (6.0 * sqrt(2));
+    B1_bar_comparison[5](2, 0) = B1_bar_comparison[5](0, 2);
+    B1_bar_comparison[5](1, 1) = 0.75;
+    B1_bar_comparison[5](1, 2) = 1.0 / (2.0 + std::exp(-4.0)) * 0.5 * sqrt(1.0 + 0.5 * std::exp(-4.0)) * std::exp(-2.0) / sqrt(2.0);
+    B1_bar_comparison[5](2, 1) = B1_bar_comparison[5](1, 2);
+    B1_bar_comparison[5](2, 2) = 1.0 / (2.0 + std::exp(-4.0)) * (0.75 * std::exp(-4.0) + 2.0 / 3.0);
 
-    std::fill(std::begin(A0_comparison), std::end(A0_comparison), 0.0);
-    std::fill(std::begin(B0_comparison), std::end(B0_comparison), 0.0);
     for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
     {
         for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
@@ -486,8 +495,8 @@ TEST_CASE("tree_h2", "[tree_h2]")
                 {
                     for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
                     {
-                        A0_comparison(mu, i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * A1_bar_comparison(mu, i1, j1);
-                        B0_comparison(mu, i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * B1_bar_comparison(mu, i1, j1);
+                        A0_comparison[mu](i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * A1_bar_comparison[mu](i1, j1);
+                        B0_comparison[mu](i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * B1_bar_comparison[mu](i1, j1);
                     }
                 }
             }
@@ -495,49 +504,44 @@ TEST_CASE("tree_h2", "[tree_h2]")
     }
 
     // Calculate A01_comparison
-    std::fill(std::begin(A01_bar_comparison), std::end(A01_bar_comparison), 0.0);
-    std::fill(std::begin(B01_bar_comparison), std::end(B01_bar_comparison), 0.0);
+    A01_bar_comparison[0](0, 0) = 1.0;
+    A01_bar_comparison[0](1, 1) = 1.0;
+    A01_bar_comparison[2](0, 0) = 1.0;
+    A01_bar_comparison[2](1, 1) = 1.0;
+    A01_bar_comparison[3](0, 0) = 1.0;
+    A01_bar_comparison[3](1, 1) = 1.0;
+    A01_bar_comparison[5](0, 0) = 1.0;
+    A01_bar_comparison[5](1, 1) = 1.0;
 
-    A01_bar_comparison(0, 0, 0) = 1.0;
-    A01_bar_comparison(0, 1, 1) = 1.0;
-    A01_bar_comparison(2, 0, 0) = 1.0;
-    A01_bar_comparison(2, 1, 1) = 1.0;
-    A01_bar_comparison(3, 0, 0) = 1.0;
-    A01_bar_comparison(3, 1, 1) = 1.0;
-    A01_bar_comparison(5, 0, 0) = 1.0;
-    A01_bar_comparison(5, 1, 1) = 1.0;
+    A01_bar_comparison[1](0, 0) = 0.5;
+    A01_bar_comparison[1](0, 1) =-0.5;
+    A01_bar_comparison[1](1, 0) = 0.5;
+    A01_bar_comparison[1](1, 1) =-0.5;
 
-    A01_bar_comparison(1, 0, 0) = 0.5;
-    A01_bar_comparison(1, 0, 1) =-0.5;
-    A01_bar_comparison(1, 1, 0) = 0.5;
-    A01_bar_comparison(1, 1, 1) =-0.5;
+    A01_bar_comparison[4](0, 0) = 0.5;
+    A01_bar_comparison[4](0, 1) = 0.5;
+    A01_bar_comparison[4](1, 0) =-0.5;
+    A01_bar_comparison[4](1, 1) =-0.5;
 
-    A01_bar_comparison(4, 0, 0) = 0.5;
-    A01_bar_comparison(4, 0, 1) = 0.5;
-    A01_bar_comparison(4, 1, 0) =-0.5;
-    A01_bar_comparison(4, 1, 1) =-0.5;
+    B01_bar_comparison[0](0, 0) = 1.0;
+    B01_bar_comparison[0](1, 1) = 1.0;
+    B01_bar_comparison[2](0, 0) = 1.0;
+    B01_bar_comparison[2](1, 1) = 1.0;
+    B01_bar_comparison[3](0, 0) = 1.0;
+    B01_bar_comparison[3](1, 1) = 1.0;
+    B01_bar_comparison[5](0, 0) = 1.0;
+    B01_bar_comparison[5](1, 1) = 1.0;
 
-    B01_bar_comparison(0, 0, 0) = 1.0;
-    B01_bar_comparison(0, 1, 1) = 1.0;
-    B01_bar_comparison(2, 0, 0) = 1.0;
-    B01_bar_comparison(2, 1, 1) = 1.0;
-    B01_bar_comparison(3, 0, 0) = 1.0;
-    B01_bar_comparison(3, 1, 1) = 1.0;
-    B01_bar_comparison(5, 0, 0) = 1.0;
-    B01_bar_comparison(5, 1, 1) = 1.0;
+    B01_bar_comparison[1](0, 0) = 0.5;
+    B01_bar_comparison[1](0, 1) =-0.5;
+    B01_bar_comparison[1](1, 0) = B01_bar_comparison[1](0, 1);
+    B01_bar_comparison[1](1, 1) = 0.5;
 
-    B01_bar_comparison(1, 0, 0) = 0.5;
-    B01_bar_comparison(1, 0, 1) =-0.5;
-    B01_bar_comparison(1, 1, 0) = B01_bar_comparison(1, 0, 1);
-    B01_bar_comparison(1, 1, 1) = 0.5;
+    B01_bar_comparison[4](0, 0) = 0.75;
+    B01_bar_comparison[4](0, 1) = 0.25;
+    B01_bar_comparison[4](1, 0) = B01_bar_comparison[4](0, 1);
+    B01_bar_comparison[4](1, 1) = 0.75;
 
-    B01_bar_comparison(4, 0, 0) = 0.75;
-    B01_bar_comparison(4, 0, 1) = 0.25;
-    B01_bar_comparison(4, 1, 0) = B01_bar_comparison(4, 0, 1);
-    B01_bar_comparison(4, 1, 1) = 0.75;
-
-    std::fill(std::begin(A00_comparison), std::end(A00_comparison), 0.0);
-    std::fill(std::begin(B00_comparison), std::end(B00_comparison), 0.0);
     for (Index mu = 0; mu < node0->grid.n_reactions; ++mu)
     {
         for (Index i0 = 0; i0 < node0->RankIn(); ++i0)
@@ -552,8 +556,8 @@ TEST_CASE("tree_h2", "[tree_h2]")
                         {
                             for (Index j01 = 0; j01 < node0->RankOut()[1]; ++j01)
                             {
-                                A00_comparison(mu, i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * A01_bar_comparison(mu, i01, j01) * A0_comparison(mu, i0, j0);
-                                B00_comparison(mu, i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * B01_bar_comparison(mu, i01, j01) * B0_comparison(mu, i0, j0);
+                                A00_comparison[mu](i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * A01_bar_comparison[mu](i01, j01) * A0_comparison[mu](i0, j0);
+                                B00_comparison[mu](i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * B01_bar_comparison[mu](i01, j01) * B0_comparison[mu](i0, j0);
                             }
                         }
                     }
@@ -562,10 +566,13 @@ TEST_CASE("tree_h2", "[tree_h2]")
         }
     }
 
-    REQUIRE(bool(node0->coefficients.A == A0_comparison));
-    REQUIRE(bool(node0->coefficients.B == B0_comparison));
-    REQUIRE(bool(node00->coefficients.A == A00_comparison));
-    REQUIRE(bool(node00->coefficients.B == B00_comparison));
+    for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
+    {
+        REQUIRE(bool(node0->coefficients.A[mu] == A0_comparison[mu]));
+        REQUIRE(bool(node0->coefficients.B[mu] == B0_comparison[mu]));
+        REQUIRE(bool(node00->coefficients.A[mu] == A00_comparison[mu]));
+        REQUIRE(bool(node00->coefficients.B[mu] == B00_comparison[mu]));
+    }
 
     multi_array<double, 2> K00(X00.shape());
     multi_array<double, 2> K00C(X00.shape());
@@ -588,8 +595,8 @@ TEST_CASE("tree_h2", "[tree_h2]")
             {
                 for (Index j = 0; j < node00->RankIn(); ++j)
                 {
-                    K00C(x, i) += tau * A00_comparison(mu, i, j) * node00->coefficients.propensity[mu][x_dep] * K00(x, j);
-                    K00D(x, i) += tau * B00_comparison(mu, i, j) * node00->coefficients.propensity[mu][x_dep] * K00(x, j);
+                    K00C(x, i) += tau * A00_comparison[mu](i, j) * node00->external_coefficients.propensity[mu][x_dep] * K00(x, j);
+                    K00D(x, i) += tau * B00_comparison[mu](i, j) * node00->external_coefficients.propensity[mu][x_dep] * K00(x, j);
                 }
             }
             IndexFunction::IncrVecIndex(std::begin(node00->grid.n), std::begin(vec_index), std::end(vec_index));

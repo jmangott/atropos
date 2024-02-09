@@ -141,10 +141,12 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     std::vector<double> liml(d);
     multi_array<bool, 2> dep({n_reactions, d});
     multi_array<Index, 2> nu({n_reactions, d});
+    std::vector<int> species(d);
 
     n = {4, 3};
     binsize = {1, 1};
     liml = {0.0, 0.0};
+    species = {0, 1};
 
     std::fill(std::begin(dep), std::end(dep), false);
     dep(0, 0) = true;
@@ -160,7 +162,7 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     nu(2, 0) = 1;
     nu(3, 1) = 1;
 
-    grid_parms grid(n, binsize, liml, dep, nu);
+    grid_parms grid(n, binsize, liml, dep, nu, species);
     grid.Initialize();
 
     // TEST 1
@@ -182,7 +184,8 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     comparison_array(6, 0) = 12.0;
 
     Matrix::ShiftRows<1>(output_array, input_array, grid, 0);
-
+    cout << output_array << endl;
+    cout << comparison_array << endl;
     REQUIRE(bool(output_array == comparison_array));
 
     // TEST 2
