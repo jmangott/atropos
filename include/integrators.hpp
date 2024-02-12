@@ -7,9 +7,9 @@
 #include "timer_class.hpp"
 #include "tree_class.hpp"
 
-struct Integrator
+struct integrator_base
 {
-    Integrator(const blas_ops &_blas, const std::map<std::string, integration_method*> &_integration_methods)
+    integrator_base(const blas_ops &_blas, const std::map<std::string, integration_method*> &_integration_methods)
     : blas(_blas)
     , integration_methods(_integration_methods)
     {}
@@ -18,10 +18,10 @@ struct Integrator
     const std::map<std::string, integration_method*> integration_methods;
 };
 
-struct TTNIntegrator : Integrator
+struct ttn_integrator : integrator_base
 {
-    TTNIntegrator(const blas_ops &_blas, const std::map<std::string, integration_method*> &_integration_methods)
-    : Integrator(_blas, _integration_methods)
+    ttn_integrator(const blas_ops &_blas, const std::map<std::string, integration_method*> &_integration_methods)
+    : integrator_base(_blas, _integration_methods)
     {}
 
     void operator()(cme_internal_node * const node, const double tau) const;

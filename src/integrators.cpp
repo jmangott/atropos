@@ -1,7 +1,7 @@
 #include "integrators.hpp"
 
 template <Index id>
-void TTNIntegrator::SubflowPhi(cme_internal_node * const node, const double tau) const
+void ttn_integrator::SubflowPhi(cme_internal_node * const node, const double tau) const
 {
     Index id_c = (id == 0) ? 1 : 0;
 
@@ -84,11 +84,11 @@ void TTNIntegrator::SubflowPhi(cme_internal_node * const node, const double tau)
     get_time::stop("S");
 }
 
-template void TTNIntegrator::SubflowPhi<0>(cme_internal_node * const node, const double tau) const;
+template void ttn_integrator::SubflowPhi<0>(cme_internal_node * const node, const double tau) const;
 
-template void TTNIntegrator::SubflowPhi<1>(cme_internal_node * const node, const double tau) const;
+template void ttn_integrator::SubflowPhi<1>(cme_internal_node * const node, const double tau) const;
 
-void TTNIntegrator::SubflowPsi(cme_internal_node * const node, const double tau) const
+void ttn_integrator::SubflowPsi(cme_internal_node * const node, const double tau) const
 {
     multi_array<double, 2> Qmat({prod(node->RankOut()), node->RankIn()});
 
@@ -104,7 +104,7 @@ void TTNIntegrator::SubflowPsi(cme_internal_node * const node, const double tau)
     Matrix::Tensorize(Qmat, node->Q, 2);
 }
 
-void TTNIntegrator::operator()(cme_internal_node * const node, const double tau) const
+void ttn_integrator::operator()(cme_internal_node * const node, const double tau) const
 {
     SubflowPhi<0>(node, tau);
     SubflowPhi<1>(node, tau);

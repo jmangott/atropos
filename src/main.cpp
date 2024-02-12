@@ -24,7 +24,7 @@ int main(int argc, char** argv)
     if (result.count("help"))
     {
         std::cout << options.help() << std::endl;
-        exit(0);
+        std::exit(EXIT_SUCCESS);
     }
 
     std::string output = result["output"].as<std::string>();
@@ -38,14 +38,14 @@ int main(int argc, char** argv)
     integration_methods["Q"] = new implicit_euler{};
 
     blas_ops blas;
-    TTNIntegrator integrator(blas, integration_methods);
+    ttn_integrator integrator(blas, integration_methods);
     cme_lr_tree tree;
 
     double t = 0.0;
     double dm = 0.0;
     double dm_max = 0.0;
 
-    const Index kNsteps = ceil(tfinal / tau); // Number of time steps
+    const Index kNsteps = std::ceil(tfinal / tau); // Number of time steps
 
     tree.Read("input/input.nc");
     std::cout << tree;

@@ -29,14 +29,14 @@ void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::sy
 
 struct diagnostics
 {
-    diagnostics(const Integrator &_integrator, const std::chrono::nanoseconds _t_elapsed, const double _tau, const double _dm_max)
+    diagnostics(const integrator_base &_integrator, const std::chrono::nanoseconds _t_elapsed, const double _tau, const double _dm_max)
     : integrator(_integrator)
     , t_elapsed(_t_elapsed)
     , tau(_tau)
     , dm_max(_dm_max)
     {}
 
-    const Integrator integrator;
+    const integrator_base integrator;
     const std::chrono::nanoseconds t_elapsed;
     const double tau;
     const double dm_max;

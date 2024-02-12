@@ -21,7 +21,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     integrations_methods["Q"] = new explicit_euler{};
 
     blas_ops blas;
-    TTNIntegrator integrator(blas, integrations_methods);
+    ttn_integrator integrator(blas, integrations_methods);
 
     Index r = 2;
     Index n_basisfunctions = 1;
