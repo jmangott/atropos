@@ -562,7 +562,7 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
     multi_array<double, 2> aKB(K.shape());
     multi_array<double, 2> aKA_shift(K.shape());
     multi_array<double, 2> K_dot(K.shape());
-    multi_array<double, 1> a_vec({K.shape()[0]});
+    multi_array<double, 1> weight({K.shape()[0]});
     set_zero(K_dot);
 
     std::vector<Index> vec_index(node->grid.d);
@@ -597,11 +597,12 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
                 );
                 IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
 
-                a_vec(i) = node->external_coefficients.propensity[mu][alpha];
+                weight(i) = node->external_coefficients.propensity[mu][alpha];
             }
         }
-        ptw_mult_row(KA, a_vec, aKA);
-        ptw_mult_row(KB, a_vec, aKB);
+        ptw_mult_row(KA, weight, aKA);
+        ptw_mult_row(KB, weight, aKB);
+
         // Shift prod_KC
         get_time::start("ShiftKDot");
         Matrix::ShiftRows<1>(aKA_shift, aKA, node->grid, mu);
