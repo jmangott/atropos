@@ -44,7 +44,7 @@ void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::sy
 
 
 // TODO: memory requirement
-void PrintDiagnostics(const integration_method &method, const std::chrono::nanoseconds t_elapsed, const double tau, const double dm_max)
+void PrintDiagnostics(const std::map<std::string, integration_method *> &integration_methods, const std::chrono::nanoseconds t_elapsed, const double tau, const double dm_max)
 {
     const auto [hrs, mins, secs, ms] = ChronoBurst(t_elapsed);
 
@@ -55,7 +55,9 @@ void PrintDiagnostics(const integration_method &method, const std::chrono::nanos
         << mins.count() << "mins "
         << secs.count() << "s "
         << ms.count() << "ms\n";
-    std::cout << "Integration method: " << method.get_name() << "\n";
+    std::cout << "Integration method (K): " << integration_methods.at("K")->get_name() << "\n";
+    std::cout << "Integration method (S): " << integration_methods.at("S")->get_name() << "\n";
+    std::cout << "Integration method (Q): " << integration_methods.at("Q")->get_name() << "\n";
     std::cout << "Time step size: " << tau << "\n";
     std::cout << "max(norm - 1.0): " << dm_max << "\n";
 #ifdef __OPENMP__

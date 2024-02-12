@@ -30,6 +30,6 @@ auto ChronoBurst(std::chrono::duration<Rep, std::ratio<num, denom>> d)
 void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::system_clock::time_point t_start, const double norm);
 
 // Print diagnostic information
-void PrintDiagnostics(const integration_method &method, const std::chrono::nanoseconds t_elapsed, const double tau, const double dm_max);
+void PrintDiagnostics(const std::map<std::string, integration_method *> &integration_methods, const std::chrono::nanoseconds t_elapsed, const double tau, const double dm_max);
 
 #endif
