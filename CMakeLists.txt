@@ -132,7 +132,7 @@ set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
 set(SRC_FILES ${SRC}/grid_class.cpp
               ${SRC}/matrix.cpp
               ${SRC}/print_functions.cpp
-              ${SRC}/subflows.cpp
+              ${SRC}/integrators.cpp
               ${SRC}/timer_class.cpp
               ${SRC}/tree_class.cpp)
 
