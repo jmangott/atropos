@@ -9,14 +9,20 @@
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
+#include "integrators.hpp"
 #include "matrix.hpp"
-#include "subflows.hpp"
 #include "tree_class.hpp"
 
 TEST_CASE("tree_h1", "[tree_h1]")
 {
+    std::map<std::string, integration_method *> integrations_methods;
+    integrations_methods["K"] = new explicit_euler{};
+    integrations_methods["S"] = new explicit_euler{};
+    integrations_methods["Q"] = new explicit_euler{};
+
     blas_ops blas;
-    explicit_euler method;
+    TTNIntegrator integrator(blas, integrations_methods);
+
     Index r = 2;
     Index n_basisfunctions = 1;
     Index n_reactions = 4;
@@ -234,7 +240,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     gram_schmidt gs(&blas);
 
     double tau = 1.0;
-    SubflowPhi<0>(root, blas, tau, method);
+    integrator.SubflowPhi<0>(root, tau);
 
     std::vector<multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
     std::vector<multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
@@ -338,7 +344,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     multi_array<double, 2> tmp(node0->X);
     blas.matmul(tmp, node0->S, node0->X);
     const auto K_step_rhs0 = [node0, blas] (const multi_array<double, 2> &K) { return CalculateKDot(K, node0, blas); };
-    method.integrate(node0->X, K_step_rhs0, tau);
+    integrator.integration_methods.at("K")->integrate(node0->X, K_step_rhs0, tau);
 
     REQUIRE(bool(K0_comparison == node0->X));
 
@@ -540,7 +546,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     const auto S_step_rhs0 = [node0](const multi_array<double, 2> &S)
     { return CalculateSDot(S, node0); };
-    method.integrate(node0->S, S_step_rhs0, -1.0 * tau);
+    integrator.integration_methods.at("S")->integrate(node0->S, S_step_rhs0, -1.0 * tau);
     node0->S -= S0_old;
     REQUIRE(bool(S0_comparison == node0->S));
 
@@ -548,7 +554,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node0->X = X0;
     node1->X = X1;
 
-    TTNIntegrator(tree.root, blas, tau, method);
+    integrator(tree.root, tau);
 
     std::fill(std::begin(E_comparison), std::end(E_comparison), 0.0);
     std::fill(std::begin(F_comparison), std::end(F_comparison), 0.0);
@@ -590,7 +596,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node1->X = X1;
     tau = 0.001;
 
-    SubflowPhi<0>(tree.root, blas, tau, method);
+    integrator.SubflowPhi<0>(tree.root, tau);
 
     // Perform the L step manually
     multi_array<double, 2> Qmat({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
@@ -611,7 +617,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     // K step
     const auto K_step_rhs1 = [node1, blas](const multi_array<double, 2> &K) { return CalculateKDot(K, node1, blas); };
-    method.integrate(node1->X, K_step_rhs1, tau);
+    integrator.integration_methods.at("K")->integrate(node1->X, K_step_rhs1, tau);
 
     // Perform the QR decomposition K = X * S
     std::function<double(double *, double *)> ip_x;
@@ -624,7 +630,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node1->CalculateEF(blas);
     const auto S_step_rhs1 = [node1](const multi_array<double, 2> &S)
     { return CalculateSDot(S, node1); };
-    method.integrate(node1->S, S_step_rhs1, -1.0 * tau);
+    integrator.integration_methods.at("S")->integrate(node1->S, S_step_rhs1, -1.0 * tau);
 
     // Set C^n = G^n * (S^(n+id))^T
     multi_array<double, 2> Gmat({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
@@ -635,7 +641,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     multi_array<double, 3> deltaQ(root->Q);
 
-    SubflowPsi(tree.root, blas, tau, method);
+    integrator.SubflowPsi(tree.root, tau);
     deltaS -= node1->S;
     deltaQ -= root->Q;
 

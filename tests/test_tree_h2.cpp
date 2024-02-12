@@ -9,14 +9,20 @@
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
+#include "integrators.hpp"
 #include "matrix.hpp"
-#include "subflows.hpp"
 #include "tree_class.hpp"
 
 TEST_CASE("tree_h2", "[tree_h2]")
 {
+    std::map<std::string, integration_method *> integrations_methods;
+    integrations_methods["K"] = new explicit_euler{};
+    integrations_methods["S"] = new explicit_euler{};
+    integrations_methods["Q"] = new explicit_euler{};
+
     blas_ops blas;
-    explicit_euler method;
+    TTNIntegrator integrator(blas, integrations_methods);
+
     Index r = 3, r0 = 2;
     Index n_basisfunctions = 1, n_basisfunctions0 = 1;
     Index n_reactions = 6;
@@ -386,7 +392,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
     Matrix::Tensorize(Qmat, G0_comparison, 0);
 
     double tau = 1.0;
-    SubflowPhi<0>(root, blas, tau, method);
+    integrator.SubflowPhi<0>(root, tau);
 
     std::vector<multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
     std::vector<multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
