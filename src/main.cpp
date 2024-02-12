@@ -32,15 +32,13 @@ int main(int argc, char** argv)
     double tau = result["tau"].as<double>();
     double tfinal = result["tfinal"].as<double>();
 
-    get_time::start("main");
-
-    std::map<std::string, integration_method*> integrations_methods;
-    integrations_methods["K"] = new implicit_euler{};
-    integrations_methods["S"] = new explicit_euler{};
-    integrations_methods["Q"] = new implicit_euler{};
+    std::map<std::string, integration_method*> integration_methods;
+    integration_methods["K"] = new implicit_euler{};
+    integration_methods["S"] = new explicit_euler{};
+    integration_methods["Q"] = new implicit_euler{};
 
     blas_ops blas;
-    TTNIntegrator integrator(blas, integrations_methods);
+    TTNIntegrator integrator(blas, integration_methods);
     cme_lr_tree tree;
 
     double t = 0.0;
@@ -91,13 +89,17 @@ int main(int argc, char** argv)
     auto t_stop(std::chrono::high_resolution_clock::now());
     auto t_elapsed = t_stop - t_start;
 
-    get_time::stop("main");
     std::cout << "\n\n";
     std::cout << "TIMER RESULTS\n";
     std::cout << "-------------\n";
     std::cout << get_time::sorted_output();
 
-    PrintDiagnostics(integrator.integration_methods, t_elapsed, tau, dm_max);
+    std::ofstream diagnostics_file;
+    Diagnostics diagnostics{integrator, t_elapsed, tau, dm_max};
+    diagnostics_file.open("output/" + output + "/diagnostics.txt", std::fstream::out);
+    diagnostics_file << diagnostics;
+    diagnostics_file.close();
+    std::cout << diagnostics;
 
     return EXIT_SUCCESS;
 }

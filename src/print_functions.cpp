@@ -44,27 +44,29 @@ void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::sy
 
 
 // TODO: memory requirement
-void PrintDiagnostics(const std::map<std::string, integration_method *> &integration_methods, const std::chrono::nanoseconds t_elapsed, const double tau, const double dm_max)
+std::ostream& operator<<(std::ostream& os, const Diagnostics& diagnostics)
 {
-    const auto [hrs, mins, secs, ms] = ChronoBurst(t_elapsed);
+    const auto [hrs, mins, secs, ms] = ChronoBurst(diagnostics.t_elapsed);
 
-    std::cout << "DIAGNOSTICS\n";
-    std::cout << "-----------\n";
-    std::cout << "Time elapsed: "
+    os << "DIAGNOSTICS\n"
+        << "-----------\n"
+        << "Time elapsed: "
         << hrs.count() << "h "
         << mins.count() << "mins "
         << secs.count() << "s "
-        << ms.count() << "ms\n";
-    std::cout << "Integration method (K): " << integration_methods.at("K")->get_name() << "\n";
-    std::cout << "Integration method (S): " << integration_methods.at("S")->get_name() << "\n";
-    std::cout << "Integration method (Q): " << integration_methods.at("Q")->get_name() << "\n";
-    std::cout << "Time step size: " << tau << "\n";
-    std::cout << "max(norm - 1.0): " << dm_max << "\n";
+        << ms.count() << "ms\n"
+        << "Integration method (K): " << diagnostics.integrator.integration_methods.at("K")->get_name() << "\n"
+        << "Integration method (S): " << diagnostics.integrator.integration_methods.at("S")->get_name() << "\n"
+        << "Integration method (Q): " << diagnostics.integrator.integration_methods.at("Q")->get_name() << "\n"
+        << "Time step size: " << diagnostics.tau << "\n"
+        << "max(norm - 1.0): " << diagnostics.dm_max << "\n";
 #ifdef __OPENMP__
-    cout << "[OpenMP activated]: OMP_NUM_THREADS=" << omp_get_max_threads() << "\n";
+    os << "[OpenMP activated]: OMP_NUM_THREADS=" << omp_get_max_threads() << "\n";
 #else
-    std::cout << "[OpenMP not activated]\n";
+    os << "[OpenMP not activated]\n";
 #endif
-    std::cout << "-----------\n";
-    std::cout << endl;
+    os << "-----------\n"
+        << endl;
+
+    return os;
 }

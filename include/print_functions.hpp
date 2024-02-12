@@ -3,13 +3,11 @@
 
 #include <chrono>
 #include <iostream>
-#include <sstream>
-#include <string>
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
 
-#include "integration_methods.hpp"
+#include "integrators.hpp"
 
 #ifdef __OPENMP__
 #include <omp.h>
@@ -29,7 +27,22 @@ auto ChronoBurst(std::chrono::duration<Rep, std::ratio<num, denom>> d)
 // Print progress bar
 void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::system_clock::time_point t_start, const double norm);
 
+struct Diagnostics
+{
+    Diagnostics(const Integrator &_integrator, const std::chrono::nanoseconds _t_elapsed, const double _tau, const double _dm_max)
+    : integrator(_integrator)
+    , t_elapsed(_t_elapsed)
+    , tau(_tau)
+    , dm_max(_dm_max)
+    {}
+
+    const Integrator integrator;
+    const std::chrono::nanoseconds t_elapsed;
+    const double tau;
+    const double dm_max;
+};
+
 // Print diagnostic information
-void PrintDiagnostics(const std::map<std::string, integration_method *> &integration_methods, const std::chrono::nanoseconds t_elapsed, const double tau, const double dm_max);
+std::ostream& operator<<(std::ostream &os, const Diagnostics &diagnostics);
 
 #endif
