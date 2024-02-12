@@ -1,9 +1,10 @@
+#include <cstdlib>
 #include <filesystem>
 
 #include <cxxopts.hpp>
 
+#include "integrators.hpp"
 #include "print_functions.hpp"
-#include "subflows.hpp"
 #include "timer_class.hpp"
 #include "tree_class.hpp"
 
@@ -33,19 +34,26 @@ int main(int argc, char** argv)
 
     get_time::start("main");
 
+    std::map<std::string, integration_method*> integrations_methods;
+    integrations_methods["K"] = new implicit_euler{};
+    integrations_methods["S"] = new explicit_euler{};
+    integrations_methods["Q"] = new implicit_euler{};
+
+    blas_ops blas;
+    TTNIntegrator integrator(blas, integrations_methods);
+    cme_lr_tree tree;
+
     double t = 0.0;
     double dm = 0.0;
     double dm_max = 0.0;
-    blas_ops blas;
-    implicit_euler method;
-    cme_lr_tree tree;
+
     const Index kNsteps = ceil(tfinal / tau); // Number of time steps
 
     tree.Read("input/input.nc");
-    cout << tree;
+    std::cout << tree;
     tree.Orthogonalize(blas);
     double norm = tree.Normalize();
-    cout << "Norm: " << norm << endl;
+    std::cout << "Norm: " << norm << std::endl;
 
     // Check if folder in ../output/ exists, otherwise create folder
     std::string fname;
@@ -63,7 +71,7 @@ int main(int argc, char** argv)
         if (tfinal - t < tau)
             tau = tfinal - t;
 
-        TTNIntegrator(tree.root, blas, tau, method);
+        integrator(tree.root, tau);
         norm = tree.Normalize();
 
         dm = norm - 1.0;
@@ -84,12 +92,12 @@ int main(int argc, char** argv)
     auto t_elapsed = t_stop - t_start;
 
     get_time::stop("main");
-    cout << endl << endl;
-    cout << "TIMER RESULTS" << endl;
-    cout << "-------------" << endl;
-    cout << get_time::sorted_output();
+    std::cout << "\n\n";
+    std::cout << "TIMER RESULTS\n";
+    std::cout << "-------------\n";
+    std::cout << get_time::sorted_output();
 
-    PrintDiagnostics(method, t_elapsed, tau, dm_max);
+    PrintDiagnostics(integrator.integration_methods, t_elapsed, tau, dm_max);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
