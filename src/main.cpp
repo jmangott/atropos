@@ -95,11 +95,11 @@ int main(int argc, char** argv)
     std::cout << get_time::sorted_output();
 
     std::ofstream diagnostics_file;
-    Diagnostics diagnostics{integrator, t_elapsed, tau, dm_max};
+    diagnostics dgn{integrator, t_elapsed, tau, dm_max};
     diagnostics_file.open("output/" + output + "/diagnostics.txt", std::fstream::out);
-    diagnostics_file << diagnostics;
+    diagnostics_file << dgn;
     diagnostics_file.close();
-    std::cout << diagnostics;
+    std::cout << dgn;
 
     return EXIT_SUCCESS;
 }
