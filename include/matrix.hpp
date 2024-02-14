@@ -112,8 +112,6 @@ namespace Matrix
         Index max_i = std::min(n_rows, n_rows + shift);
 
         // NOTE: Ensign stores matrices in column-major order
-
-        std::vector<Index> vec_index(grid.d);
         // TODO: parallelize loops
         for (Index j = 0; j < n_cols; ++j)
         {
@@ -123,14 +121,13 @@ namespace Matrix
             }
         }
 
+        std::vector<Index> vec_index(grid.d);
         IndexFunction::CombIndexToVecIndex(min_i, std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
         for (Index i = min_i; i < max_i; ++i)
         {
-            for (int k = 0; k < grid.d; ++k)
+            for (Index k = 0; k < grid.d; ++k)
             {
-                if (
-                    ((inv * grid.nu(mu, k) > 0) && (vec_index[k] - inv * grid.nu(mu, k) < 0)) ||
-                    ((inv * grid.nu(mu, k) < 0) && (vec_index[k] - inv * grid.nu(mu, k) >= grid.n[k])))
+                if ((vec_index[k] - inv * grid.nu(mu, k) < 0) || (vec_index[k] - inv * grid.nu(mu, k) >= grid.n[k]))
                 {
                     for (Index j = 0; j < n_cols; ++j)
                     {
