@@ -7,10 +7,10 @@ from scripts.initial_condition_class import InitialCondition
 from scripts.tree_class import Tree
 from scripts.index_functions import incrVecIndex
 
-import scripts.hierarchical.models.bax as model
+import scripts.models.bax as model
 
 partition_str = "(0 1 2)(((3 4 6 7)(5 8))(9 10))"
-r_out = np.array([5, 3, 3])
+r_out = np.array([5, 4, 4])
 n_basisfunctions = np.ones(r_out.size, dtype="int")
 
 # Grid parameters
