@@ -1,5 +1,5 @@
-#ifndef NETCDF_ERROR_HPP
-#define NETCDF_ERROR_HPP
+#ifndef NETCDF_CHECK_HPP
+#define NETCDF_CHECK_HPP
 
 #include <cstdlib>
 
