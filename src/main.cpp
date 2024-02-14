@@ -17,7 +17,7 @@ int main(int argc, char** argv)
         ("s,snapshot", "Number of steps between two snapshots", cxxopts::value<int>())
         ("t,tau", "Time step size", cxxopts::value<double>())
         ("f,tfinal", "Final integration time", cxxopts::value<double>())
-        ("ss,substeps", "Number of integration substeps", cxxopts::value<unsigned int>()->default_value("1"))
+        ("n,substeps", "Number of integration substeps", cxxopts::value<unsigned int>()->default_value("1"))
         ("k,kstep", "Integration method for the K step (`e` for explicit` or `i` for implicit Euler)", cxxopts::value<char>()->default_value("i"))
         ("h,help", "Print usage")
         ;
@@ -41,10 +41,12 @@ int main(int argc, char** argv)
     {
     case 'e':
         integration_methods["K"] = new explicit_euler(substeps);
+        break;
     case 'i':
         integration_methods["K"] = new implicit_euler(substeps);
+        break;
     default:
-        std::cout << "Command line option `kstep` must be either `e` or `i`!" << std::endl;
+        std::cout << "Error: Command line option `kstep` must be either `e` or `i`!" << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
