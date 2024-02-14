@@ -17,6 +17,8 @@ int main(int argc, char** argv)
         ("s,snapshot", "Number of steps between two snapshots", cxxopts::value<int>())
         ("t,tau", "Time step size", cxxopts::value<double>())
         ("f,tfinal", "Final integration time", cxxopts::value<double>())
+        ("ss,substeps", "Number of integration substeps", cxxopts::value<unsigned int>()->default_value("1"))
+        ("k,kstep", "Integration method for the K step (`e` for explicit` or `i` for implicit Euler)", cxxopts::value<char>()->default_value("i"))
         ("h,help", "Print usage")
         ;
 
@@ -31,11 +33,23 @@ int main(int argc, char** argv)
     int snapshot = result["snapshot"].as<int>();
     double tau = result["tau"].as<double>();
     double tfinal = result["tfinal"].as<double>();
+    unsigned int substeps = result["substeps"].as<unsigned int>();
+    char kstep = result["kstep"].as<char>();
 
     std::map<std::string, integration_method*> integration_methods;
-    integration_methods["K"] = new implicit_euler{};
-    integration_methods["S"] = new explicit_euler{};
-    integration_methods["Q"] = new implicit_euler{};
+    switch (kstep)
+    {
+    case 'e':
+        integration_methods["K"] = new explicit_euler(substeps);
+    case 'i':
+        integration_methods["K"] = new implicit_euler(substeps);
+    default:
+        std::cout << "Command line option `kstep` must be either `e` or `i`!" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    integration_methods["S"] = new explicit_euler(substeps);
+    integration_methods["Q"] = new explicit_euler(substeps);
 
     blas_ops blas;
     ttn_integrator integrator(blas, integration_methods);
@@ -45,7 +59,7 @@ int main(int argc, char** argv)
     double dm = 0.0;
     double dm_max = 0.0;
 
-    const Index kNsteps = std::ceil(tfinal / tau); // Number of time steps
+    const Index kNsteps = std::ceil(tfinal / tau);
 
     tree.Read("input/input.nc");
     std::cout << tree;
