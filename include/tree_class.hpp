@@ -13,7 +13,7 @@
 
 #include "coeff_class.hpp"
 #include "grid_class.hpp"
-#include "netcdf_error.hpp"
+#include "netcdf_check.hpp"
 #include "matrix.hpp"
 #include "timer_class.hpp"
 
