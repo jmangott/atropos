@@ -51,6 +51,7 @@ int main(int argc, char** argv)
     std::cout << tree;
     tree.Orthogonalize(blas);
     double norm = tree.Normalize();
+    tree.InitializeAB_bar(blas);
     std::cout << "Norm: " << norm << std::endl;
 
     // Check if folder in ../output/ exists, otherwise create folder

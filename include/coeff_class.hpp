@@ -11,12 +11,14 @@
 
 struct cme_coeff
 {
-    std::vector<multi_array<double, 2>> A, B;
+    std::vector<multi_array<double, 2>> A, B, A_bar, B_bar;
     multi_array<double, 4> E, F;
 
     cme_coeff(const Index _n_reactions, const Index _r_in)
     : A(_n_reactions)
     , B(_n_reactions)
+    , A_bar(_n_reactions)
+    , B_bar(_n_reactions)
     , E({_r_in, _r_in, _r_in, _r_in})
     , F({_r_in, _r_in, _r_in, _r_in})
     {
@@ -24,6 +26,8 @@ struct cme_coeff
         {
             A[mu].resize({_r_in, _r_in});
             B[mu].resize({_r_in, _r_in});
+            A_bar[mu].resize({_r_in, _r_in});
+            B_bar[mu].resize({_r_in, _r_in});
         }
     }
 };

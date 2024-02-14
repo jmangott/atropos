@@ -24,6 +24,8 @@ void cme_internal_node::Initialize(int ncid)
         {
             coefficients.A[mu](0, 0) = 1.0;
             coefficients.B[mu](0, 0) = 1.0;
+            coefficients.A_bar[mu](0, 0) = 1.0;
+            coefficients.B_bar[mu](0, 0) = 1.0;
         }
         coefficients.E(0, 0, 0, 0) = 1.0;
         coefficients.F(0, 0, 0, 0) = 1.0;
@@ -298,6 +300,21 @@ void cme_lr_tree::Orthogonalize(const blas_ops& blas) const
     OrthogonalizeHelper(root, blas);
 };
 
+void cme_lr_tree::InitializeAB_barHelper(cme_node* const node, const blas_ops& blas) const
+{
+    if (node->IsInternal())
+    {
+        InitializeAB_barHelper(node->child[0], blas);
+        InitializeAB_barHelper(node->child[1], blas);
+    }
+    node->CalculateAB_bar(blas);
+}
+
+void cme_lr_tree::InitializeAB_bar(const blas_ops& blas) const
+{
+    InitializeAB_barHelper(root, blas);
+}
+
 std::vector<double> cme_lr_tree::NormalizeHelper(cme_node const * const node) const
 {
     std::vector<double> x_sum(node->RankIn(), 0.0);
@@ -475,74 +492,59 @@ cme_node* ReadHelpers::ReadNode(int ncid, const std::string id, cme_internal_nod
     return child_node;
 }
 
-void CalculateAB_bar(cme_node const * const child_node_init, std::vector<multi_array<double, 2>> &A_bar, std::vector<multi_array<double, 2>> &B_bar, const blas_ops &blas)
+void cme_node::CalculateAB_bar(const blas_ops &blas)
 {
-    for (Index mu = 0; mu < child_node_init->grid.n_reactions; ++mu)
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
-        set_zero(A_bar[mu]);
-        set_zero(B_bar[mu]);
+        set_zero(coefficients.A_bar[mu]);
+        set_zero(coefficients.B_bar[mu]);
     }
 
-    if (child_node_init->IsExternal())
+    if (IsExternal())
     {
-        cme_external_node *child_node = (cme_external_node *) child_node_init;
-        multi_array<double, 2> X_shift({child_node->grid.dx, child_node->RankIn()});
-        multi_array<double, 1> weight({child_node->grid.dx});
+        cme_external_node *this_node = (cme_external_node *) this;
+        multi_array<double, 2> X_shift({this_node->grid.dx, this_node->RankIn()});
+        multi_array<double, 1> weight({this_node->grid.dx});
 
-        for (Index mu = 0; mu < child_node->grid.n_reactions; ++mu)
+        for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
         {
-            Matrix::ShiftRows<-1>(X_shift, child_node->X, child_node->grid, mu);
+            Matrix::ShiftRows<-1>(X_shift, this_node->X, this_node->grid, mu);
 
-            std::vector<Index> vec_index(child_node->grid.d, 0);
+            std::vector<Index> vec_index(this_node->grid.d, 0);
 
             // TODO: parallelize this loop
-            for (Index alpha = 0; alpha < child_node->grid.dx; ++alpha)
+            for (Index alpha = 0; alpha < this_node->grid.dx; ++alpha)
             {
-                Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(child_node->grid.n_dep[mu]), std::begin(child_node->grid.idx_dep[mu]), std::end(child_node->grid.idx_dep[mu]));
+                Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]), std::begin(this_node->grid.idx_dep[mu]), std::end(this_node->grid.idx_dep[mu]));
 
-                weight(alpha) = child_node->external_coefficients.propensity[mu][alpha_dep] * child_node->grid.h_mult;
-                IndexFunction::IncrVecIndex(std::begin(child_node->grid.n), std::begin(vec_index), std::end(vec_index));
+                weight(alpha) = this_node->external_coefficients.propensity[mu][alpha_dep] * this_node->grid.h_mult;
+                IndexFunction::IncrVecIndex(std::begin(this_node->grid.n), std::begin(vec_index), std::end(vec_index));
             }
-            coeff(X_shift, child_node->X, weight, A_bar[mu], blas);
-            coeff(child_node->X, child_node->X, weight, B_bar[mu], blas);
+            coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
+            coeff(this_node->X, this_node->X, weight, coefficients.B_bar[mu], blas);
         }
     }
     else
     {
-        cme_internal_node *child_node = (cme_internal_node *)child_node_init;
-        std::vector<multi_array<double, 2>> A_bar_child0(child_node->grid.n_reactions);
-        std::vector<multi_array<double, 2>> B_bar_child0(child_node->grid.n_reactions);
-        std::vector<multi_array<double, 2>> A_bar_child1(child_node->grid.n_reactions);
-        std::vector<multi_array<double, 2>> B_bar_child1(child_node->grid.n_reactions);
-
-        for (Index mu = 0; mu < child_node->grid.n_reactions; ++mu)
-        {
-            A_bar_child0[mu].resize({child_node->RankOut()[0], child_node->RankOut()[0]});
-            B_bar_child0[mu].resize({child_node->RankOut()[0], child_node->RankOut()[0]});
-            A_bar_child1[mu].resize({child_node->RankOut()[1], child_node->RankOut()[1]});
-            B_bar_child1[mu].resize({child_node->RankOut()[1], child_node->RankOut()[1]});
-        }
-
-        CalculateAB_bar(child_node->child[0], A_bar_child0, B_bar_child0, blas);
-        CalculateAB_bar(child_node->child[1], A_bar_child1, B_bar_child1, blas);
+        cme_internal_node *this_node = (cme_internal_node *) this;
 
         // TODO: remove number of loops
-        for (Index mu = 0; mu < child_node->grid.n_reactions; ++mu)
+        for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
         {
-            for (Index i0 = 0; i0 < child_node->RankOut()[0]; ++i0)
+            for (Index i0 = 0; i0 < this_node->RankOut()[0]; ++i0)
             {
-                for (Index j0 = 0; j0 < child_node->RankOut()[0]; ++j0)
+                for (Index j0 = 0; j0 < this_node->RankOut()[0]; ++j0)
                 {
-                    for (Index i1 = 0; i1 < child_node->RankOut()[1]; ++i1)
+                    for (Index i1 = 0; i1 < this_node->RankOut()[1]; ++i1)
                     {
-                        for (Index j1 = 0; j1 < child_node->RankOut()[1]; ++j1)
+                        for (Index j1 = 0; j1 < this_node->RankOut()[1]; ++j1)
                         {
-                            for (Index i = 0; i < child_node->RankIn(); ++i)
+                            for (Index i = 0; i < this_node->RankIn(); ++i)
                             {
-                                for (Index j = 0; j < child_node->RankIn(); ++j)
+                                for (Index j = 0; j < this_node->RankIn(); ++j)
                                 {
-                                    A_bar[mu](i, j) += child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * A_bar_child0[mu](i0, j0) * A_bar_child1[mu](i1, j1);
-                                    B_bar[mu](i, j) += child_node->Q(i0, i1, i) * child_node->Q(j0, j1, j) * B_bar_child0[mu](i0, j0) * B_bar_child1[mu](i1, j1);
+                                    coefficients.A_bar[mu](i, j) += this_node->Q(i0, i1, i) * this_node->Q(j0, j1, j) * this_node->child[0]->coefficients.A_bar[mu](i0, j0) * this_node->child[1]->coefficients.A_bar[mu](i1, j1);
+                                    coefficients.B_bar[mu](i, j) += this_node->Q(i0, i1, i) * this_node->Q(j0, j1, j) * this_node->child[0]->coefficients.B_bar[mu](i0, j0) * this_node->child[1]->coefficients.B_bar[mu](i1, j1);
                                 }
                             }
                         }
@@ -621,17 +623,6 @@ void cme_node::CalculateEF(const blas_ops& blas)
     std::fill(std::begin(coefficients.E), std::end(coefficients.E), 0.0);
     std::fill(std::begin(coefficients.F), std::end(coefficients.F), 0.0);
 
-    std::vector<multi_array<double, 2>> A_bar(grid.n_reactions);
-    std::vector<multi_array<double, 2>> B_bar(grid.n_reactions);
-
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
-    {
-        A_bar[mu].resize({RankIn(), RankIn()});
-        B_bar[mu].resize({RankIn(), RankIn()});
-    }
-
-    CalculateAB_bar(this, A_bar, B_bar, blas);
-
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         for (Index i = 0; i < RankIn(); ++i)
@@ -642,8 +633,8 @@ void cme_node::CalculateEF(const blas_ops& blas)
                 {
                     for (Index l = 0; l < RankIn(); ++l)
                     {
-                        coefficients.E(i, j, k, l) += A_bar[mu](i, k) * coefficients.A[mu](j, l);
-                        coefficients.F(i, j, k, l) += B_bar[mu](i, k) * coefficients.B[mu](j, l);
+                        coefficients.E(i, j, k, l) += coefficients.A_bar[mu](i, k) * coefficients.A[mu](j, l);
+                        coefficients.F(i, j, k, l) += coefficients.B_bar[mu](i, k) * coefficients.B[mu](j, l);
                     }
                 }
             }
@@ -680,22 +671,6 @@ void cme_internal_node::CalculateGH(const blas_ops& blas)
     std::fill(std::begin(internal_coefficients.G), std::end(internal_coefficients.G), 0.0);
     std::fill(std::begin(internal_coefficients.H), std::end(internal_coefficients.H), 0.0);
 
-    std::vector<multi_array<double, 2>> A_bar_child0(grid.n_reactions);
-    std::vector<multi_array<double, 2>> B_bar_child0(grid.n_reactions);
-    std::vector<multi_array<double, 2>> A_bar_child1(grid.n_reactions);
-    std::vector<multi_array<double, 2>> B_bar_child1(grid.n_reactions);
-
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
-    {
-        A_bar_child0[mu].resize({RankOut()[0], RankOut()[0]}); 
-        B_bar_child0[mu].resize({RankOut()[0], RankOut()[0]}); 
-        A_bar_child1[mu].resize({RankOut()[1], RankOut()[1]}); 
-        B_bar_child1[mu].resize({RankOut()[1], RankOut()[1]}); 
-    }
-
-    CalculateAB_bar(child[0], A_bar_child0, B_bar_child0, blas);
-    CalculateAB_bar(child[1], A_bar_child1, B_bar_child1, blas);
-
     // TODO: remove number of loops
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
@@ -711,8 +686,8 @@ void cme_internal_node::CalculateGH(const blas_ops& blas)
                         {
                             for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
                             {
-                                internal_coefficients.G(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.A[mu](i, j) * A_bar_child0[mu](i0, j0) * A_bar_child1[mu](i1, j1);
-                                internal_coefficients.H(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.B[mu](i, j) * B_bar_child0[mu](i0, j0) * B_bar_child1[mu](i1, j1);
+                                internal_coefficients.G(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.A[mu](i, j) * child[0]->coefficients.A_bar[mu](i0, j0) * child[1]->coefficients.A_bar[mu](i1, j1);
+                                internal_coefficients.H(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.B[mu](i, j) * child[0]->coefficients.B_bar[mu](i0, j0) * child[1]->coefficients.B_bar[mu](i1, j1);
                             }
                         }
                     }

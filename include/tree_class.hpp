@@ -132,7 +132,7 @@ struct cme_node : virtual node<double>
     , grid(_grid)
     , coefficients(_grid.n_reactions, _r_in)
     {}
-    void CalculateS(const double tau);
+    void CalculateAB_bar(const blas_ops &blas);
     void CalculateEF(const blas_ops& blas);
 };
 
@@ -147,6 +147,7 @@ struct cme_internal_node : cme_node, internal_node<double>
     , internal_coefficients(_r_in, _r_out)
     {}
     void Initialize(int ncid) override;
+
     template <Index id>
     void CalculateAB(const blas_ops &blas);
     void CalculateGH(const blas_ops &blas);
@@ -164,7 +165,6 @@ struct cme_external_node : cme_node, external_node<double>
     , external_coefficients(_grid.n_reactions)
     {}
     void Initialize(int ncid) override;
-    void CalculateCD();
 };
 
 multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas);
@@ -187,12 +187,14 @@ struct cme_lr_tree
     private:
         void PrintHelper(std::ostream &os, cme_node const * const node) const;
         void OrthogonalizeHelper(cme_internal_node * const node, const blas_ops &blas) const;
+        void InitializeAB_barHelper(cme_node * const node, const blas_ops &blas) const;
         std::vector<double> NormalizeHelper(cme_node const * const node) const;
 
     public:
         void Read(const std::string fn);
         void Write(const std::string, const double t, const double tau, const double dm) const;
         void Orthogonalize(const blas_ops &blas) const;
+        void InitializeAB_bar(const blas_ops &blas) const;
         double Normalize() const;
 };
 
@@ -234,25 +236,16 @@ multi_array<T, 2> external_node<T>::Orthogonalize(std::function<T(T *, T *)> inn
     return X_R;
 };
 
-// TODO: Is the propensity really needed for all nodes or only for the external ones?
-void CalculateAB_bar(cme_node const * const child_node_init, std::vector<multi_array<double, 2>> &A_bar, std::vector<multi_array<double, 2>> &B_bar, const blas_ops &blas);
-
 template <Index id>
 void cme_internal_node::CalculateAB(const blas_ops &blas)
 {
     const Index id_c = (id == 0) ? 1 : 0;
-    std::vector<multi_array<double, 2>> A_bar(grid.n_reactions);
-    std::vector<multi_array<double, 2>> B_bar(grid.n_reactions);
 
     for (Index mu = 0; mu < child[id]->grid.n_reactions; ++mu)
     {
-        A_bar[mu].resize({RankOut()[id_c], RankOut()[id_c]});
-        B_bar[mu].resize({RankOut()[id_c], RankOut()[id_c]});
         set_zero(child[id]->coefficients.A[mu]);
         set_zero(child[id]->coefficients.B[mu]);
     }
-
-    CalculateAB_bar(child[id_c], A_bar, B_bar, blas);
 
     // TODO: reduce number of loops: precalculate A*A_bar
     // and calculate A*A_bar(mu, ic=i1*i, jc=j1*j) * G(ic, i0) * G(jc, j0) (only 5 loops needed)
@@ -270,8 +263,8 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
                         {
                             for (Index j = 0; j < RankIn(); ++j)
                             {
-                                child[id]->coefficients.A[mu](i0, j0) += coefficients.A[mu](i, j) * G(i0, i1, i) * G(j0, j1, j) * A_bar[mu](i1, j1);
-                                child[id]->coefficients.B[mu](i0, j0) += coefficients.B[mu](i, j) * G(i0, i1, i) * G(j0, j1, j) * B_bar[mu](i1, j1);
+                                child[id]->coefficients.A[mu](i0, j0) += coefficients.A[mu](i, j) * G(i0, i1, i) * G(j0, j1, j) * child[id_c]->coefficients.A_bar[mu](i1, j1);
+                                child[id]->coefficients.B[mu](i0, j0) += coefficients.B[mu](i, j) * G(i0, i1, i) * G(j0, j1, j) * child[id_c]->coefficients.B_bar[mu](i1, j1);
                             }
                         }
                     }

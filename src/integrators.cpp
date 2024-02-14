@@ -55,7 +55,7 @@ void ttn_integrator::SubflowPhi(cme_internal_node * const node, const double tau
         Matrix::Tensorize(Cmat_child, child_node->Q, 2);
         get_time::stop("Internal");
 
-        (*this)(child_node, tau);
+        ttn_integrator::operator()(child_node, tau);
 
         get_time::start("Internal");
         // Compute QR decomposition C^(n+id) = Q^(n+id) * S^(n+id)
@@ -66,6 +66,8 @@ void ttn_integrator::SubflowPhi(cme_internal_node * const node, const double tau
         Matrix::Tensorize(Cmat_child, child_node->Q, 2);
         get_time::stop("Internal");
     }
+
+    node->child[id]->CalculateAB_bar(blas);
 
     // Integrate S
     get_time::start("S");
