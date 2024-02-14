@@ -8,6 +8,7 @@ setup(name='kinetic-cme-scripts',
                     'scripts.models.toggle_switch',
                     'scripts.id_class',
                     'scripts.initial_condition_class',
+                    'scripts.index_functions',
                     'scripts.grid_class',
                     'scripts.reaction_class',
                     'scripts.tree_class']
