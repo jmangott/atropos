@@ -1,21 +1,17 @@
 #ifndef NETCDF_ERROR_HPP
 #define NETCDF_ERROR_HPP
 
-#define NETCDF_CHECK(e)                                                     \
-    {                                                                       \
-        int res = e;                                                        \
-        if(res != NC_NOERR)                                                 \
-        {                                                                   \
-            cout << "NetCDF Error " << __FILE__ << ":" << __LINE__ << ": "  \
-             << nc_strerror(res) << endl;                                   \
-            exit(1);                                                        \
-        }                                                                   \
-    }
+#include <cstdlib>
 
-#define NETCDF_ERROR(e)                                                         \
+#define NETCDF_CHECK(e)                                                         \
     {                                                                           \
-        printf("NetCDF Error %s:%i: %s\n", __FILE__, __LINE__, nc_strerror(e)); \
-        exit(1);                                                                \
+        int res = e;                                                            \
+        if(res != NC_NOERR)                                                     \
+        {                                                                       \
+            std::cout << "NetCDF Error " << __FILE__ << ":" << __LINE__ << ": " \
+             << nc_strerror(res) << std::endl;                                  \
+            exit(EXIT_FAILURE);                                                 \
+        }                                                                       \
     }
 
 #endif
