@@ -15,10 +15,11 @@
 
 TEST_CASE("tree_h1", "[tree_h1]")
 {
+    unsigned int substeps = 1;
     std::map<std::string, integration_method *> integrations_methods;
-    integrations_methods["K"] = new explicit_euler{};
-    integrations_methods["S"] = new explicit_euler{};
-    integrations_methods["Q"] = new explicit_euler{};
+    integrations_methods["K"] = new explicit_euler(substeps);
+    integrations_methods["S"] = new explicit_euler(substeps);
+    integrations_methods["Q"] = new explicit_euler(substeps);
 
     blas_ops blas;
     ttn_integrator integrator(blas, integrations_methods);
