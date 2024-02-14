@@ -342,6 +342,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
     node1->X = X1;
     node00->X = X00;
     node01->X = X01;
+    tree.InitializeAB_bar(blas);
 
     // Check if this yields the same probability distribution
     std::fill(std::begin(p), std::end(p), 0.0);

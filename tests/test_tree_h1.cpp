@@ -177,6 +177,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     // Check if the probability distribution remains the same under orthogonalization
     std::fill(std::begin(p_ortho), std::end(p_ortho), 0.0);
     tree.Orthogonalize(blas);
+    tree.InitializeAB_bar(blas);
 
     for (Index i = 0; i < r; ++i)
     {
@@ -361,6 +362,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node0->S(0, 1) = 0.0;
     node0->S(1, 0) = 0.0;
     node0->S(1, 1) = 0.0;
+    node0->CalculateAB_bar(blas);
     multi_array<double, 2> S0_old(node0->S);
 
     S0_comparison(0, 0) = tau * 1.5 * std::exp(-0.5);
@@ -595,6 +597,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node0->X = X0;
     node1->X = X1;
     tau = 0.001;
+    node0->CalculateAB_bar(blas);
+    node1->CalculateAB_bar(blas);
 
     integrator.SubflowPhi<0>(tree.root, tau);
 
@@ -623,6 +627,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
     std::function<double(double *, double *)> ip_x;
     ip_x = inner_product_from_const_weight(node1->grid.h_mult, node1->grid.dx);
     gs(node1->X, node1->S, ip_x);
+
+    node1->CalculateAB_bar(blas);
 
     // Integrate S
     multi_array<double, 2> deltaS(node1->S);
