@@ -184,8 +184,6 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     comparison_array(6, 0) = 12.0;
 
     Matrix::ShiftRows<1>(output_array, input_array, grid, 0);
-    cout << output_array << endl;
-    cout << comparison_array << endl;
     REQUIRE(bool(output_array == comparison_array));
 
     // TEST 2
