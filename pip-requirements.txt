@@ -1,6 +1,7 @@
 numba
 numpy
 matplotlib
+regex
 scipy
 xarray
 xarray-datatree
