@@ -16,7 +16,7 @@
 
 #include "matrix_free.hpp"
 #include "timer_class.hpp"
-
+//TODO: use a function pointer instead of std::function for performance
 struct integration_method
 {
     integration_method() = default;
@@ -76,6 +76,46 @@ struct implicit_euler : integration_method
     std::string get_name() const override
     {
         return "implicit_euler (" + std::to_string(substeps) + " substeps)";
+    }
+
+    const unsigned int substeps;
+};
+
+struct crank_nicolson : integration_method
+{
+    crank_nicolson(const unsigned int _substeps)
+    : substeps(_substeps)
+    {};
+
+    void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const override
+    {
+        double tau_half = 0.5 * tau;
+
+        Eigen::GMRES<matrix_free, Eigen::IdentityPreconditioner> gmres;
+        Eigen::VectorXd x, b;
+        multi_array<double, 2> b_arr(arr.shape());
+
+        double tau_substep = tau_half / substeps;
+        matrix_free A(arr.shape(), rhs, tau_substep);
+        gmres.compute(A);
+
+        for (auto i = 0U; i < substeps; ++i)
+        {
+            b_arr = arr;
+            b_arr += rhs(arr) * tau_half;
+
+            b = Eigen::Map<Eigen::VectorXd>(b_arr.data(), prod(b_arr.shape()));
+
+            x = gmres.solve(b);
+            
+            Eigen::Map<Eigen::VectorXd>(arr.data(), x.size()) = x;
+        }
+
+    }
+
+    std::string get_name() const override
+    {
+        return "crank_nicolson (" + std::to_string(substeps) + " substeps)";
     }
 
     const unsigned int substeps;

@@ -18,7 +18,7 @@ int main(int argc, char** argv)
         ("t,tau", "Time step size", cxxopts::value<double>())
         ("f,tfinal", "Final integration time", cxxopts::value<double>())
         ("n,substeps", "Number of integration substeps", cxxopts::value<unsigned int>()->default_value("1"))
-        ("k,kstep", "Integration method for the K step (`e` for explicit` or `i` for implicit Euler)", cxxopts::value<char>()->default_value("i"))
+        ("k,kstep", "Integration method for the K step (`e` (explicit Euler), `i` (implicit Euler), `c` (Crank-Nicolson))", cxxopts::value<char>()->default_value("i"))
         ("h,help", "Print usage")
         ;
 
@@ -44,6 +44,9 @@ int main(int argc, char** argv)
         break;
     case 'i':
         integration_methods["K"] = new implicit_euler(substeps);
+        break;
+    case 'c':
+        integration_methods["K"] = new crank_nicolson(substeps);
         break;
     default:
         std::cout << "Error: Command line option `kstep` must be either `e` or `i`!" << std::endl;
