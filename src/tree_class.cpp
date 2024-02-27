@@ -138,7 +138,7 @@ void WriteHelpers::WriteGridParms(int ncid, const grid_parms grid)
     NETCDF_CHECK(nc_def_var(ncid, "liml", NC_DOUBLE, 1, &id_d, &varid_liml));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_liml, grid.liml.data()));
     NETCDF_CHECK(nc_def_var(ncid, "species", NC_INT, 1, &id_d, &varid_species));
-    NETCDF_CHECK(nc_put_var_int(ncid, varid_liml, grid.species.data()));
+    NETCDF_CHECK(nc_put_var_int(ncid, varid_species, grid.species.data()));
 }
 
 void WriteHelpers::WriteNode(int ncid, cme_node const * const node)
@@ -582,7 +582,7 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
         {
             Index alpha;
 #ifdef __OPENMP__
-            Index chunk_size = IndexFunction::SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(grid.n), grid.dx);
+            Index chunk_size = IndexFunction::SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(node->grid.n), node->grid.dx);
 #endif
 
 #ifdef __OPENMP__

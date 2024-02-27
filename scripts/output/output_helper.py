@@ -22,7 +22,7 @@ plt.rcParams.update({
     'pgf.rcfonts': False,
     "figure.figsize": (6, 4),
     "lines.linewidth": "1",
-    "lines.markersize": "4.5",
+    "lines.markersize": "5",
     "lines.linestyle": "none",
     "axes.titlesize": "medium",
 })
@@ -49,9 +49,10 @@ def __readTree(node: Node, filename: str):
 def readTree(filename: str) -> Tree:
     with xr.open_dataset(filename) as ds:
         partition_str = ds.attrs['partition_str']
-        n = ds['n'].values
-        binsize = ds['binsize'].values
-        liml = ds['liml'].values
+        species = ds['species'].values
+        n = ds['n'].values[species]
+        binsize = ds['binsize'].values[species]
+        liml = ds['liml'].values[species]
         grid = GridParms(n, binsize, liml)
         tree = Tree(partition_str, grid)
 
