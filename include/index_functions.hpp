@@ -66,7 +66,7 @@ namespace IndexFunction
         ++(*(std::next(d_last, -1)));
     }
 
-    #ifdef __OPENMP__
+#ifdef __OPENMP__
     template <class InputIt, class InputItInt>
     Index SetVecIndex(InputIt first, InputIt last, InputItInt first_int, const Index dx)
     {
@@ -78,7 +78,7 @@ namespace IndexFunction
         CombIndexToVecIndex(start_index, first_int, first, last);
         return chunk_size;
     }
-    #endif
+#endif
 }
 
 #endif
