@@ -82,7 +82,7 @@ TEST_CASE("SetVecIndex", "[SetVecIndex]")
     omp_set_dynamic(0);
     omp_set_num_threads(4);
     Index dx = 399;
-    vector<Index> interval = {7, 19, 3};
+    std::vector<Index> interval = {7, 19, 3};
 
 #pragma omp parallel
     {
