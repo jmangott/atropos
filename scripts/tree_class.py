@@ -235,7 +235,7 @@ class Tree:
 
         elif isinstance(node, InternalNode):
             ds = self.__createDataset(node)
-            ds["Q"] = (["n_basisfunctions", "r_out", "r_out"], node.Q.T)
+            ds["Q"] = (["n_basisfunctions", "r_out0", "r_out1"], node.Q.T)
             dt = DataTree(name=str(node.id),
                           parent=parent_dt, data=ds)
             self.__write(node.child[0], dt)
@@ -251,7 +251,7 @@ class Tree:
         self.grid.permute(self.species)
 
         ds = self.__createDataset(self.root)
-        ds["Q"] = (["n_basisfunctions", "r_out", "r_out"], self.root.Q.T)
+        ds["Q"] = (["n_basisfunctions", "r_out0", "r_out1"], self.root.Q.T)
         dt = DataTree(name=str(self.root.id), data=ds)
         dt.attrs["partition_str"] = self.partition_str
         self.__write(self.root.child[0], dt)
@@ -269,6 +269,7 @@ class Tree:
             node.X_slice = np.einsum("i,ijk,j", node.child[0].X_slice, node.Q, node.child[1].X_slice)
 
     def calculateObservables(self, slice: npt.NDArray[np.int_]):
+        # TODO: add direct output of the norm, but this also requires a change of the `InitialCondition` class
         if slice.size != self.root.grid.d():
             raise Exception(
                 "`slice.size` must be equal to the number of dimensions of the root node")

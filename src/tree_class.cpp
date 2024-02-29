@@ -415,14 +415,16 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
 std::array<Index, 2> ReadHelpers::ReadRankOut(int ncid)
 {
     // read rank
-    int id_r;
-    NETCDF_CHECK(nc_inq_dimid(ncid, "r_out", &id_r));
+    int id_r0, id_r1;
+    NETCDF_CHECK(nc_inq_dimid(ncid, "r_out0", &id_r0));
+    NETCDF_CHECK(nc_inq_dimid(ncid, "r_out1", &id_r1));
 
-    size_t r_t;
+    size_t r0_t, r1_t;
     char tmp[NC_MAX_NAME + 1];
-    NETCDF_CHECK(nc_inq_dim(ncid, id_r, tmp, &r_t));
+    NETCDF_CHECK(nc_inq_dim(ncid, id_r0, tmp, &r0_t));
+    NETCDF_CHECK(nc_inq_dim(ncid, id_r1, tmp, &r1_t));
 
-    std::array<Index, 2> r_out = {(Index) r_t, (Index) r_t};
+    std::array<Index, 2> r_out = {(Index) r0_t, (Index) r1_t};
     return r_out;
 }
 
@@ -503,25 +505,31 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
     if (IsExternal())
     {
         cme_external_node *this_node = (cme_external_node *) this;
-        multi_array<double, 2> X_shift({this_node->grid.dx, this_node->RankIn()});
-        multi_array<double, 1> weight({this_node->grid.dx});
-
-        for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
+// #ifdef __OPENMP__
+// #pragma omp parallel
+// #endif
         {
-            Matrix::ShiftRows<-1>(X_shift, this_node->X, this_node->grid, mu);
+            multi_array<double, 2> X_shift({this_node->grid.dx, this_node->RankIn()});
+            multi_array<double, 1> weight({this_node->grid.dx});
 
-            std::vector<Index> vec_index(this_node->grid.d, 0);
-
-            // TODO: parallelize this loop
-            for (Index alpha = 0; alpha < this_node->grid.dx; ++alpha)
+// #ifdef __OPENMP__
+// #pragma omp for
+// #endif
+            for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
             {
-                Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]), std::begin(this_node->grid.idx_dep[mu]), std::end(this_node->grid.idx_dep[mu]));
+                Matrix::ShiftRows<-1>(X_shift, this_node->X, this_node->grid, mu);
+                std::vector<Index> vec_index(this_node->grid.d, 0);
 
-                weight(alpha) = this_node->external_coefficients.propensity[mu][alpha_dep] * this_node->grid.h_mult;
-                IndexFunction::IncrVecIndex(std::begin(this_node->grid.n), std::begin(vec_index), std::end(vec_index));
+                for (Index alpha = 0; alpha < this_node->grid.dx; ++alpha)
+                {
+                    Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]), std::begin(this_node->grid.idx_dep[mu]), std::end(this_node->grid.idx_dep[mu]));
+
+                    weight(alpha) = this_node->external_coefficients.propensity[mu][alpha_dep] * this_node->grid.h_mult;
+                    IndexFunction::IncrVecIndex(std::begin(this_node->grid.n), std::begin(vec_index), std::end(vec_index));
+                }
+                coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
+                coeff(this_node->X, this_node->X, weight, coefficients.B_bar[mu], blas);
             }
-            coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
-            coeff(this_node->X, this_node->X, weight, coefficients.B_bar[mu], blas);
         }
     }
     else
@@ -529,6 +537,9 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
         cme_internal_node *this_node = (cme_internal_node *) this;
 
         // TODO: remove number of loops
+// #ifdef __OPENMP__
+// #pragma omp parallel for
+// #endif
         for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
         {
             for (Index i0 = 0; i0 < this_node->RankOut()[0]; ++i0)
@@ -558,61 +569,56 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
 multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas)
 {
     get_time::start("CalculateKDot");
-    multi_array<double, 2> KA(K.shape());
-    multi_array<double, 2> KB(K.shape());
-    multi_array<double, 2> aKA(K.shape());
-    multi_array<double, 2> aKB(K.shape());
-    multi_array<double, 2> aKA_shift(K.shape());
+
     multi_array<double, 2> K_dot(K.shape());
-    multi_array<double, 1> weight({K.shape()[0]});
     set_zero(K_dot);
 
-    std::vector<Index> vec_index(node->grid.d);
+// #ifdef __OPENMP__
+// #pragma omp parallel
+// #endif
+    {
+        multi_array<double, 2> KA(K.shape());
+        multi_array<double, 2> KB(K.shape());
+        multi_array<double, 2> aKA(K.shape());
+        multi_array<double, 2> aKB(K.shape());
+        multi_array<double, 2> aKA_shift(K.shape());
+        multi_array<double, 1> weight({K.shape()[0]});
+        std::vector<Index> vec_index(node->grid.d);
 
-    for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
-    {    
-        std::fill(std::begin(vec_index), std::end(vec_index), 0);
-        blas.matmul_transb(K, node->coefficients.A[mu], KA);
-        blas.matmul_transb(K, node->coefficients.B[mu], KB);
-
-// TODO: improve parallelization
-#ifdef __OPENMP__
-#pragma omp parallel firstprivate(vec_index)
-#endif
+// #ifdef __OPENMP__
+// #pragma omp for
+// #endif
+        for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
         {
+            std::fill(std::begin(vec_index), std::end(vec_index), 0);
+            blas.matmul_transb(K, node->coefficients.A[mu], KA);
+            blas.matmul_transb(K, node->coefficients.B[mu], KB);
             Index alpha;
-#ifdef __OPENMP__
-            Index chunk_size = IndexFunction::SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(node->grid.n), node->grid.dx);
-#endif
 
-#ifdef __OPENMP__
-#pragma omp for schedule(static, chunk_size)
-#endif
             for (Index i = 0; i < node->grid.dx; ++i)
             {
-                alpha = IndexFunction::VecIndexToDepCombIndex
-                (
-                    std::begin(vec_index), 
-                    std::begin(node->grid.n_dep[mu]), 
-                    std::begin(node->grid.idx_dep[mu]), 
-                    std::end(node->grid.idx_dep[mu])
-                );
+                alpha = IndexFunction::VecIndexToDepCombIndex(
+                    std::begin(vec_index),
+                    std::begin(node->grid.n_dep[mu]),
+                    std::begin(node->grid.idx_dep[mu]),
+                    std::end(node->grid.idx_dep[mu]));
                 IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
 
                 weight(i) = node->external_coefficients.propensity[mu][alpha];
             }
+
+            ptw_mult_row(KA, weight, aKA);
+            ptw_mult_row(KB, weight, aKB);
+
+            // Shift prod_KC
+            get_time::start("ShiftKDot");
+            Matrix::ShiftRows<1>(aKA_shift, aKA, node->grid, mu);
+            get_time::stop("ShiftKDot");
+
+            // Calculate k_dot = shift(C * K) - D * K
+            K_dot += aKA_shift;
+            K_dot -= aKB;
         }
-        ptw_mult_row(KA, weight, aKA);
-        ptw_mult_row(KB, weight, aKB);
-
-        // Shift prod_KC
-        get_time::start("ShiftKDot");
-        Matrix::ShiftRows<1>(aKA_shift, aKA, node->grid, mu);
-        get_time::stop("ShiftKDot");
-
-        // Calculate k_dot = shift(C * K) - D * K
-        K_dot += aKA_shift;
-        K_dot -= aKB;
     }
     get_time::stop("CalculateKDot");
     return K_dot;
@@ -623,6 +629,9 @@ void cme_node::CalculateEF(const blas_ops& blas)
     std::fill(std::begin(coefficients.E), std::end(coefficients.E), 0.0);
     std::fill(std::begin(coefficients.F), std::end(coefficients.F), 0.0);
 
+// #ifdef __OPENMP__
+// #pragma omp parallel for
+// #endif
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         for (Index i = 0; i < RankIn(); ++i)
@@ -647,9 +656,9 @@ multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_
     multi_array<double, 2> S_dot(S.shape());
     set_zero(S_dot);
 
-#ifdef __OPENMP__
-#pragma omp parallel for collapse(2)
-#endif
+// #ifdef __OPENMP__
+// #pragma omp parallel for collapse(2)
+// #endif
     for (Index i = 0; i < node->RankIn(); i++)
     {
         for (Index j = 0; j < node->RankIn(); j++)
@@ -671,7 +680,9 @@ void cme_internal_node::CalculateGH(const blas_ops& blas)
     std::fill(std::begin(internal_coefficients.G), std::end(internal_coefficients.G), 0.0);
     std::fill(std::begin(internal_coefficients.H), std::end(internal_coefficients.H), 0.0);
 
-    // TODO: remove number of loops
+// #ifdef __OPENMP__
+// #pragma omp parallel for
+// #endif
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         for (Index i = 0; i < RankIn(); ++i)
@@ -702,15 +713,18 @@ multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const c
     multi_array<double, 2> Q_dot(Qmat.shape());
     std::fill(std::begin(Q_dot), std::end(Q_dot), 0.0);
 
+// #ifdef __OPENMP__
+// #pragma omp parallel for collapse(2)
+// #endif
     for (Index i = 0; i < node->RankIn(); ++i)
     {
-        for (Index j = 0; j < node->RankIn(); ++j)
+        for (Index i0 = 0; i0 < prod(node->RankOut()); ++i0)
         {
-            for (Index i0 = 0; i0 < prod(node->RankOut()); ++i0)
+            for (Index j = 0; j < node->RankIn(); ++j)
             {
                 for (Index j0 = 0; j0 < prod(node->RankOut()); ++j0)
                 {
-                        Q_dot(i0, i) += (node->internal_coefficients.G(i, i0, j, j0) - node->internal_coefficients.H(i, i0, j, j0)) * Qmat(j0, j);
+                    Q_dot(i0, i) += (node->internal_coefficients.G(i, i0, j, j0) - node->internal_coefficients.H(i, i0, j, j0)) * Qmat(j0, j);
                 }
             }
         }
