@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
@@ -373,28 +374,45 @@ TEST_CASE("tree_h2", "[tree_h2]")
 
     REQUIRE(bool(p == p_ortho));
 
-    gram_schmidt gs(&blas);
+    multi_array<double, 3> G({root->RankOut()[0], root->RankOut()[1], root->RankIn()});
+    multi_array<double, 2> S0({root->RankOut()[0], root->RankOut()[0]});
 
-    // Calculate G0_comparison (needed for A01_comparison)
-    multi_array<double, 2> Qmat({node0->RankIn() * node0->RankOut()[1], node0->RankOut()[0]});
-    multi_array<double, 3> Q0_comparison({node0->RankOut()[0], node0->RankOut()[1], node0->RankIn()});
-    multi_array<double, 3> G0_comparison({node0->RankOut()[0], node0->RankOut()[1], node0->RankIn()});
-    multi_array<double, 2> S00_comparison({node0->RankOut()[0], node0->RankOut()[0]});
+    std::fill(std::begin(Q), std::end(Q), 0.0);
+    std::fill(std::begin(G), std::end(G), 0.0);
+    set_zero(S0);
 
-    std::fill(std::begin(Q0_comparison), std::end(Q0_comparison), 0.0);
+    Q(0, 0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
+    G(0, 0, 0) = 1.0;
+    G(1, 1, 0) = 1.0;
+    G(2, 2, 0) = 1.0;
+    S0(0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
 
-    Q0_comparison(0, 0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
+    multi_array<double, 3> G0({node0->RankOut()[0], node0->RankOut()[1], node0->RankIn()});
+    multi_array<double, 2> S00({node0->RankOut()[0], node0->RankOut()[0]});
 
-    std::function<double(double *, double *)> ip;
-    ip = inner_product_from_const_weight(1.0, node0->RankIn() * node0->RankOut()[1]);
+    std::fill(std::begin(Q0), std::end(Q0), 0.0);
+    std::fill(std::begin(G0), std::end(G0), 0.0);
+    set_zero(S00);
 
-    // Compute QR decomposition C^n = (S^(n+id))^T * G^n
-    Matrix::Matricize(Q0_comparison, Qmat, 0);
-    gs(Qmat, S00_comparison, ip);
-    Matrix::Tensorize(Qmat, G0_comparison, 0);
+    Q0(0, 0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
+    G0(0, 0, 0) = 1.0;
+    G0(1, 0, 1) = 1.0;
+    S00(0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
 
-    double tau = 1.0;
-    integrator.SubflowPhi<0>(root, tau);
+    root->Q = Q;
+    root->G = G;
+
+    node0->Q = Q0;
+    node0->G = G0;
+    node0->S = S0;
+
+    node00->S = S00;
+    node00->X = X00;
+    node01->X = X01;
+    node1->X = X1;
+
+    root->CalculateAB<0>(blas);
+    node0->CalculateAB<0>(blas);
 
     std::vector<multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
     std::vector<multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
@@ -426,7 +444,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
         set_zero(B01_bar_comparison[mu]);
     }
 
-    // Calculate A1_comparison and B1_comparison
+    // Calculate A1_bar_comparison and B1_bar_comparison
     A1_bar_comparison[0](0, 0) = 1.0;
     A1_bar_comparison[0](1, 1) = 1.0;
     A1_bar_comparison[0](2, 2) = 1.0;
@@ -495,23 +513,11 @@ TEST_CASE("tree_h2", "[tree_h2]")
 
     for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
     {
-        for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
-        {
-            for (Index j0 = 0; j0 < root->RankOut()[0]; ++j0)
-            {
-                for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1)
-                {
-                    for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
-                    {
-                        A0_comparison[mu](i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * A1_bar_comparison[mu](i1, j1);
-                        B0_comparison[mu](i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * B1_bar_comparison[mu](i1, j1);
-                    }
-                }
-            }
-        }
+        REQUIRE(bool(tree.root->child[1]->coefficients.A_bar[mu] == A1_bar_comparison[mu]));
+        REQUIRE(bool(tree.root->child[1]->coefficients.B_bar[mu] == B1_bar_comparison[mu]));
     }
 
-    // Calculate A01_comparison
+    // Calculate A01_bar_comparison and B01_bar_comparison
     A01_bar_comparison[0](0, 0) = 1.0;
     A01_bar_comparison[0](1, 1) = 1.0;
     A01_bar_comparison[2](0, 0) = 1.0;
@@ -550,74 +556,100 @@ TEST_CASE("tree_h2", "[tree_h2]")
     B01_bar_comparison[4](1, 0) = B01_bar_comparison[4](0, 1);
     B01_bar_comparison[4](1, 1) = 0.75;
 
-    for (Index mu = 0; mu < node0->grid.n_reactions; ++mu)
+    for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
     {
-        for (Index i0 = 0; i0 < node0->RankIn(); ++i0)
-        {
-            for (Index j0 = 0; j0 < node0->RankIn(); ++j0)
-            {
-                for (Index i00 = 0; i00 < node0->RankOut()[0]; ++i00)
-                {
-                    for (Index j00 = 0; j00 < node0->RankOut()[0]; ++j00)
-                    {
-                        for (Index i01 = 0; i01 < node0->RankOut()[1]; ++i01)
-                        {
-                            for (Index j01 = 0; j01 < node0->RankOut()[1]; ++j01)
-                            {
-                                A00_comparison[mu](i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * A01_bar_comparison[mu](i01, j01) * A0_comparison[mu](i0, j0);
-                                B00_comparison[mu](i00, j00) += G0_comparison(i00, i01, i0) * G0_comparison(j00, j01, j0) * B01_bar_comparison[mu](i01, j01) * B0_comparison[mu](i0, j0);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        REQUIRE(bool(tree.root->child[0]->child[1]->coefficients.A_bar[mu] == A01_bar_comparison[mu]));
+        REQUIRE(bool(tree.root->child[0]->child[1]->coefficients.B_bar[mu] == B01_bar_comparison[mu]));
+    }
+
+    // Calculate A0_comparison and B0_comparison
+    A0_comparison[0] = A1_bar_comparison[0];
+    A0_comparison[1] = A1_bar_comparison[1];
+    A0_comparison[2] = A1_bar_comparison[2];
+    A0_comparison[3] = A1_bar_comparison[3];
+    A0_comparison[4] = A1_bar_comparison[4];
+    A0_comparison[5] = A1_bar_comparison[5];
+
+    B0_comparison[0] = B1_bar_comparison[0];
+    B0_comparison[1] = B1_bar_comparison[1];
+    B0_comparison[2] = B1_bar_comparison[2];
+    B0_comparison[3] = B1_bar_comparison[3];
+    B0_comparison[4] = B1_bar_comparison[4];
+    B0_comparison[5] = B1_bar_comparison[5];
+
+    // Calculate A00_comparison and B00_comparison
+    A00_comparison[0](0, 0) = 1.0;
+    A00_comparison[0](1, 1) = 1.0;
+
+    A00_comparison[1](0, 0) = 0.5;
+    A00_comparison[1](1, 1) = 0.5;
+
+    A00_comparison[2](0, 0) = (1.0 + 2.0 * std::exp(-2.0)) / (2.0 + std::exp(-4.0));
+    A00_comparison[2](0, 1) =-sqrt(1.0 + 0.5 * std::exp(-4.0)) / (2.0 + std::exp(-4.0));
+    A00_comparison[2](1, 0) = sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 - 2.0 * std::exp(-2.0)) / (2.0 + std::exp(-4.0));
+    A00_comparison[2](1, 1) =-0.5;
+
+    A00_comparison[3](0, 0) = 1.0;
+    A00_comparison[3](1, 1) = 1.0;
+
+    A00_comparison[4](0, 0) = 0.5;
+    A00_comparison[4](1, 1) = 0.5;
+
+    A00_comparison[5](0, 0) = (1.0 + 0.5 * std::exp(-2.0)) / (2.0 + std::exp(-4.0));
+    A00_comparison[5](0, 1) = sqrt(1.0 + 0.5 * std::exp(-4.0)) * (1.0 - 0.5 * std::exp(-2.0)) / (2.0 + std::exp(-4.0));
+    A00_comparison[5](1, 0) =-sqrt(1.0 + 0.5 * std::exp(-4.0)) / (2.0 + std::exp(-4.0));
+    A00_comparison[5](1, 1) =-0.5;
+
+    B00_comparison[0](0, 0) = 1.0;
+    B00_comparison[0](1, 1) = 1.0;
+
+    B00_comparison[1](0, 0) = 0.5;
+    B00_comparison[1](1, 1) = 0.5;
+
+    B00_comparison[2](0, 0) = (1.0 + 2.0 * std::exp(-4.0)) / (2.0 + std::exp(-4.0));
+    B00_comparison[2](0, 1) =-sqrt(1.0 + 0.5 * std::exp(-4.0)) / (2.0 + std::exp(-4.0));
+    B00_comparison[2](1, 0) = B00_comparison[2](0, 1);
+    B00_comparison[2](1, 1) = 0.5;
+
+    B00_comparison[3](0, 0) = 1.0;
+    B00_comparison[3](1, 1) = 1.0;
+
+    B00_comparison[4](0, 0) = 0.75;
+    B00_comparison[4](1, 1) = 0.75;
+
+    B00_comparison[5](0, 0) = (1.5 + std::exp(-4.0) / 3.0) / (2.0 + std::exp(-4.0));
+    B00_comparison[5](0, 1) = 0.5 * sqrt(1.0 + 0.5 * std::exp(-4.0)) / (2.0 + std::exp(-4.0));
+    B00_comparison[5](1, 0) = B00_comparison[5](0, 1);
+    B00_comparison[5](1, 1) = 0.75;
+
+    for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
+    {
+        REQUIRE(bool(tree.root->child[0]->coefficients.A[mu] == A0_comparison[mu]));
+        REQUIRE(bool(tree.root->child[0]->coefficients.B[mu] == B0_comparison[mu]));
     }
 
     for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
     {
-        REQUIRE(bool(node0->coefficients.A[mu] == A0_comparison[mu]));
-        REQUIRE(bool(node0->coefficients.B[mu] == B0_comparison[mu]));
-        REQUIRE(bool(node00->coefficients.A[mu] == A00_comparison[mu]));
-        REQUIRE(bool(node00->coefficients.B[mu] == B00_comparison[mu]));
+        REQUIRE(bool(tree.root->child[0]->child[0]->coefficients.A[mu] == A00_comparison[mu]));
+        REQUIRE(bool(tree.root->child[0]->child[0]->coefficients.B[mu] == B00_comparison[mu]));
     }
 
     multi_array<double, 2> K00(X00.shape());
-    multi_array<double, 2> K00C(X00.shape());
-    multi_array<double, 2> K00D(X00.shape());
-    multi_array<double, 2> K00C_shift(X00.shape());
-    multi_array<double, 2> K_dot(X00.shape());
-    set_zero(K_dot);
-    blas.matmul(X00, S00_comparison, K00);
+    multi_array<double, 2> K00_dot(X00.shape());
+    multi_array<double, 2> K00_dot_comparison(X00.shape());
 
-    std::vector<Index> vec_index(node00->grid.d);
-    for (Index mu = 0; mu < node00->grid.n_reactions; ++mu)
-    {
-        set_zero(K00C);
-        set_zero(K00D);
-        std::fill(std::begin(vec_index), std::end(vec_index), 0);
-        for (Index x = 0; x < node00->grid.dx; ++x)
-        {
-            Index x_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(node00->grid.n_dep[mu]), std::begin(node00->grid.idx_dep[mu]), std::end(node00->grid.idx_dep[mu]));
-            for (Index i = 0; i < node00->RankIn(); ++i)
-            {
-                for (Index j = 0; j < node00->RankIn(); ++j)
-                {
-                    K00C(x, i) += tau * A00_comparison[mu](i, j) * node00->external_coefficients.propensity[mu][x_dep] * K00(x, j);
-                    K00D(x, i) += tau * B00_comparison[mu](i, j) * node00->external_coefficients.propensity[mu][x_dep] * K00(x, j);
-                }
-            }
-            IndexFunction::IncrVecIndex(std::begin(node00->grid.n), std::begin(vec_index), std::end(vec_index));
-        }
-        Matrix::ShiftRows<1>(K00C_shift, K00C, node00->grid, mu);
-        K_dot += K00C_shift;
-        K_dot -= K00D;
-    }
-    K00 += K_dot;
+    blas.matmul(X00, S00, K00);
+    K00_dot = CalculateKDot(K00, node00, blas);
 
-    std::function<double(double *, double *)> ip00;
-    ip00 = inner_product_from_const_weight(node00->grid.h_mult, node00->grid.dx);
-    gs(K00, node00->S, ip00);
+    // Calculate K00_comparison
+    double alpha = sqrt(2.0) * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
+    double beta = (2.0 * (std::exp(-2.0) - std::exp(-4.0)) + 0.5 * std::exp(-2.0) - std::exp(-4.0) / 3.0 - 0.5) / (2.0 + std::exp(-4.0)) - 0.25;
+    double gamma = (0.5 - 2.0 * std::exp(-2.0)) * sqrt(1.0 + 0.5 * std::exp(-4.0)) / (2.0 + std::exp(-4.0));
+    
+    K00_dot_comparison(0, 0) = alpha * beta;
+    K00_dot_comparison(0, 1) = alpha * gamma;
+    K00_dot_comparison(1, 0) = alpha * (beta - 0.5);
+    K00_dot_comparison(1, 1) = alpha * gamma;
 
-    REQUIRE(bool(K00 == node00->X));
+    REQUIRE(bool(K00_dot == K00_dot_comparison));
 }
