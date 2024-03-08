@@ -10,20 +10,12 @@
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
-#include "integrators.hpp"
 #include "matrix.hpp"
 #include "tree_class.hpp"
 
 TEST_CASE("tree_h2", "[tree_h2]")
 {
-    unsigned int substeps = 1;
-    std::map<std::string, integration_method *> integrations_methods;
-    integrations_methods["K"] = new explicit_euler(substeps);
-    integrations_methods["S"] = new explicit_euler(substeps);
-    integrations_methods["Q"] = new explicit_euler(substeps);
-
     blas_ops blas;
-    ttn_integrator integrator(blas, integrations_methods);
 
     Index r = 3, r0 = 2;
     Index n_basisfunctions = 1, n_basisfunctions0 = 1;

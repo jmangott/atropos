@@ -9,20 +9,12 @@
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
-#include "integrators.hpp"
 #include "matrix.hpp"
 #include "tree_class.hpp"
 
 TEST_CASE("tree_h1", "[tree_h1]")
 {
-    unsigned int substeps = 1;
-    std::map<std::string, integration_method *> integrations_methods;
-    integrations_methods["K"] = new explicit_euler(substeps);
-    integrations_methods["S"] = new explicit_euler(substeps);
-    integrations_methods["Q"] = new explicit_euler(substeps);
-
     blas_ops blas;
-    ttn_integrator integrator(blas, integrations_methods);
 
     Index r = 2;
     Index n_basisfunctions = 1;
@@ -239,10 +231,23 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     REQUIRE(bool(p == p_ortho));
 
-    gram_schmidt gs(&blas);
+    multi_array<double, 3> G({root->RankOut()[0], root->RankOut()[1], root->RankIn()});
+    multi_array<double, 2> S0({root->RankOut()[0], root->RankOut()[0]});
 
-    double tau = 1.0;
-    integrator.SubflowPhi<0>(root, tau);
+    std::fill(std::begin(Q), std::end(Q), 0.0);
+    std::fill(std::begin(G), std::end(G), 0.0);
+    set_zero(S0);
+
+    Q(0, 0, 0) = 2.0 * std::exp(-0.5);
+    G(0, 0, 0) = 1.0;
+    G(1, 1, 0) = 1.0;
+    S0(0, 0) = 2.0 * std::exp(-0.5);
+
+    root->Q = Q;
+    root->G = G;
+    node0->S = S0;
+
+    tree.root->CalculateAB<0>(blas);
 
     std::vector<multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
     std::vector<multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
@@ -320,56 +325,35 @@ TEST_CASE("tree_h1", "[tree_h1]")
         REQUIRE(bool(node0->coefficients.B[mu] == B0_comparison[mu]));
     }
 
-    // Reset S, G and X0 to get reproducable results
-    node0->S(0, 0) = 2.0 * std::exp(-0.5);
-    node0->S(0, 1) = 0.0;
-    node0->S(1, 0) = 0.0;
-    node0->S(1, 1) = 0.0;
-    root->G(0, 0, 0) = 1.0;
-    root->G(1, 0, 0) = 0.0;
-    root->G(0, 1, 0) = 0.0;
-    root->G(1, 1, 0) = 1.0;
-    node0->X = X0;
-
-    // Recalculate the coefficients A and B
-    root->CalculateAB<0>(blas);
-
     // Test K step
-    multi_array<double, 2> K0_comparison(node0->X.shape());
+    multi_array<double, 2> K0_dot_comparison(node0->X.shape());
     double norm_2e = std::sqrt(2.0) * std::exp(-0.5);
 
-    K0_comparison(0, 0) = (1.0 - 0.25 * tau) * norm_2e;
-    K0_comparison(0, 1) = 0.25 * tau * norm_2e;
-    K0_comparison(1, 0) = (1.0 - 1.25 * tau) * norm_2e;
-    K0_comparison(1, 1) = 0.75 * tau * norm_2e;
+    K0_dot_comparison(0, 0) =-0.25 * norm_2e;
+    K0_dot_comparison(0, 1) = 0.25 * norm_2e;
+    K0_dot_comparison(1, 0) =-1.25 * norm_2e;
+    K0_dot_comparison(1, 1) = 0.75 * norm_2e;
 
-    multi_array<double, 2> tmp(node0->X);
-    blas.matmul(tmp, node0->S, node0->X);
-    const auto K_step_rhs0 = [node0, blas] (const multi_array<double, 2> &K) { return CalculateKDot(K, node0, blas); };
-    integrator.integration_methods.at("K")->integrate(node0->X, K_step_rhs0, tau);
+    multi_array<double, 2> K0(node0->X.shape());
+    multi_array<double, 2> K0_dot(node0->X.shape());
 
-    REQUIRE(bool(K0_comparison == node0->X));
+    blas.matmul(node0->X, node0->S, K0);
+    K0_dot = CalculateKDot(K0, node0, blas);
 
-    std::function<double(double *, double *)> ip0;
-    ip0 = inner_product_from_const_weight(node0->grid.h_mult, node0->grid.dx);
-    gs(node0->X, node0->S, ip0);
+    REQUIRE(bool(K0_dot_comparison == K0_dot));
 
     // Test S step
-    multi_array<double, 2> S0_comparison(node0->S.shape());
+    multi_array<double, 2> S0_dot(node0->S.shape());
+    multi_array<double, 2> S0_dot_comparison(node0->S.shape());
 
     // Reset S and X0 to get reproducable results
     node0->X = X0;
-    node0->S(0, 0) = 2.0 * std::exp(-0.5);
-    node0->S(0, 1) = 0.0;
-    node0->S(1, 0) = 0.0;
-    node0->S(1, 1) = 0.0;
-    node0->CalculateAB_bar(blas);
-    multi_array<double, 2> S0_old(node0->S);
+    node0->S = S0;
 
-    S0_comparison(0, 0) = tau * 1.5 * std::exp(-0.5);
-    S0_comparison(0, 1) = -tau * std::exp(-0.5);
-    S0_comparison(1, 0) = -tau * std::exp(-0.5);
-    S0_comparison(1, 1) = tau * 0.5 * std::exp(-0.5);
+    S0_dot_comparison(0, 0) =-1.5 * std::exp(-0.5);
+    S0_dot_comparison(0, 1) = std::exp(-0.5);
+    S0_dot_comparison(1, 0) = std::exp(-0.5);
+    S0_dot_comparison(1, 1) =-0.5 * std::exp(-0.5);
 
     node0->CalculateEF(blas);
 
@@ -378,9 +362,9 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     // E_comparison, mu = 0
     E_comparison(0, 0, 0, 0) = 0.5;
-    E_comparison(0, 0, 1, 0) = -0.5;
+    E_comparison(0, 0, 1, 0) =-0.5;
     E_comparison(1, 0, 0, 0) = 0.5;
-    E_comparison(1, 0, 1, 0) = -0.5;
+    E_comparison(1, 0, 1, 0) =-0.5;
 
     E_comparison(0, 0, 0, 1) = 0.0;
     E_comparison(0, 0, 1, 1) = 0.0;
@@ -393,14 +377,14 @@ TEST_CASE("tree_h1", "[tree_h1]")
     E_comparison(1, 1, 1, 0) = 0.0;
 
     E_comparison(0, 1, 0, 1) = 0.5;
-    E_comparison(0, 1, 1, 1) = -0.5;
+    E_comparison(0, 1, 1, 1) =-0.5;
     E_comparison(1, 1, 0, 1) = 0.5;
-    E_comparison(1, 1, 1, 1) = -0.5;
+    E_comparison(1, 1, 1, 1) =-0.5;
 
     // F_comparison, mu = 0
     F_comparison(0, 0, 0, 0) = 0.5;
-    F_comparison(0, 0, 1, 0) = -0.5;
-    F_comparison(1, 0, 0, 0) = -0.5;
+    F_comparison(0, 0, 1, 0) =-0.5;
+    F_comparison(1, 0, 0, 0) =-0.5;
     F_comparison(1, 0, 1, 0) = 0.5;
 
     F_comparison(0, 0, 0, 1) = 0.0;
@@ -414,8 +398,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
     F_comparison(1, 1, 1, 0) = 0.0;
 
     F_comparison(0, 1, 0, 1) = 0.5;
-    F_comparison(0, 1, 1, 1) = -0.5;
-    F_comparison(1, 1, 0, 1) = -0.5;
+    F_comparison(0, 1, 1, 1) =-0.5;
+    F_comparison(1, 1, 0, 1) =-0.5;
     F_comparison(1, 1, 1, 1) = 0.5;
 
     // E_comparison, mu = 1
@@ -463,23 +447,23 @@ TEST_CASE("tree_h1", "[tree_h1]")
     // E_comparison, mu = 2
     E_comparison(0, 0, 0, 0) += 0.375;
     E_comparison(0, 0, 1, 0) += 0.375;
-    E_comparison(1, 0, 0, 0) += -0.375;
-    E_comparison(1, 0, 1, 0) += -0.375;
+    E_comparison(1, 0, 0, 0) +=-0.375;
+    E_comparison(1, 0, 1, 0) +=-0.375;
 
     E_comparison(0, 0, 0, 1) += 0.125;
     E_comparison(0, 0, 1, 1) += 0.125;
-    E_comparison(1, 0, 0, 1) += -0.125;
-    E_comparison(1, 0, 1, 1) += -0.125;
+    E_comparison(1, 0, 0, 1) +=-0.125;
+    E_comparison(1, 0, 1, 1) +=-0.125;
 
     E_comparison(0, 1, 0, 0) += 0.125;
     E_comparison(0, 1, 1, 0) += 0.125;
-    E_comparison(1, 1, 0, 0) += -0.125;
-    E_comparison(1, 1, 1, 0) += -0.125;
+    E_comparison(1, 1, 0, 0) +=-0.125;
+    E_comparison(1, 1, 1, 0) +=-0.125;
 
     E_comparison(0, 1, 0, 1) += 0.375;
     E_comparison(0, 1, 1, 1) += 0.375;
-    E_comparison(1, 1, 0, 1) += -0.375;
-    E_comparison(1, 1, 1, 1) += -0.375;
+    E_comparison(1, 1, 0, 1) +=-0.375;
+    E_comparison(1, 1, 1, 1) +=-0.375;
 
     // F_comparison, mu = 2
     F_comparison(0, 0, 0, 0) += 0.75;
@@ -547,22 +531,30 @@ TEST_CASE("tree_h1", "[tree_h1]")
     REQUIRE(bool(node0->coefficients.E == E_comparison));
     REQUIRE(bool(node0->coefficients.F == F_comparison));
 
-    const auto S_step_rhs0 = [node0](const multi_array<double, 2> &S)
-    { return CalculateSDot(S, node0); };
-    integrator.integration_methods.at("S")->integrate(node0->S, S_step_rhs0, -1.0 * tau);
-    node0->S -= S0_old;
-    REQUIRE(bool(S0_comparison == node0->S));
+    S0_dot = CalculateSDot(node0->S, node0);
+
+    REQUIRE(bool(S0_dot_comparison == S0_dot));
+
+    // Test the relation G(i0, k1, i) * G(j0, l1, j) * g(i, i0, i1, j, j0, j1) = e(i1, k1, j1, l1)
+    multi_array<double, 2> S1({tree.root->RankOut()[1], tree.root->RankOut()[1]});
+    multi_array<double, 2> K1(node1->X.shape());
+    set_zero(S1);
+    S1(0, 0) = 2.0 * std::exp(-0.5);
 
     root->Q = Q;
+    root->G = G;
+    node0->S = S0;
+    node1->S = S1;
     node0->X = X0;
     node1->X = X1;
 
-    integrator(tree.root, tau);
+    root->CalculateAB<1>(blas);
+    node1->CalculateEF(blas);
+    root->CalculateGH(blas);
 
     std::fill(std::begin(E_comparison), std::end(E_comparison), 0.0);
     std::fill(std::begin(F_comparison), std::end(F_comparison), 0.0);
 
-    // Test the relation G(i0, k1, i) * G(j0, l1, j) * g(i, i0, i1, j, j0, j1) = e(i1, k1, j1, l1)
     for (Index i = 0; i < root->RankIn(); ++i)
     {
         for (Index j = 0; j < root->RankIn(); ++j)
@@ -593,67 +585,27 @@ TEST_CASE("tree_h1", "[tree_h1]")
     REQUIRE(bool(node1->coefficients.E == E_comparison));
     REQUIRE(bool(node1->coefficients.F == F_comparison));
 
-    // Test the relation S_dot(i1, j1) = Q_dot(i0, i1, i) * G(i0, j1, i)
-    root->Q = Q;
-    node0->X = X0;
-    node1->X = X1;
-    tau = 0.001;
-    node0->CalculateAB_bar(blas);
-    node1->CalculateAB_bar(blas);
+    // Test the relation S1_dot(i1, j1) = Q_dot(i0, i1, i) * G(i0, j1, i)
+    multi_array<double, 2> S1_dot(S1.shape());
+    multi_array<double, 3> Q_dot(root->Q.shape());
+    multi_array<double, 2> Qmat1({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
+    multi_array<double, 2> Qmat2({prod(root->RankOut()), root->RankIn()});
+    multi_array<double, 2> Qmat2_dot(Qmat2.shape());
+    multi_array<double, 2> Gmat1(Qmat1.shape());
+    set_zero(Qmat1);
 
-    integrator.SubflowPhi<0>(tree.root, tau);
+    S1_dot = CalculateSDot(node1->S, node1);
 
-    // Perform the L step manually
-    multi_array<double, 2> Qmat({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
-    std::function<double(double *, double *)> ip;
-    ip = inner_product_from_const_weight(1.0, root->RankIn() * root->RankOut()[0]);
+    Matrix::Matricize(root->G, Gmat1, 1);
+    blas.matmul_transb(Gmat1, node1->S, Qmat1);
+    Matrix::Tensorize(Qmat1, root->Q, 1);
 
-    // Compute QR decomposition C^n = G^n * (S^(n+id))^T
-    Matrix::Matricize(root->Q, Qmat, 1);
-    gs(Qmat, root->child[1]->S, ip);
-    Matrix::Tensorize(Qmat, root->G, 1);
-    transpose_inplace(root->child[1]->S);
+    Matrix::Matricize(root->Q, Qmat2, 2);
+    Qmat2_dot = CalculateQDot(Qmat2, root);
+    Matrix::Tensorize(Qmat2_dot, Q_dot, 2);
 
-    root->CalculateAB<1>(blas);
-
-    // Compute K = X * S
-    multi_array<double, 2> tmp_x(node1->X);
-    blas.matmul(tmp_x, node1->S, node1->X);
-
-    // K step
-    const auto K_step_rhs1 = [node1, blas](const multi_array<double, 2> &K) { return CalculateKDot(K, node1, blas); };
-    integrator.integration_methods.at("K")->integrate(node1->X, K_step_rhs1, tau);
-
-    // Perform the QR decomposition K = X * S
-    std::function<double(double *, double *)> ip_x;
-    ip_x = inner_product_from_const_weight(node1->grid.h_mult, node1->grid.dx);
-    gs(node1->X, node1->S, ip_x);
-
-    node1->CalculateAB_bar(blas);
-
-    // Integrate S
-    multi_array<double, 2> deltaS(node1->S);
-
-    node1->CalculateEF(blas);
-    const auto S_step_rhs1 = [node1](const multi_array<double, 2> &S)
-    { return CalculateSDot(S, node1); };
-    integrator.integration_methods.at("S")->integrate(node1->S, S_step_rhs1, -1.0 * tau);
-
-    // Set C^n = G^n * (S^(n+id))^T
-    multi_array<double, 2> Gmat({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
-    Matrix::Matricize(root->G, Gmat, 1);
-    set_zero(Qmat);
-    blas.matmul_transb(Gmat, deltaS, Qmat);
-    Matrix::Tensorize(Qmat, root->Q, 1);
-
-    multi_array<double, 3> deltaQ(root->Q);
-
-    integrator.SubflowPsi(tree.root, tau);
-    deltaS -= node1->S;
-    deltaQ -= root->Q;
-
-    multi_array<double, 2> deltaQG({node1->RankIn(), node1->RankIn()});
-    set_zero(deltaQG);
+    multi_array<double, 2> Q_dotG(S1_dot.shape());
+    set_zero(Q_dotG);
 
     for (Index i = 0; i < root->RankIn(); ++i)
     {
@@ -663,11 +615,11 @@ TEST_CASE("tree_h1", "[tree_h1]")
             {
                 for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
                 {
-                    deltaQG(i1, j1) -= deltaQ(i0, i1, i) * root->G(i0, j1, i);
+                    Q_dotG(i1, j1) += Q_dot(i0, i1, i) * root->G(i0, j1, i);
                 }
             }
         }
     }
 
-    REQUIRE(bool(deltaQG == deltaS));
+    REQUIRE(bool(Q_dotG == S1_dot));
 }
