@@ -17,6 +17,12 @@
 #include "matrix.hpp"
 #include "timer_class.hpp"
 
+// TODO: Add this as an Ensign functionality
+#ifdef __OPENMP__
+#pragma omp declare reduction(+: multi_array<double, 2>: omp_out += omp_in) \
+    initializer(omp_priv = decltype(omp_orig)(omp_orig))
+#endif
+
 // General classes for the hierarchical DLR approximation
 // TODO: introduce a template parameter `N` for arbitrary many outgoing legs
 template<class T>
@@ -241,6 +247,9 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
 {
     const Index id_c = (id == 0) ? 1 : 0;
 
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
     for (Index mu = 0; mu < child[id]->grid.n_reactions; ++mu)
     {
         set_zero(child[id]->coefficients.A[mu]);
@@ -249,6 +258,9 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
 
     // TODO: reduce number of loops: precalculate A*A_bar
     // and calculate A*A_bar(mu, ic=i1*i, jc=j1*j) * G(ic, i0) * G(jc, j0) (only 5 loops needed)
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         for (Index i0 = 0; i0 < RankOut()[id]; ++i0)

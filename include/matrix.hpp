@@ -72,11 +72,11 @@ namespace Matrix
         std::default_random_engine generator(1234);
         std::normal_distribution<double> distribution(0.0, 1.0);
 
-        for (Index k = n_basisfunctions; k < cols; ++k)
-        {
 #ifdef __OPENMP__
 #pragma omp parallel for
 #endif
+        for (Index k = n_basisfunctions; k < cols; ++k)
+        {
             for (Index i = 0; i < rows; ++i)
             {
                 input(i, k) = distribution(generator);
@@ -112,7 +112,9 @@ namespace Matrix
         Index max_i = std::min(n_rows, n_rows + shift);
 
         // NOTE: Ensign stores matrices in column-major order
-        // TODO: parallelize loops
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
         for (Index j = 0; j < n_cols; ++j)
         {
             for (Index i = min_i; i < max_i; ++i)
@@ -129,6 +131,10 @@ namespace Matrix
             {
                 if ((vec_index[k] - inv * grid.nu(mu, k) < 0) || (vec_index[k] - inv * grid.nu(mu, k) >= grid.n[k]))
                 {
+// TODO: improve parallelization
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
                     for (Index j = 0; j < n_cols; ++j)
                     {
                         output_array(i, j) = 0.0;

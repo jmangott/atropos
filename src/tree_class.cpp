@@ -496,6 +496,9 @@ cme_node* ReadHelpers::ReadNode(int ncid, const std::string id, cme_internal_nod
 
 void cme_node::CalculateAB_bar(const blas_ops &blas)
 {
+#ifdef __OPENMP__
+#pragma omp parallel
+#endif  
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         set_zero(coefficients.A_bar[mu]);
@@ -505,16 +508,16 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
     if (IsExternal())
     {
         cme_external_node *this_node = (cme_external_node *) this;
-// #ifdef __OPENMP__
-// #pragma omp parallel
-// #endif
+#ifdef __OPENMP__
+#pragma omp parallel
+#endif
         {
             multi_array<double, 2> X_shift({this_node->grid.dx, this_node->RankIn()});
             multi_array<double, 1> weight({this_node->grid.dx});
 
-// #ifdef __OPENMP__
-// #pragma omp for
-// #endif
+#ifdef __OPENMP__
+#pragma omp for
+#endif
             for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
             {
                 Matrix::ShiftRows<-1>(X_shift, this_node->X, this_node->grid, mu);
@@ -537,9 +540,9 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
         cme_internal_node *this_node = (cme_internal_node *) this;
 
         // TODO: remove number of loops
-// #ifdef __OPENMP__
-// #pragma omp parallel for
-// #endif
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
         for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
         {
             for (Index i0 = 0; i0 < this_node->RankOut()[0]; ++i0)
@@ -566,17 +569,22 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
     }
 }
 
+#ifdef __OPENMP__
+#pragma omp declare reduction(+: multi_array<double, 2>: omp_out += omp_in) \
+    initializer(omp_priv = decltype(omp_orig)(omp_orig))
+#endif
+
 multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas)
 {
     get_time::start("CalculateKDot");
-
     multi_array<double, 2> K_dot(K.shape());
     set_zero(K_dot);
 
-// #ifdef __OPENMP__
-// #pragma omp parallel
-// #endif
+#ifdef __OPENMP__
+#pragma omp parallel reduction(+: K_dot)
+#endif
     {
+        // multi_array<double, 2> K_dot_thread(K.shape());
         multi_array<double, 2> KA(K.shape());
         multi_array<double, 2> KB(K.shape());
         multi_array<double, 2> aKA(K.shape());
@@ -584,10 +592,11 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
         multi_array<double, 2> aKA_shift(K.shape());
         multi_array<double, 1> weight({K.shape()[0]});
         std::vector<Index> vec_index(node->grid.d);
+        // set_zero(K_dot_thread);
 
-// #ifdef __OPENMP__
-// #pragma omp for
-// #endif
+#ifdef __OPENMP__
+#pragma omp for
+#endif
         for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
         {
             std::fill(std::begin(vec_index), std::end(vec_index), 0);
@@ -615,11 +624,12 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
             Matrix::ShiftRows<1>(aKA_shift, aKA, node->grid, mu);
             get_time::stop("ShiftKDot");
 
-            // Calculate k_dot = shift(C * K) - D * K
+            // Calculate K_dot = shift(C * K) - D * K
+            aKA_shift -= aKB;
             K_dot += aKA_shift;
-            K_dot -= aKB;
         }
     }
+
     get_time::stop("CalculateKDot");
     return K_dot;
 }
@@ -656,9 +666,9 @@ multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_
     multi_array<double, 2> S_dot(S.shape());
     set_zero(S_dot);
 
-// #ifdef __OPENMP__
-// #pragma omp parallel for collapse(2)
-// #endif
+#ifdef __OPENMP__
+#pragma omp parallel for collapse(2)
+#endif
     for (Index i = 0; i < node->RankIn(); i++)
     {
         for (Index j = 0; j < node->RankIn(); j++)
@@ -713,9 +723,9 @@ multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const c
     multi_array<double, 2> Q_dot(Qmat.shape());
     std::fill(std::begin(Q_dot), std::end(Q_dot), 0.0);
 
-// #ifdef __OPENMP__
-// #pragma omp parallel for collapse(2)
-// #endif
+#ifdef __OPENMP__
+#pragma omp parallel for collapse(2)
+#endif
     for (Index i = 0; i < node->RankIn(); ++i)
     {
         for (Index i0 = 0; i0 < prod(node->RankOut()); ++i0)
