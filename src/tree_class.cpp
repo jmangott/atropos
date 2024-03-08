@@ -569,11 +569,6 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
     }
 }
 
-#ifdef __OPENMP__
-#pragma omp declare reduction(+: multi_array<double, 2>: omp_out += omp_in) \
-    initializer(omp_priv = decltype(omp_orig)(omp_orig))
-#endif
-
 multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas)
 {
     get_time::start("CalculateKDot");
