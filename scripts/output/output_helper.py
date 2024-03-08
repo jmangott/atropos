@@ -50,9 +50,10 @@ def readTree(filename: str) -> Tree:
     with xr.open_dataset(filename) as ds:
         partition_str = ds.attrs['partition_str']
         species = ds['species'].values
-        n = ds['n'].values[species]
-        binsize = ds['binsize'].values[species]
-        liml = ds['liml'].values[species]
+        sorted = np.argsort(species)
+        n = ds['n'].values[sorted]
+        binsize = ds['binsize'].values[sorted]
+        liml = ds['liml'].values[sorted]
         grid = GridParms(n, binsize, liml)
         tree = Tree(partition_str, grid)
 
