@@ -631,29 +631,45 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
 
 void cme_node::CalculateEF(const blas_ops& blas)
 {
-    std::fill(std::begin(coefficients.E), std::end(coefficients.E), 0.0);
-    std::fill(std::begin(coefficients.F), std::end(coefficients.F), 0.0);
+    multi_array<double, 4> E(coefficients.E.shape());
+    multi_array<double, 4> F(coefficients.F.shape());
+    std::fill(std::begin(E), std::end(E), 0.0);
+    std::fill(std::begin(F), std::end(F), 0.0);
 
-// #ifdef __OPENMP__
-// #pragma omp parallel for
-// #endif
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+#ifdef __OPENMP__
+#pragma omp parallel reduction(+: E, F)
+#endif
     {
-        for (Index i = 0; i < RankIn(); ++i)
+        multi_array<double, 4> E_thread(coefficients.E.shape());
+        multi_array<double, 4> F_thread(coefficients.F.shape());
+
+        std::fill(std::begin(E_thread), std::end(E_thread), 0.0);
+        std::fill(std::begin(F_thread), std::end(F_thread), 0.0);
+#ifdef __OPENMP__
+#pragma omp for
+#endif
+        for (Index mu = 0; mu < grid.n_reactions; ++mu)
         {
-            for (Index j = 0; j < RankIn(); ++j)
+            for (Index i = 0; i < RankIn(); ++i)
             {
-                for (Index k = 0; k < RankIn(); ++k)
+                for (Index j = 0; j < RankIn(); ++j)
                 {
-                    for (Index l = 0; l < RankIn(); ++l)
+                    for (Index k = 0; k < RankIn(); ++k)
                     {
-                        coefficients.E(i, j, k, l) += coefficients.A_bar[mu](i, k) * coefficients.A[mu](j, l);
-                        coefficients.F(i, j, k, l) += coefficients.B_bar[mu](i, k) * coefficients.B[mu](j, l);
+                        for (Index l = 0; l < RankIn(); ++l)
+                        {
+                            E_thread(i, j, k, l) += coefficients.A_bar[mu](i, k) * coefficients.A[mu](j, l);
+                            F_thread(i, j, k, l) += coefficients.B_bar[mu](i, k) * coefficients.B[mu](j, l);
+                        }
                     }
                 }
             }
         }
+        E += E_thread;
+        F += F_thread;
     }
+    coefficients.E = E;
+    coefficients.F = F;
 }
 
 multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node)

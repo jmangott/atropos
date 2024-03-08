@@ -17,9 +17,13 @@
 #include "matrix.hpp"
 #include "timer_class.hpp"
 
-// TODO: Add this as an Ensign functionality
 #ifdef __OPENMP__
 #pragma omp declare reduction(+: multi_array<double, 2>: omp_out += omp_in) \
+    initializer(omp_priv = decltype(omp_orig)(omp_orig))
+#endif
+
+#ifdef __OPENMP__
+#pragma omp declare reduction(+: multi_array<double, 4>: omp_out += omp_in) \
     initializer(omp_priv = decltype(omp_orig)(omp_orig))
 #endif
 
