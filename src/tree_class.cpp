@@ -631,18 +631,17 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
 
 void cme_node::CalculateEF(const blas_ops& blas)
 {
-    multi_array<double, 4> E(coefficients.E.shape());
-    multi_array<double, 4> F(coefficients.F.shape());
-    std::fill(std::begin(E), std::end(E), 0.0);
-    std::fill(std::begin(F), std::end(F), 0.0);
+    multi_array<double, 4> E_temp(coefficients.E.shape());
+    multi_array<double, 4> F_temp(coefficients.F.shape());
+    std::fill(std::begin(E_temp), std::end(E_temp), 0.0);
+    std::fill(std::begin(F_temp), std::end(F_temp), 0.0);
 
 #ifdef __OPENMP__
-#pragma omp parallel reduction(+: E, F)
+#pragma omp parallel reduction(+: E_temp, F_temp)
 #endif
     {
         multi_array<double, 4> E_thread(coefficients.E.shape());
         multi_array<double, 4> F_thread(coefficients.F.shape());
-
         std::fill(std::begin(E_thread), std::end(E_thread), 0.0);
         std::fill(std::begin(F_thread), std::end(F_thread), 0.0);
 #ifdef __OPENMP__
@@ -665,11 +664,11 @@ void cme_node::CalculateEF(const blas_ops& blas)
                 }
             }
         }
-        E += E_thread;
-        F += F_thread;
+        E_temp += E_thread;
+        F_temp += F_thread;
     }
-    coefficients.E = E;
-    coefficients.F = F;
+    coefficients.E = E_temp;
+    coefficients.F = F_temp;
 }
 
 multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node)
@@ -698,35 +697,51 @@ multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_
 
 void cme_internal_node::CalculateGH(const blas_ops& blas)
 {
-    std::fill(std::begin(internal_coefficients.G), std::end(internal_coefficients.G), 0.0);
-    std::fill(std::begin(internal_coefficients.H), std::end(internal_coefficients.H), 0.0);
+    multi_array<double, 4> G_temp(internal_coefficients.G.shape());
+    multi_array<double, 4> H_temp(internal_coefficients.H.shape());
+    std::fill(std::begin(G_temp), std::end(G_temp), 0.0);
+    std::fill(std::begin(H_temp), std::end(H_temp), 0.0);
 
-// #ifdef __OPENMP__
-// #pragma omp parallel for
-// #endif
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+#ifdef __OPENMP__
+#pragma omp parallel reduction(+: G_temp, H_temp)
+#endif
     {
-        for (Index i = 0; i < RankIn(); ++i)
+        multi_array<double, 4> G_thread(internal_coefficients.G.shape());
+        multi_array<double, 4> H_thread(internal_coefficients.H.shape());
+        std::fill(std::begin(G_thread), std::end(G_thread), 0.0);
+        std::fill(std::begin(H_thread), std::end(H_thread), 0.0);
+
+#ifdef __OPENMP__
+#pragma omp for
+#endif
+        for (Index mu = 0; mu < grid.n_reactions; ++mu)
         {
-            for (Index j = 0; j < RankIn(); ++j)
+            for (Index i = 0; i < RankIn(); ++i)
             {
-                for (Index i0 = 0; i0 < RankOut()[0]; ++i0)
+                for (Index j = 0; j < RankIn(); ++j)
                 {
-                    for (Index j0 = 0; j0 < RankOut()[0]; ++j0)
+                    for (Index i0 = 0; i0 < RankOut()[0]; ++i0)
                     {
-                        for (Index i1 = 0; i1 < RankOut()[1]; ++i1)
+                        for (Index j0 = 0; j0 < RankOut()[0]; ++j0)
                         {
-                            for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
+                            for (Index i1 = 0; i1 < RankOut()[1]; ++i1)
                             {
-                                internal_coefficients.G(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.A[mu](i, j) * child[0]->coefficients.A_bar[mu](i0, j0) * child[1]->coefficients.A_bar[mu](i1, j1);
-                                internal_coefficients.H(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.B[mu](i, j) * child[0]->coefficients.B_bar[mu](i0, j0) * child[1]->coefficients.B_bar[mu](i1, j1);
+                                for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
+                                {
+                                    G_thread(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.A[mu](i, j) * child[0]->coefficients.A_bar[mu](i0, j0) * child[1]->coefficients.A_bar[mu](i1, j1);
+                                    H_thread(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.B[mu](i, j) * child[0]->coefficients.B_bar[mu](i0, j0) * child[1]->coefficients.B_bar[mu](i1, j1);
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        G_temp += G_thread;
+        H_temp += H_thread;
     }
+    internal_coefficients.G = G_temp;
+    internal_coefficients.H = H_temp;
 }
 
 multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node)
