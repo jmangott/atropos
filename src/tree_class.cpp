@@ -508,21 +508,28 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
     if (IsExternal())
     {
         cme_external_node *this_node = (cme_external_node *) this;
-#ifdef __OPENMP__
-#pragma omp parallel
-#endif
+        multi_array<double, 2> X_shift({this_node->grid.dx, this_node->RankIn()});
+        multi_array<double, 1> weight({this_node->grid.dx});
+
+// #ifdef __OPENMP__
+// #pragma omp parallel
+// #endif
+        for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
         {
-            multi_array<double, 2> X_shift({this_node->grid.dx, this_node->RankIn()});
-            multi_array<double, 1> weight({this_node->grid.dx});
+            Matrix::ShiftRows<-1>(X_shift, this_node->X, this_node->grid, mu);
 
 #ifdef __OPENMP__
-#pragma omp for
+#pragma omp parallel firstprivate(this_node)
 #endif
-            for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
             {
-                Matrix::ShiftRows<-1>(X_shift, this_node->X, this_node->grid, mu);
                 std::vector<Index> vec_index(this_node->grid.d, 0);
+#ifdef __OPENMP__
+                Index chunk_size chunk_size = IndexFunction::SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(this_node->grid.n), this_node->grid.dx);
+#endif
 
+#ifdef __OPENMP__
+#pragma omp for schedule(static, chunk_size)
+#endif
                 for (Index alpha = 0; alpha < this_node->grid.dx; ++alpha)
                 {
                     Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]), std::begin(this_node->grid.idx_dep[mu]), std::end(this_node->grid.idx_dep[mu]));
@@ -530,9 +537,9 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
                     weight(alpha) = this_node->external_coefficients.propensity[mu][alpha_dep] * this_node->grid.h_mult;
                     IndexFunction::IncrVecIndex(std::begin(this_node->grid.n), std::begin(vec_index), std::end(vec_index));
                 }
-                coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
-                coeff(this_node->X, this_node->X, weight, coefficients.B_bar[mu], blas);
             }
+            coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
+            coeff(this_node->X, this_node->X, weight, coefficients.B_bar[mu], blas);
         }
     }
     else
@@ -575,9 +582,9 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
     multi_array<double, 2> K_dot(K.shape());
     set_zero(K_dot);
 
-#ifdef __OPENMP__
-#pragma omp parallel reduction(+: K_dot)
-#endif
+// #ifdef __OPENMP__
+// #pragma omp parallel reduction(+: K_dot)
+// #endif
     {
         // multi_array<double, 2> K_dot_thread(K.shape());
         multi_array<double, 2> KA(K.shape());
@@ -586,31 +593,40 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
         multi_array<double, 2> aKB(K.shape());
         multi_array<double, 2> aKA_shift(K.shape());
         multi_array<double, 1> weight({K.shape()[0]});
-        std::vector<Index> vec_index(node->grid.d);
         // set_zero(K_dot_thread);
 
-#ifdef __OPENMP__
-#pragma omp for
-#endif
+// #ifdef __OPENMP__
+// #pragma omp for
+// #endif
         for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
         {
-            std::fill(std::begin(vec_index), std::end(vec_index), 0);
             blas.matmul_transb(K, node->coefficients.A[mu], KA);
             blas.matmul_transb(K, node->coefficients.B[mu], KB);
-            Index alpha;
 
-            for (Index i = 0; i < node->grid.dx; ++i)
+#ifdef __OPENMP__
+#pragma omp parallel firstprivate(node)
+#endif
             {
-                alpha = IndexFunction::VecIndexToDepCombIndex(
-                    std::begin(vec_index),
-                    std::begin(node->grid.n_dep[mu]),
-                    std::begin(node->grid.idx_dep[mu]),
-                    std::end(node->grid.idx_dep[mu]));
-                IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
+                std::vector<Index> vec_index(node->grid.d, 0);
+#ifdef __OPENMP__
+                Index chunk_size chunk_size = IndexFunction::SetVecIndex(std::begin(vec_index), std::end(vec_index), std::begin(node->grid.n), node->grid.dx);
+#endif
 
-                weight(i) = node->external_coefficients.propensity[mu][alpha];
+#ifdef __OPENMP__
+#pragma omp for schedule(static, chunk_size)
+#endif
+                for (Index i = 0; i < node->grid.dx; ++i)
+                {
+                    Index alpha = IndexFunction::VecIndexToDepCombIndex(
+                        std::begin(vec_index),
+                        std::begin(node->grid.n_dep[mu]),
+                        std::begin(node->grid.idx_dep[mu]),
+                        std::end(node->grid.idx_dep[mu]));
+                    IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
+
+                    weight(i) = node->external_coefficients.propensity[mu][alpha];
+                }
             }
-
             ptw_mult_row(KA, weight, aKA);
             ptw_mult_row(KB, weight, aKB);
 
