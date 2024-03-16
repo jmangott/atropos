@@ -24,7 +24,7 @@
 with the projector-splitting integrator for Tree Tensor networks.[^fn1]
 
 $`P(t,x)\,\mathrm{d}t`$ is the probability of finding a population number of $`x = (x_1, \dots, x_N)`$ molecules of species $`S_1, \dots, S_N`$ in the time interval $`[t,\,t + \mathrm{d}t]`$.
-The CME describes the time evolution of this probability distribution $`P(t,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x-\nu_\mu)`$ can be interpreted as transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
+The CME describes the time evolution of this probability distribution $`P(t,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x-\nu_\mu)`$ are proportional to the transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
 
 <!-- In our approach, the reaction network has to be separated recursively into two parts, such that $`x=(x_{(1)},x_{(2)})`$. The probability distribution is then approximated by
 ```math
@@ -53,19 +53,30 @@ Optionally:
 ## Installation
 Clone the repository via
 ```shell
-git clone https://git.uibk.ac.at/c7021158/kinetic-cme.git
+git clone git@github.com:jmangott/CME-integrator.git
 ```
+
+<!-- ```shell
+# git clone https://git.uibk.ac.at/c7021158/kinetic-cme.git
+``` -->
+
 and build the program by executing
 ```shell
-cd kinetic-cme
+cd CME-integrator
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
+<!-- ```shell
+cd kinetic-cme
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+``` -->
+
 The generated executable `hierarchical-cme` can be found in `bin`.
 
 To enable compiler options for debugging, use `-DCMAKE_BUILD_TYPE=Debug` instead.
-Unit tests for C++ files are provided in the `tests` folder, and for Python files in the `scripts/tests` folder. They can be run with 
+Unit tests for C++ files are provided in the `tests` folder. They can be run with 
 ```shell
 ctest --test-dir build
 ```
@@ -115,7 +126,11 @@ In order to generate reference solutions for the example problems, the PySB pack
 ```shell
 conda install -c alubbock pysb
 ```
-All scripts and notebooks have to be executed from the project root. When using a IDE, make sure to adjust the settings accordingly. In Microsoft Visual Studio Code one has to set "Notebook File Root" to `{workspaceFolder}` to run the notebooks.
+All scripts and notebooks have to be executed from the project root. When using a IDE, make sure to adjust the settings accordingly. In Microsoft Visual Studio Code one has to set the "Notebook File Root" to `{workspaceFolder}` to run the notebooks.
+Unit tests for Python files are located in the `scripts/tests` folder. They can be run in the Python environment via
+```shell
+pytest scripts/tests
+```
 
 ## Run the program
 `hierarchical-cme` has to be run with
@@ -130,7 +145,7 @@ and expects the following command line arguments:
 - `-h`, `--help`: Print usage
 
 ## Input
-Input netCDF files have to be stored as `input/input.nc` and can be generated with the input scripts provided in `scripts`.
+Input netCDF files have to be stored as `input/input.nc` and can be generated with the input scripts provided in `scripts/input`.
 
 **Caution:** As `Ensign` stores arrays in column-major (Fortran) order, it is assumed that input arrays also follow this convention.
 <!-- TODO: Give more detais -->
@@ -140,9 +155,17 @@ The user can choose between a first-order explicit and implicit Euler integrator
 <!-- TODO: ### Binning -->
 
 ### Preparing input data
-A template Python script called `set_input_template.py` is provided in `scripts/input` in order to facilitate the generation of the parameters (`parameters.hpp`) and the inital condition (`input.nc`). Code marked with `TODO` has to be modified according to the specific needs. The required `input/` directory is created automatically.
+The `set_bax.py` script located in `scripts/input` folder generates input data for the BAX pore assembly model. It gives an example on how the initial conditions have to be set up. The `input/input.nc` file is generated with the `set_bax.py` script via
+```shell
+python3 scripts/input/set_bax.py --partition (0 1 2)(((3 4 6 7)(5 8))(9 10)) --rank 5 15 15
+```
+and a short documentation for this script is provided by
+```shell
+python3 scripts/input/set_bax.py --help
+```
+<!-- TODO: ### Describe examples in more detail -->
 
- Note that `hierarchical-cme` assumes that the propensity function can be factorized for the species in different partitions. However, the input scripts rely on the `ReactionSystem` class (cf. `scripts/reaction_class.py`), which assumes that the propensity function is factorizable in all species. For most scenarios this should be sufficient. If one encounters a problem where species in a partition are not factorizable, the propensity function can be adjusted manually after initializing the `Tree` with the method `initialize`.
+Note that `hierarchical-cme` assumes that the propensity function is factorizable for the species in different partitions. However, the input scripts rely on the `ReactionSystem` class (cf. `scripts/reaction_class.py`), which assumes that the propensity function is factorizable in *all* species. This is a valid assumption for most scenarios. For problems where species in a partition are not factorizable, the propensity function can be adjusted manually after initializing the `Tree` with the method `initialize`.
 
 #### Writing a model file with the `ReactionSystem` class
 The model file contains all reactions $`R_\mu`$ ($`\mu=1,\dots,M`$) of the specific problem and has to be imported in the input scripts.
@@ -151,17 +174,17 @@ The model file contains all reactions $`R_\mu`$ ($`\mu=1,\dots,M`$) of the speci
 
 
 ## Output
-`kinetic-cme` automatically creates a folder in `output/` named `kFilename`, which is set in the `parameter.hpp` file.
-The low-rank factors and coupling coefficients as well as the chosen model parameters are stored in this folder as `output_t<ts>.nc` (`<ts>` denotes the time step) in intervals according to the parameter `kSnapshot`.
+`hierarchical-cme` automatically creates a folder in `output/` with a name set by the `-o`/`--output` parameter.
+The low-rank factors and coupling coefficients as well as the chosen model parameters are stored in this folder as `output_t<ts>.nc` (`<ts>` denotes the time step) in intervals according to the `-s`/`--snapshot` parameter.
 
 <!-- TODO: Describe the structure of the .netCDF file -->
 
 ## Example problems
-Input generation scripts for the example problems (toggle switch, lambda phage and BAX pore aggregation) are provided in `scripts/input/example_setups`, model files can be found in `include/models`.
+Input generation scripts for the example problems (toggle switch, lambda phage and BAX pore aggregation) are provided in `scripts/input/` and model files can be found in `scripts/models`.
 
 Interactive Python notebooks for comparison of the DLR results with reference solutions for the example problems can be found in `scripts/output`.
 
-Before executing the notebooks, one has to generate the output files with `kinetic-cme` and the corresponding reference solutions. These can in turn be generated with the notebooks located in `scripts/reference_solutions`. Furthermore, a `plots` directory has to be created.
+Before executing the notebooks, one has to generate the output files with `hierarchical-cme` and the corresponding reference solutions. These can in turn be generated with the scripts located in `scripts/reference_solutions`.
 
 ## References
 [^fn1]: Ceruti, G., Lubich, C., and Walach, H.: Time integration of Tree Tensor networks", SIAM J. Numer. Anal. **59** (2021)
