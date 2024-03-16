@@ -163,6 +163,7 @@ class LambdaPhageTestCase(unittest.TestCase):
         with self.assertRaises(Exception):
             lp_tree.calculateObservables(np.ones(10))
 
+    # TODO: write a better test 
     def test_calculate_observables(self):
         lp_tree = Tree(self.partition_str, self.grid)
         lp_tree.initialize(lp_model, self.r_out)
@@ -173,12 +174,21 @@ class LambdaPhageTestCase(unittest.TestCase):
         for Q in initial_condition.Q:
             Q[0, 0, 0] = 1.0
 
-        lp_tree.calculateObservables(np.array([0, 0, 0, 0, 0]))
-        self.assertTrue(lp_tree.root.child[0].X_slice == 1.0)
-        self.assertTrue(lp_tree.root.child[1].X_slice == 1.0)
-        self.assertTrue(lp_tree.root.child[0].child[0].X_sum == self.grid.n[4])
-        self.assertTrue(lp_tree.root.child[0].child[1].X_sum == self.grid.n[0] * self.grid.n[1])
-        self.assertTrue(lp_tree.root.child[1].X_sum == self.grid.n[2] * self.grid.n[3])
+        slice_vec = np.zeros(lp_tree.grid.d(), dtype="int")
+        norm = np.prod(lp_tree.root.grid.n)
+        sorted = np.argsort(lp_tree.species)
+        n = lp_tree.root.grid.n[sorted]
+
+        for i, n_el in enumerate(n):
+            sliced_distribution, marginal_distribution = lp_tree.calculateObservables(i, slice_vec)
+            self.assertTrue(np.all(sliced_distribution == np.ones(n_el)))
+            self.assertTrue(np.all(marginal_distribution == np.ones(n_el) * norm / n_el))
+
+        with self.assertRaises(Exception):
+            _, _ = lp_tree.calculateObservables(5, slice_vec)
+        
+        with self.assertRaises(Exception):
+            _, _ = lp_tree.calculateObservables(4, np.zeros(lp_tree.grid.d() + 1))
 
 if __name__ == "__main__":
     unittest.main()
