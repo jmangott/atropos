@@ -4,13 +4,14 @@ mpl.use('pgf')
 import matplotlib.pyplot as plt
 from numba import njit
 import numpy as np
+import glob
 import os
 import xarray as xr
 
 if not os.path.exists("plots"):
     os.makedirs("plots")
 
-from scripts.index_functions import incrVecIndex, vecIndexToCombIndex
+from scripts.index_functions import incrVecIndex, vecIndexToCombIndex, vecIndexToState
 from scripts.grid_class import GridParms
 from scripts.tree_class import Tree, Node, ExternalNode, InternalNode
 
@@ -21,8 +22,8 @@ plt.rcParams.update({
     'text.usetex': True,
     'pgf.rcfonts': False,
     "figure.figsize": (6, 4),
-    "lines.linewidth": "1",
-    "lines.markersize": "5",
+    # "lines.linewidth": "1",
+    # "lines.markersize": "5",
     "lines.linestyle": "none",
     "axes.titlesize": "medium",
 })
@@ -81,6 +82,56 @@ class GridInfo:
         self.t = _ds["t"].values
         self.dt = _ds["dt"].values
 
+def convertToSeconds(time_string):
+    factor = [3600.0, 60.0, 1.0, 0.001]
+    unit = ["h", "mins", "s", "ms"]
+    seconds = 0.0
+    for (ts, f, u) in zip(time_string, factor, unit):
+        seconds += float(ts[:-len(u)]) * f
+    return seconds
+
+class TimeSeries:
+    def __init__(self, _foldername):
+        self.foldername = _foldername
+        self.__list_of_files = sorted(glob.glob(_foldername + "/*.nc"), key=self.getT)
+        self.__number_of_files = len(self.__list_of_files)
+
+    def getWallTime(self):
+        with open(self.foldername + "/diagnostics.txt") as file:
+            for line in file:
+                if line.startswith("Time elapsed:"):
+                    return convertToSeconds(line.split()[-4:])
+                
+    def getT(self, filename):
+        with xr.open_dataset(filename) as ds:
+            return float(ds["t"].values)
+
+    def getTau(self):
+        with xr.open_dataset(self.__list_of_files[0]) as ds:
+            return float(ds["tau"].values)
+
+    def getD(self):
+        with xr.open_dataset(self.__list_of_files[0]) as ds:
+            return ds["n"].values.size
+
+    def calculateConcentrations(self):
+        t = np.zeros(self.__number_of_files)
+        concentrations = np.zeros((self.__number_of_files, self.getD()))
+
+        for i, filename in enumerate(self.__list_of_files):
+            tree = readTree(filename)
+
+            # Transform grid variables to normal ordering
+            sorted = np.argsort(tree.species)
+            grid = tree.root.grid.permute(sorted)
+
+            t[i] = self.getT(filename)
+            slice_vec = np.zeros(grid.d(), dtype="int")
+            for j, n_j in enumerate(grid.n):
+                _, marginal_distribution = tree.calculateObservables(j, slice_vec)
+                state = vecIndexToState(np.arange(n_j), grid.liml[j], grid.binsize[j])
+                concentrations[i, j] = np.dot(marginal_distribution, state)
+        return t, concentrations
 
 @njit
 def calculateXSum(input_array: np.ndarray, n: np.ndarray) -> list[np.ndarray]:
