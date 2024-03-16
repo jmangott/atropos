@@ -7,7 +7,6 @@ import numpy as np
 import numpy.typing as npt
 import os
 import regex
-from typing import Union
 import xarray as xr
 
 from scripts.grid_class import GridParms
@@ -20,7 +19,6 @@ class Node:
         self.child = [None] * 2
         self.id = _id
         self.grid = _grid
-
 
 class InternalNode(Node):
     def __init__(self, _parent: 'InternalNode', _id: Id, _grid: GridParms):
@@ -257,21 +255,41 @@ class Tree:
         self.__write(self.root.child[0], dt)
         self.__write(self.root.child[1], dt)
         dt.to_netcdf(fname)
-
-    def __calculateObservables(self, node: Node, slice: npt.NDArray[np.int_]):
+    
+    def __calculateObservables(self, node: Node, idx_n: int, slice_vec: npt.NDArray[np.int_]):
         if isinstance(node, ExternalNode):
-            node.X_sum = np.sum(node.X, axis=0)
-            node.X_slice = node.X[vecIndexToCombIndex(slice[node.grid.species], node.grid.n), :]
+            if idx_n in node.grid.species:
+                # Sliced distribution
+                partition_idx_n = np.where(idx_n==node.grid.species)[0][0]
+                sliced_distribution = np.zeros((node.grid.n[partition_idx_n], node.rankIn()), dtype="float64")
+                partition_slice_vec = slice_vec[node.grid.species]
+                for i in range(node.grid.n[partition_idx_n]):
+                    partition_slice_vec[partition_idx_n] = i
+                    sliced_distribution[i, :] = node.X[vecIndexToCombIndex(partition_slice_vec, node.grid.n), :]
+                # Marginal distribution
+                vec_index = np.zeros(node.grid.d(), dtype=np.int64)
+                marginal_distribution = np.zeros((node.grid.n[partition_idx_n], node.rankIn()), dtype="float64")
+                for i in range(node.grid.dx()):
+                    marginal_distribution[vec_index[partition_idx_n], :] += node.X[i, :]
+                    incrVecIndex(vec_index, node.grid.n, node.grid.d())
+            else:
+                partition_slice_vec = slice_vec[node.grid.species]
+                sliced_distribution = node.X[vecIndexToCombIndex(partition_slice_vec, node.grid.n), :]
+                marginal_distribution = np.sum(node.X, axis=0)
         elif isinstance(node, InternalNode):
-            self.__calculateObservables(node.child[0], slice)
-            self.__calculateObservables(node.child[1], slice)
-            node.X_sum = np.einsum("i,ijk,j", node.child[0].X_sum, node.Q, node.child[1].X_sum)
-            node.X_slice = np.einsum("i,ijk,j", node.child[0].X_slice, node.Q, node.child[1].X_slice)
+            X0_sliced, X0_marginal = self.__calculateObservables(node.child[0], idx_n, slice_vec)
+            X1_sliced, X1_marginal = self.__calculateObservables(node.child[1], idx_n, slice_vec)
+            if (X0_sliced.ndim > 1):
+                sliced_distribution = np.einsum("ij,jkl,k->il", X0_sliced, node.Q, X1_sliced)
+                marginal_distribution = np.einsum("ij,jkl,k->il", X0_marginal, node.Q, X1_marginal)
+            elif (X1_sliced.ndim > 1):
+                sliced_distribution = np.einsum("i,ijk,lj->lk", X0_sliced, node.Q, X1_sliced)
+                marginal_distribution = np.einsum("i,ijk,lj->lk", X0_marginal, node.Q, X1_marginal)
+            else:
+                sliced_distribution = np.einsum("i,ijk,j->k", X0_sliced, node.Q, X1_sliced)
+                marginal_distribution = np.einsum("i,ijk,j->k", X0_marginal, node.Q, X1_marginal)
+        return sliced_distribution, marginal_distribution
 
-    def calculateObservables(self, slice: npt.NDArray[np.int_]):
-        # TODO: add direct output of the norm, but this also requires a change of the `InitialCondition` class
-        if slice.size != self.root.grid.d():
-            raise Exception(
-                "`slice.size` must be equal to the number of dimensions of the root node")
-        self.__calculateObservables(self.root.child[0], slice)
-        self.__calculateObservables(self.root.child[1], slice)
+    def calculateObservables(self, idx_n: int, slice_vec: npt.NDArray[np.int_]):
+        sliced_distribution, marginal_distribution = self.__calculateObservables(self.root, idx_n, slice_vec)
+        return sliced_distribution[:, 0], marginal_distribution[:, 0]
