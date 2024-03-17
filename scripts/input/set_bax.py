@@ -87,8 +87,8 @@ for node in range(tree.n_external_nodes):
     idx += len(vec_index)
 
 # Calculate norm
-tree.calculateObservables(np.zeros(tree.root.grid.d(), dtype="int"))
-norm = (tree.root.child[0].X_sum * tree.root.child[1].X_sum)[0]
+_ = marginal_distribution = tree.calculateObservables(0, np.zeros(tree.root.grid.d(), dtype="int"))
+norm = np.sum(marginal_distribution)
 print("norm:", norm)
 tree.root.Q[0, 0, 0] /= norm
 
