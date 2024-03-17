@@ -157,7 +157,7 @@ The user can choose between a first-order explicit and implicit Euler integrator
 ### Preparing input data
 The `set_bax.py` script located in `scripts/input` folder generates input data for the BAX pore assembly model. It gives an example on how the initial conditions have to be set up. The `input/input.nc` file is generated with the `set_bax.py` script via
 ```shell
-python3 scripts/input/set_bax.py --partition (0 1 2)(((3 4 6 7)(5 8))(9 10)) --rank 5 15 15
+python3 scripts/input/set_bax.py --partition "(0 1 2)(((3 4 6 7)(5 8))(9 10))" --rank 5 15 15
 ```
 and a short documentation for this script is provided by
 ```shell
