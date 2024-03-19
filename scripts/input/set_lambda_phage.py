@@ -7,7 +7,7 @@ from scripts.initial_condition_class import InitialCondition
 from scripts.tree_class import Tree
 from scripts.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
 
-import scripts.hierarchical.models.lambda_phage as model
+import scripts.models.lambda_phage as model
 
 # Partition string
 partition_str = "((0 1)(2 4))(3)"
@@ -23,8 +23,8 @@ liml = np.zeros(d)
 grid = GridParms(n, binsize, liml)
 
 # Set up the partition tree
-tree = Tree(model.reaction_system, partition_str, grid, r_out)
-tree.buildTree()
+tree = Tree(partition_str, grid)
+tree.initialize(model.reaction_system, r_out)
 
 # Initial distribution
 def multinomial(x):
@@ -49,24 +49,24 @@ p0_mat = p0.reshape((tree.root.child[0].grid.dx(), tree.root.child[1].grid.dx())
 u, s, vh = np.linalg.svd(p0_mat, full_matrices=False)
 
 # Use only the first `r` singular values
-x0 = u[:, :tree.root.r_out]
-q = np.diag(s[:tree.root.r_out])
-x1 = vh[:tree.root.r_out, :].T
+x0 = u[:, :tree.root.rankOut()]
+q = np.diag(s[:tree.root.rankOut()])
+x1 = vh[:tree.root.rankOut(), :].T
 
 # SVD of x0
 q0 = np.zeros((r_out[1], r_out[1], r_out[0]))
-x0_tensor = np.zeros((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx(), tree.root.r_out))
+x0_tensor = np.zeros((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx(), tree.root.rankOut()))
 
-for i in range(tree.root.r_out):
+for i in range(tree.root.rankOut()):
     x0_tensor[:, :, i] = x0[:, i].reshape((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx()), order="F")
 
 x0_mat = tensorUnfold(x0_tensor, 0)
 u, _, _ = np.linalg.svd(x0_mat, full_matrices=False)
-x00 = u[:, :tree.root.child[0].r_out]
+x00 = u[:, :tree.root.child[0].rankOut()]
 
 x0_mat = tensorUnfold(x0_tensor, 1)
 u, _, _ = np.linalg.svd(x0_mat, full_matrices=False)
-x01 = u[:, :tree.root.child[0].r_out]
+x01 = u[:, :tree.root.child[0].rankOut()]
 
 q0 = np.einsum('ik,jl,ijm', x00, x01, x0_tensor)
 
@@ -85,7 +85,7 @@ initial_conditions.X[2][:] = x1
 
 # Print tree and write it to a netCDF file
 print(tree)
-tree.writeTree()
+tree.write()
 
 x00_sum = np.sum(x00, axis=0)
 x01_sum = np.sum(x01, axis=0)
