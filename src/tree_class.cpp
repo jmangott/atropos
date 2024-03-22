@@ -107,7 +107,7 @@ void cme_lr_tree::Write(const std::string fn, const double t, const double tau, 
     NETCDF_CHECK(nc_def_var(ncid, "tau", NC_DOUBLE, 0, 0, &varid_tau));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_tau, &tau));
     NETCDF_CHECK(nc_def_var(ncid, "dm", NC_DOUBLE, 0, 0, &varid_dm));
-    NETCDF_CHECK(nc_put_var_double(ncid, varid_tau, &dm));
+    NETCDF_CHECK(nc_put_var_double(ncid, varid_dm, &dm));
 
     WriteHelpers::WriteNode(ncid, root);
 
@@ -698,13 +698,13 @@ multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_
 
 void cme_internal_node::CalculateGH(const blas_ops& blas)
 {
-    multi_array<double, 4> G_temp(internal_coefficients.G.shape());
-    multi_array<double, 4> H_temp(internal_coefficients.H.shape());
-    std::fill(std::begin(G_temp), std::end(G_temp), 0.0);
-    std::fill(std::begin(H_temp), std::end(H_temp), 0.0);
+    multi_array<double, 4> &Gref = internal_coefficients.G;
+    multi_array<double, 4> &Href = internal_coefficients.H;
+    std::fill(std::begin(Gref), std::end(Gref), 0.0);
+    std::fill(std::begin(Href), std::end(Href), 0.0);
 
 #ifdef __OPENMP__
-#pragma omp parallel reduction(+: G_temp, H_temp)
+#pragma omp parallel reduction(+: Gref, Href)
 #endif
     {
         multi_array<double, 4> G_thread(internal_coefficients.G.shape());
@@ -738,11 +738,9 @@ void cme_internal_node::CalculateGH(const blas_ops& blas)
                 }
             }
         }
-        G_temp += G_thread;
-        H_temp += H_thread;
+        Gref += G_thread;
+        Href += H_thread;
     }
-    internal_coefficients.G = G_temp;
-    internal_coefficients.H = H_temp;
 }
 
 multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node)
