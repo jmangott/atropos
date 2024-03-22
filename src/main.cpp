@@ -13,12 +13,13 @@ int main(int argc, char** argv)
     cxxopts::Options options("hierarchical-cme", "Tree tensor network integrator for the chemical master equation");
 
     options.add_options()
+        ("i,input", "Name of the input .nc file", cxxopts::value<std::string>()->default_value("input/input.nc"))
         ("o,output", "Name of the output folder", cxxopts::value<std::string>())
         ("s,snapshot", "Number of steps between two snapshots", cxxopts::value<int>())
         ("t,tau", "Time step size", cxxopts::value<double>())
         ("f,tfinal", "Final integration time", cxxopts::value<double>())
         ("n,substeps", "Number of integration substeps", cxxopts::value<unsigned int>()->default_value("1"))
-        ("k,kstep", "Integration method for the K step (`e` (explicit Euler), `i` (implicit Euler), `c` (Crank-Nicolson))", cxxopts::value<char>()->default_value("i"))
+        ("m,method", "Integration method (`e` (explicit Euler), `i` (implicit Euler), `c` (Crank-Nicolson))", cxxopts::value<char>()->default_value("i"))
         ("h,help", "Print usage")
         ;
 
@@ -29,32 +30,36 @@ int main(int argc, char** argv)
         std::exit(EXIT_SUCCESS);
     }
 
+    std::string input = result["input"].as<std::string>();
     std::string output = result["output"].as<std::string>();
     int snapshot = result["snapshot"].as<int>();
     double tau = result["tau"].as<double>();
     double tfinal = result["tfinal"].as<double>();
     unsigned int substeps = result["substeps"].as<unsigned int>();
-    char kstep = result["kstep"].as<char>();
+    char method = result["method"].as<char>();
 
     std::map<std::string, integration_method*> integration_methods;
-    switch (kstep)
+    switch (method)
     {
     case 'e':
         integration_methods["K"] = new explicit_euler(substeps);
+        integration_methods["Q"] = new explicit_euler(substeps);
+        integration_methods["S"] = new explicit_euler(substeps);
         break;
     case 'i':
         integration_methods["K"] = new implicit_euler(substeps);
+        integration_methods["Q"] = new implicit_euler(substeps);
+        integration_methods["S"] = new explicit_euler(substeps);  // S is integrated backwards in time
         break;
     case 'c':
         integration_methods["K"] = new crank_nicolson(substeps);
+        integration_methods["Q"] = new crank_nicolson(substeps);
+        integration_methods["S"] = new crank_nicolson(substeps);
         break;
     default:
-        std::cout << "Error: Command line option `kstep` must be either `e` or `i`!" << std::endl;
+        std::cout << "Error: Command line option `m` must be either `e`, `i` or `c`!" << std::endl;
         std::exit(EXIT_FAILURE);
     }
-
-    integration_methods["S"] = new explicit_euler(substeps);
-    integration_methods["Q"] = new explicit_euler(substeps);
 
     blas_ops blas;
     ttn_integrator integrator(blas, integration_methods);
@@ -66,7 +71,7 @@ int main(int argc, char** argv)
 
     const Index kNsteps = std::ceil(tfinal / tau);
 
-    tree.Read("input/input.nc");
+    tree.Read(input);
     std::cout << tree;
     tree.Orthogonalize(blas);
     double norm = tree.Normalize();
@@ -83,7 +88,7 @@ int main(int argc, char** argv)
     tree.Write(fname, t, tau, dm);
 
     auto t_start(std::chrono::high_resolution_clock::now());
-
+    get_time::start("main");
     for (Index ts = 0; ts < kNsteps; ++ts)
     {
         if (tfinal - t < tau)
@@ -105,6 +110,7 @@ int main(int argc, char** argv)
             tree.Write(fname, t, tau, dm);
         }
     }
+    get_time::stop("main");
 
     auto t_stop(std::chrono::high_resolution_clock::now());
     auto t_elapsed = t_stop - t_start;
