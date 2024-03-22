@@ -15,19 +15,6 @@ from scripts.index_functions import incrVecIndex, vecIndexToCombIndex, vecIndexT
 from scripts.grid_class import GridParms
 from scripts.tree_class import Tree, Node, ExternalNode, InternalNode
 
-# Update Matplotlib settings
-plt.rcParams.update({
-    "pgf.texsystem": "pdflatex",
-    'font.family': 'serif',
-    'text.usetex': True,
-    'pgf.rcfonts': False,
-    "figure.figsize": (6, 4),
-    # "lines.linewidth": "1",
-    # "lines.markersize": "5",
-    "lines.linestyle": "none",
-    "axes.titlesize": "medium",
-})
-
 def groupPath(id) -> str:
     path = ""
     for i, id_element in enumerate(id):
@@ -64,7 +51,6 @@ def readTree(filename: str) -> Tree:
 
         return tree
 
-
 class GridInfo:
     """Class for storing DLR parameters."""
     def __init__(self, _ds: xr.core.dataset.Dataset):
@@ -96,12 +82,18 @@ class TimeSeries:
         self.__list_of_files = sorted(glob.glob(_foldername + "/*.nc"), key=self.getT)
         self.__number_of_files = len(self.__list_of_files)
 
+    def getMaxMassErr(self):
+        with open(self.foldername + "/diagnostics.txt") as file:
+            for line in file:
+                if line.startswith("max(norm - 1.0):"):
+                    return float(line.split()[-1])
+
     def getWallTime(self):
         with open(self.foldername + "/diagnostics.txt") as file:
             for line in file:
                 if line.startswith("Time elapsed:"):
                     return convertToSeconds(line.split()[-4:])
-                
+
     def getT(self, filename):
         with xr.open_dataset(filename) as ds:
             return float(ds["t"].values)
@@ -114,24 +106,43 @@ class TimeSeries:
         with xr.open_dataset(self.__list_of_files[0]) as ds:
             return ds["n"].values.size
 
-    def calculateConcentrations(self):
+    def getMassErr(self):
         t = np.zeros(self.__number_of_files)
-        concentrations = np.zeros((self.__number_of_files, self.getD()))
+        mass_error = np.zeros(self.__number_of_files)
+        for i, filename in enumerate(self.__list_of_files):
+            with xr.open_dataset(filename) as ds:
+                t[i] = float(ds["t"].values)
+                mass_error[i] = float(ds["dm"].values)
+        return t, mass_error
+
+    def calculateMoments(self):
+        t = np.zeros(self.__number_of_files)
+        n_moments = 2
+        moments = [np.zeros((self.__number_of_files, self.getD())) for _ in range(n_moments)]
 
         for i, filename in enumerate(self.__list_of_files):
             tree = readTree(filename)
 
-            # Transform grid variables to normal ordering
-            sorted = np.argsort(tree.species)
-            grid = tree.root.grid.permute(sorted)
-
             t[i] = self.getT(filename)
-            slice_vec = np.zeros(grid.d(), dtype="int")
-            for j, n_j in enumerate(grid.n):
+            slice_vec = np.zeros(tree.grid.d(), dtype="int")
+            for j, n_j in enumerate(tree.grid.n):
                 _, marginal_distribution = tree.calculateObservables(j, slice_vec)
-                state = vecIndexToState(np.arange(n_j), grid.liml[j], grid.binsize[j])
-                concentrations[i, j] = np.dot(marginal_distribution, state)
-        return t, concentrations
+                state = vecIndexToState(np.arange(n_j), tree.grid.liml[j], tree.grid.binsize[j])
+                for m in range(n_moments):
+                    moments[m][i, j] = np.dot(marginal_distribution, state ** (m + 1))
+        return t, moments
+
+
+def calculateMarginalDistributionError(filename, DLR_marginal_distribution, SSA_marginal_distribution, ssa_sol):
+    tree = readTree(filename)
+    DLR_marginal_err = np.zeros(tree.grid.d())
+    SSA_marginal_err = np.zeros(tree.grid.d())
+    slice_vec = np.zeros(tree.grid.d(), dtype="int")
+    for i in range(tree.grid.d()):
+        _, marginal_p1_r5_15_15 = tree.calculateObservables(i, slice_vec)
+        DLR_marginal_err[i] = np.linalg.norm(marginal_p1_r5_15_15 - DLR_marginal_distribution[i], np.inf)
+        SSA_marginal_err[i] = np.linalg.norm(marginal_p1_r5_15_15[ssa_sol.n_min[i] : ssa_sol.n_min[i]+ssa_sol.n[i]] - SSA_marginal_distribution[i][:tree.grid.n[i]], np.inf)
+    return DLR_marginal_err, SSA_marginal_err
 
 @njit
 def calculateXSum(input_array: np.ndarray, n: np.ndarray) -> list[np.ndarray]:
