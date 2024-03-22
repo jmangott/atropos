@@ -2,7 +2,7 @@
 from numba import njit
 import numpy as np
 
-# @njit
+@njit
 def combIndexToVecIndex(comb_index: int, interval: np.ndarray) -> np.ndarray:
     """Calculates a vector index from a given combined index `comb_index`."""
     vec_index = np.zeros(interval.size, dtype="int64")
@@ -47,7 +47,6 @@ def incrVecIndex(vec_index: np.ndarray, interval: np.ndarray, dim: int) -> None:
     if (dim > 0):
         vec_index[dim - 1] += 1
     return
-
 
 @njit
 def tensorUnfold(tensor, mode):
