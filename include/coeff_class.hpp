@@ -1,13 +1,14 @@
 #ifndef COEFF_CLASS_HPP
 #define COEFF_CLASS_HPP
 
-#include<memory>
 #include <vector>
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
 
 #include "grid_class.hpp"
+
+// TODO: rename A->C, B->D, A_bar->A and B_bar->B
 
 struct cme_coeff
 {
@@ -37,8 +38,8 @@ struct cme_internal_coeff
     multi_array<double, 4> G, H;
 
     cme_internal_coeff(const Index _r_in, const std::array<Index, 2> _r_out) 
-    : G({_r_in, prod(_r_out), _r_in, prod(_r_out)})
-    , H({_r_in, prod(_r_out), _r_in, prod(_r_out)})
+    : G({prod(_r_out), prod(_r_out), _r_in, _r_in})
+    , H({prod(_r_out), prod(_r_out), _r_in, _r_in})
     {}
 };
 
