@@ -79,8 +79,16 @@ def convertToSeconds(time_string):
 class TimeSeries:
     def __init__(self, _foldername):
         self.foldername = _foldername
-        self.__list_of_files = sorted(glob.glob(_foldername + "/*.nc"), key=self.getT)
+        self.time = []
+        self.__list_of_files = sorted(glob.glob(_foldername + "/*.nc"), key=self.__getT)
+        self.time.sort()
         self.__number_of_files = len(self.__list_of_files)
+
+    def __getT(self, filename):
+        with xr.open_dataset(filename) as ds:
+            t = float(ds["t"].values)
+            self.time.append(t)
+            return t
 
     def getMaxMassErr(self):
         with open(self.foldername + "/diagnostics.txt") as file:
@@ -94,10 +102,6 @@ class TimeSeries:
                 if line.startswith("Time elapsed:"):
                     return convertToSeconds(line.split()[-4:])
 
-    def getT(self, filename):
-        with xr.open_dataset(filename) as ds:
-            return float(ds["t"].values)
-
     def getTau(self):
         with xr.open_dataset(self.__list_of_files[0]) as ds:
             return float(ds["tau"].values)
@@ -107,30 +111,25 @@ class TimeSeries:
             return ds["n"].values.size
 
     def getMassErr(self):
-        t = np.zeros(self.__number_of_files)
         mass_error = np.zeros(self.__number_of_files)
         for i, filename in enumerate(self.__list_of_files):
             with xr.open_dataset(filename) as ds:
-                t[i] = float(ds["t"].values)
                 mass_error[i] = float(ds["dm"].values)
-        return t, mass_error
+        return mass_error
 
     def calculateMoments(self):
-        t = np.zeros(self.__number_of_files)
         n_moments = 2
         moments = [np.zeros((self.__number_of_files, self.getD())) for _ in range(n_moments)]
 
         for i, filename in enumerate(self.__list_of_files):
             tree = readTree(filename)
-
-            t[i] = self.getT(filename)
             slice_vec = np.zeros(tree.grid.d(), dtype="int")
             for j, n_j in enumerate(tree.grid.n):
                 _, marginal_distribution = tree.calculateObservables(j, slice_vec)
                 state = vecIndexToState(np.arange(n_j), tree.grid.liml[j], tree.grid.binsize[j])
                 for m in range(n_moments):
                     moments[m][i, j] = np.dot(marginal_distribution, state ** (m + 1))
-        return t, moments
+        return moments
 
 
 def calculateMarginalDistributionError(filename, DLR_marginal_distribution, SSA_marginal_distribution, ssa_sol):
