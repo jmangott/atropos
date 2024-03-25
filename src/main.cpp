@@ -48,7 +48,7 @@ int main(int argc, char** argv)
         break;
     case 'i':
         integration_methods["K"] = new implicit_euler(substeps);
-        integration_methods["Q"] = new implicit_euler(substeps);
+        integration_methods["Q"] = new explicit_euler(substeps);
         integration_methods["S"] = new explicit_euler(substeps);  // S is integrated backwards in time
         break;
     case 'c':
