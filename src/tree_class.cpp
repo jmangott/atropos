@@ -538,33 +538,63 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
     else
     {
         cme_internal_node *this_node = (cme_internal_node *) this;
+        std::array<Index, 2> rank_out = this_node->RankOut();
 
-        // TODO: reduce number of loops
+        std::vector<multi_array<double, 2>> AA_bar(grid.n_reactions);
+        std::vector<multi_array<double, 2>> BB_bar(grid.n_reactions);
+
+        multi_array<double, 2> Qmat({prod(rank_out), this_node->RankIn()});
+
+        multi_array<double, 2> A_tmp1({prod(rank_out), this_node->RankIn()});
+        multi_array<double, 2> B_tmp1({prod(rank_out), this_node->RankIn()});
+        multi_array<double, 2> A_tmp2({this_node->RankIn(), this_node->RankIn()});
+        multi_array<double, 2> B_tmp2({this_node->RankIn(), this_node->RankIn()});
+
 #ifdef __OPENMP__
 #pragma omp parallel for
 #endif
         for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
         {
-            for (Index i0 = 0; i0 < this_node->RankOut()[0]; ++i0)
+            AA_bar[mu].resize({prod(rank_out), prod(rank_out)});
+            BB_bar[mu].resize({prod(rank_out), prod(rank_out)});
+        }
+
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
+        for (Index mu = 0; mu < grid.n_reactions; ++mu)
+        {
+            for (Index j1 = 0; j1 < rank_out[1]; ++j1)
             {
-                for (Index j0 = 0; j0 < this_node->RankOut()[0]; ++j0)
+                for (Index i1 = 0; i1 < rank_out[1]; ++i1)
                 {
-                    for (Index i1 = 0; i1 < this_node->RankOut()[1]; ++i1)
+                    for (Index j0 = 0; j0 < rank_out[0]; ++j0)
                     {
-                        for (Index j1 = 0; j1 < this_node->RankOut()[1]; ++j1)
+                        for (Index i0 = 0; i0 < rank_out[0]; ++i0)
                         {
-                            for (Index i = 0; i < this_node->RankIn(); ++i)
-                            {
-                                for (Index j = 0; j < this_node->RankIn(); ++j)
-                                {
-                                    coefficients.A_bar[mu](i, j) += this_node->Q(i0, i1, i) * this_node->Q(j0, j1, j) * this_node->child[0]->coefficients.A_bar[mu](i0, j0) * this_node->child[1]->coefficients.A_bar[mu](i1, j1);
-                                    coefficients.B_bar[mu](i, j) += this_node->Q(i0, i1, i) * this_node->Q(j0, j1, j) * this_node->child[0]->coefficients.B_bar[mu](i0, j0) * this_node->child[1]->coefficients.B_bar[mu](i1, j1);
-                                }
-                            }
+                            AA_bar[mu](i0 + rank_out[0] * i1, j0 + rank_out[0] * j1) = this_node->child[0]->coefficients.A_bar[mu](i0, j0) * this_node->child[1]->coefficients.A_bar[mu](i1, j1);
+                            BB_bar[mu](i0 + rank_out[0] * i1, j0 + rank_out[0] * j1) = this_node->child[0]->coefficients.B_bar[mu](i0, j0) * this_node->child[1]->coefficients.B_bar[mu](i1, j1);
                         }
                     }
                 }
             }
+        }
+
+        Matrix::Matricize(this_node->Q, Qmat, 2);
+
+#ifdef __OPENMP__
+#pragma omp parallel for
+#endif
+        for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
+        {
+            blas.matmul(AA_bar[mu], Qmat, A_tmp1);
+            blas.matmul_transa(Qmat, A_tmp1, A_tmp2);
+
+            blas.matmul(BB_bar[mu], Qmat, B_tmp1);
+            blas.matmul_transa(Qmat, B_tmp1, B_tmp2);
+
+            coefficients.A_bar[mu] += A_tmp2;
+            coefficients.B_bar[mu] += B_tmp2;
         }
     }
 }
@@ -698,48 +728,55 @@ multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_
 
 void cme_internal_node::CalculateGH(const blas_ops& blas)
 {
-    multi_array<double, 4> &Gref = internal_coefficients.G;
-    multi_array<double, 4> &Href = internal_coefficients.H;
-    std::fill(std::begin(Gref), std::end(Gref), 0.0);
-    std::fill(std::begin(Href), std::end(Href), 0.0);
+    std::fill(std::begin(internal_coefficients.G), std::end(internal_coefficients.G), 0.0);
+    std::fill(std::begin(internal_coefficients.H), std::end(internal_coefficients.H), 0.0);
 
-#ifdef __OPENMP__
-#pragma omp parallel reduction(+: Gref, Href)
-#endif
+    std::vector<multi_array<double, 2>> AAbar(grid.n_reactions);
+    std::vector<multi_array<double, 2>> BBbar(grid.n_reactions);
+
+    Index rank_in = RankIn();
+    std::array<Index, 2> rank_out = RankOut();
+
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
-        multi_array<double, 4> G_thread(internal_coefficients.G.shape());
-        multi_array<double, 4> H_thread(internal_coefficients.H.shape());
-        std::fill(std::begin(G_thread), std::end(G_thread), 0.0);
-        std::fill(std::begin(H_thread), std::end(H_thread), 0.0);
+        AAbar[mu].resize({prod(rank_out), prod(rank_out)});
+        BBbar[mu].resize({prod(rank_out), prod(rank_out)});
+    }
 
-#ifdef __OPENMP__
-#pragma omp for
-#endif
-        for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
         {
-            for (Index i = 0; i < RankIn(); ++i)
+            for (Index i1 = 0; i1 < RankOut()[1]; ++i1)
             {
-                for (Index j = 0; j < RankIn(); ++j)
+                for (Index j0 = 0; j0 < RankOut()[0]; ++j0)
                 {
                     for (Index i0 = 0; i0 < RankOut()[0]; ++i0)
                     {
-                        for (Index j0 = 0; j0 < RankOut()[0]; ++j0)
-                        {
-                            for (Index i1 = 0; i1 < RankOut()[1]; ++i1)
-                            {
-                                for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
-                                {
-                                    G_thread(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.A[mu](i, j) * child[0]->coefficients.A_bar[mu](i0, j0) * child[1]->coefficients.A_bar[mu](i1, j1);
-                                    H_thread(i, i0 + RankOut()[0] * i1, j, j0 + RankOut()[0] * j1) += coefficients.B[mu](i, j) * child[0]->coefficients.B_bar[mu](i0, j0) * child[1]->coefficients.B_bar[mu](i1, j1);
-                                }
-                            }
-                        }
+                        AAbar[mu](i0 + rank_out[0] * i1, j0 + rank_out[0] * j1) = child[0]->coefficients.A_bar[mu](i0, j0) * child[1]->coefficients.A_bar[mu](i1, j1);
+                        BBbar[mu](i0 + rank_out[0] * i1, j0 + rank_out[0] * j1) = child[0]->coefficients.B_bar[mu](i0, j0) * child[1]->coefficients.B_bar[mu](i1, j1);
                     }
                 }
             }
         }
-        Gref += G_thread;
-        Href += H_thread;
+    }
+
+    for (Index mu = 0; mu < grid.n_reactions; ++mu)
+    {
+        for (Index j = 0; j < rank_in; ++j)
+        {
+            for (Index i = 0; i < rank_in; ++i)
+            {
+                for (Index j0_comb = 0; j0_comb < prod(rank_out); ++j0_comb)
+                {
+                    for (Index i0_comb = 0; i0_comb < prod(rank_out); ++i0_comb)
+                    {
+                        internal_coefficients.G(i0_comb, j0_comb, i, j) += coefficients.A[mu](i, j) * AAbar[mu](i0_comb, j0_comb);
+                        internal_coefficients.H(i0_comb, j0_comb, i, j) += coefficients.B[mu](i, j) * BBbar[mu](i0_comb, j0_comb);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -759,7 +796,7 @@ multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const c
             {
                 for (Index j0 = 0; j0 < prod(node->RankOut()); ++j0)
                 {
-                    Q_dot(i0, i) += (node->internal_coefficients.G(i, i0, j, j0) - node->internal_coefficients.H(i, i0, j, j0)) * Qmat(j0, j);
+                    Q_dot(i0, i) += (node->internal_coefficients.G(i0, j0, i, j) - node->internal_coefficients.H(i0, j0, i, j)) * Qmat(j0, j);
                 }
             }
         }

@@ -571,8 +571,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
                             {
                                 for (Index l1 = 0; l1 < root->RankOut()[1]; ++l1)
                                 {
-                                    E_comparison(i1, k1, j1, l1) += root->internal_coefficients.G(i, i0 + root->RankOut()[0] * i1, j, j0 + root->RankOut()[0] * j1) * root->G(i0, k1, i) * root->G(j0, l1, j);
-                                    F_comparison(i1, k1, j1, l1) += root->internal_coefficients.H(i, i0 + root->RankOut()[0] * i1, j, j0 + root->RankOut()[0] * j1) * root->G(i0, k1, i) * root->G(j0, l1, j);
+                                    E_comparison(i1, k1, j1, l1) += root->internal_coefficients.G(i0 + root->RankOut()[0] * i1, j0 + root->RankOut()[0] * j1, i, j) * root->G(i0, k1, i) * root->G(j0, l1, j);
+                                    F_comparison(i1, k1, j1, l1) += root->internal_coefficients.H(i0 + root->RankOut()[0] * i1, j0 + root->RankOut()[0] * j1, i, j) * root->G(i0, k1, i) * root->G(j0, l1, j);
                                 }
                             }
                         }
