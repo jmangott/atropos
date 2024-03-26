@@ -528,8 +528,9 @@ TEST_CASE("tree_h1", "[tree_h1]")
     F_comparison(1, 1, 0, 1) += 0.25;
     F_comparison(1, 1, 1, 1) += 0.75;
 
+    E_comparison -= F_comparison;
+
     REQUIRE(bool(node0->coefficients.E == E_comparison));
-    REQUIRE(bool(node0->coefficients.F == F_comparison));
 
     S0_dot = CalculateSDot(node0->S, node0);
 
@@ -553,7 +554,6 @@ TEST_CASE("tree_h1", "[tree_h1]")
     root->CalculateGH(blas);
 
     std::fill(std::begin(E_comparison), std::end(E_comparison), 0.0);
-    std::fill(std::begin(F_comparison), std::end(F_comparison), 0.0);
 
     for (Index i = 0; i < root->RankIn(); ++i)
     {
@@ -572,7 +572,6 @@ TEST_CASE("tree_h1", "[tree_h1]")
                                 for (Index l1 = 0; l1 < root->RankOut()[1]; ++l1)
                                 {
                                     E_comparison(i1, k1, j1, l1) += root->internal_coefficients.G(i0 + root->RankOut()[0] * i1, j0 + root->RankOut()[0] * j1, i, j) * root->G(i0, k1, i) * root->G(j0, l1, j);
-                                    F_comparison(i1, k1, j1, l1) += root->internal_coefficients.H(i0 + root->RankOut()[0] * i1, j0 + root->RankOut()[0] * j1, i, j) * root->G(i0, k1, i) * root->G(j0, l1, j);
                                 }
                             }
                         }
@@ -583,7 +582,6 @@ TEST_CASE("tree_h1", "[tree_h1]")
     }
 
     REQUIRE(bool(node1->coefficients.E == E_comparison));
-    REQUIRE(bool(node1->coefficients.F == F_comparison));
 
     // Test the relation S1_dot(i1, j1) = Q_dot(i0, i1, i) * G(i0, j1, i)
     multi_array<double, 2> S1_dot(S1.shape());
