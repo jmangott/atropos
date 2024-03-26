@@ -252,63 +252,48 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
     const Index id_c = (id == 0) ? 1 : 0;
     Index rank_out_c = RankOut()[id_c];
 
-    std::vector<multi_array<double, 2>> AA_bar(grid.n_reactions);
-    std::vector<multi_array<double, 2>> BB_bar(grid.n_reactions);
-
     multi_array<double, 2> Gmat({RankIn() * rank_out_c, RankOut()[id]});
-
-    multi_array<double, 2> A_tmp1({RankIn() * rank_out_c, RankOut()[id]});
-    multi_array<double, 2> B_tmp1({RankIn() * rank_out_c, RankOut()[id]});
-    multi_array<double, 2> A_tmp2({RankOut()[id], RankOut()[id]});
-    multi_array<double, 2> B_tmp2({RankOut()[id], RankOut()[id]});
-
-#ifdef __OPENMP__
-#pragma omp parallel for
-#endif
-    for (Index mu = 0; mu < child[id]->grid.n_reactions; ++mu)
-    {
-        set_zero(child[id]->coefficients.A[mu]);
-        set_zero(child[id]->coefficients.B[mu]);
-        AA_bar[mu].resize({RankIn() * rank_out_c, RankIn() * rank_out_c});
-        BB_bar[mu].resize({RankIn() * rank_out_c, RankIn() * rank_out_c});
-    }
-
-#ifdef __OPENMP__
-#pragma omp parallel for
-#endif
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
-    {
-        for (Index i1 = 0; i1 < rank_out_c; ++i1)
-        {
-            for (Index j1 = 0; j1 < rank_out_c; ++j1)
-            {
-                for (Index i = 0; i < RankIn(); ++i)
-                {
-                    for (Index j = 0; j < RankIn(); ++j)
-                    {
-                        AA_bar[mu](i1 + rank_out_c * i, j1 + rank_out_c * j) = coefficients.A[mu](i, j) * child[id_c]->coefficients.A_bar[mu](i1, j1);
-                        BB_bar[mu](i1 + rank_out_c * i, j1 + rank_out_c * j) = coefficients.B[mu](i, j) * child[id_c]->coefficients.B_bar[mu](i1, j1);
-                    }
-                }
-            }
-        }
-    }
-
     Matrix::Matricize(G, Gmat, id);
 
 #ifdef __OPENMP__
-#pragma omp parallel for
+#pragma omp parallel
 #endif
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
-        blas.matmul(AA_bar[mu], Gmat, A_tmp1);
-        blas.matmul_transa(Gmat, A_tmp1, A_tmp2);
+        multi_array<double, 2> AA_bar({RankIn() * rank_out_c, RankIn() * rank_out_c});
+        multi_array<double, 2> BB_bar({RankIn() * rank_out_c, RankIn() * rank_out_c});
+        multi_array<double, 2> A_tmp1({RankIn() * rank_out_c, RankOut()[id]});
+        multi_array<double, 2> B_tmp1({RankIn() * rank_out_c, RankOut()[id]});
+        multi_array<double, 2> A_tmp2({RankOut()[id], RankOut()[id]});
+        multi_array<double, 2> B_tmp2({RankOut()[id], RankOut()[id]});
+#ifdef __OPENMP__
+#pragma omp for
+#endif
+        for (Index mu = 0; mu < grid.n_reactions; ++mu)
+        {
+            for (Index i1 = 0; i1 < rank_out_c; ++i1)
+            {
+                for (Index j1 = 0; j1 < rank_out_c; ++j1)
+                {
+                    for (Index i = 0; i < RankIn(); ++i)
+                    {
+                        for (Index j = 0; j < RankIn(); ++j)
+                        {
+                            AA_bar(i1 + rank_out_c * i, j1 + rank_out_c * j) = coefficients.A[mu](i, j) * child[id_c]->coefficients.A_bar[mu](i1, j1);
+                            BB_bar(i1 + rank_out_c * i, j1 + rank_out_c * j) = coefficients.B[mu](i, j) * child[id_c]->coefficients.B_bar[mu](i1, j1);
+                        }
+                    }
+                }
+            }
 
-        blas.matmul(BB_bar[mu], Gmat, B_tmp1);
-        blas.matmul_transa(Gmat, B_tmp1, B_tmp2);
+            blas.matmul(AA_bar, Gmat, A_tmp1);
+            blas.matmul_transa(Gmat, A_tmp1, A_tmp2);
 
-        child[id]->coefficients.A[mu] += A_tmp2;
-        child[id]->coefficients.B[mu] += B_tmp2;
+            blas.matmul(BB_bar, Gmat, B_tmp1);
+            blas.matmul_transa(Gmat, B_tmp1, B_tmp2);
+
+            child[id]->coefficients.A[mu] = A_tmp2;
+            child[id]->coefficients.B[mu] = B_tmp2;
+        }
     }
 };
 
