@@ -38,7 +38,7 @@ void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::sy
     std::fill(std::begin(progress_bar), std::begin(progress_bar) + pos, '#');
     std::fill(std::begin(progress_bar) + pos, std::end(progress_bar), '-');
 
-    printf("[%*s], step: %ti/%ti, time per step: %.2f%*s, time left: %2.2lli:%2.2lli:%2.2lli, progress: %4.2f%%, |norm(P)-1|: %3.2e\r", bar_width, progress_bar.c_str(), ts + 1, kNsteps, time_per_step_count, (int)time_unit.size(), time_unit.c_str(), hrs.count(), mins.count(), secs.count(), progress * 100, std::abs(norm - 1.0));
+    printf("[%*s], step: %ti/%ti, time per step: %.2f%*s, time left: %2.2lli:%2.2lli:%2.2lli, progress: %4.2f%%, |norm(P)-1|: %3.2e\r", bar_width, progress_bar.c_str(), ts + 1, kNsteps, time_per_step_count, (int)time_unit.size(), time_unit.c_str(), (long long int)hrs.count(), (long long int)mins.count(), (long long int)secs.count(), progress * 100, std::abs(norm - 1.0));
     fflush(stdout);
 }
 
