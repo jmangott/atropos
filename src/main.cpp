@@ -3,8 +3,9 @@
 
 #include <cxxopts.hpp>
 
-#include "integrators.hpp"
+#include "bug_integrator.hpp"
 #include "print_functions.hpp"
+#include "ps_integrator.hpp"
 #include "timer_class.hpp"
 #include "tree_class.hpp"
 
@@ -62,7 +63,7 @@ int main(int argc, char** argv)
     }
 
     blas_ops blas;
-    ttn_integrator integrator(blas, integration_methods);
+    ps_integrator integrator(blas, integration_methods);
     cme_lr_tree tree;
 
     double t = 0.0;

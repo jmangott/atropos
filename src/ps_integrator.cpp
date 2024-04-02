@@ -1,7 +1,7 @@
-#include "integrators.hpp"
+#include "ps_integrator.hpp"
 
 template <Index id>
-void ttn_integrator::SubflowPhi(cme_internal_node * const node, const double tau) const
+void ps_integrator::SubflowPhi(cme_internal_node * const node, const double tau) const
 {
     Index id_c = (id == 0) ? 1 : 0;
 
@@ -11,9 +11,15 @@ void ttn_integrator::SubflowPhi(cme_internal_node * const node, const double tau
     ip = inner_product_from_const_weight(1.0, node->RankIn() * node->RankOut()[id_c]);
 
     // Compute QR decomposition C^n = G^n * (S^(n+id))^T
+    get_time::start("Mat/Ten");
     Matrix::Matricize(node->Q, Qmat, id);
+    get_time::stop("Mat/Ten");
+    get_time::start("gs");
     gs(Qmat, node->child[id]->S, ip);
+    get_time::stop("gs");
+    get_time::start("Mat/Ten");
     Matrix::Tensorize(Qmat, node->G, id);
+    get_time::stop("Mat/Ten");
     transpose_inplace(node->child[id]->S);
 
     get_time::start("CalculateAB");
@@ -38,7 +44,9 @@ void ttn_integrator::SubflowPhi(cme_internal_node * const node, const double tau
         // Perform the QR decomposition K = X * S
         std::function<double(double *, double *)> ip_x;
         ip_x = inner_product_from_const_weight(child_node->grid.h_mult, child_node->grid.dx);
+        get_time::start("gs");
         gs(child_node->X, child_node->S, ip_x);
+        get_time::stop("gs");
         get_time::stop("External");
     }
     else
@@ -49,29 +57,38 @@ void ttn_integrator::SubflowPhi(cme_internal_node * const node, const double tau
         // Set C^(n+i) = Q^(n+id) * S^(n+id)
         multi_array<double, 2> Cmat_child({prod(child_node->RankOut()), child_node->RankIn()});
         multi_array<double, 2> Qmat_child({prod(child_node->RankOut()), child_node->RankIn()});
+        get_time::start("Mat/Ten");
         Matrix::Matricize(child_node->Q, Qmat_child, 2);
+        get_time::stop("Mat/Ten");
         set_zero(Cmat_child);
         blas.matmul(Qmat_child, child_node->S, Cmat_child);
+        get_time::start("Mat/Ten");
         Matrix::Tensorize(Cmat_child, child_node->Q, 2);
+        get_time::stop("Mat/Ten");
         get_time::stop("Internal");
 
-        ttn_integrator::operator()(child_node, tau);
+        ps_integrator::operator()(child_node, tau);
 
         get_time::start("Internal");
         // Compute QR decomposition C^(n+id) = Q^(n+id) * S^(n+id)
         std::function<double(double *, double *)> ip_child;
         ip_child = inner_product_from_const_weight(1.0, prod(child_node->RankOut()));
         Matrix::Matricize(child_node->Q, Cmat_child, 2);
+        get_time::start("gs");
         gs(Cmat_child, child_node->S, ip_child);
+        get_time::stop("gs");
         Matrix::Tensorize(Cmat_child, child_node->Q, 2);
         get_time::stop("Internal");
     }
-
+    get_time::start("CalculateAB_bar");
     node->child[id]->CalculateAB_bar(blas);
+    get_time::stop("CalculateAB_bar");
 
     // Integrate S
     get_time::start("S");
+    get_time::start("CalculateEF");
     node->child[id]->CalculateEF(blas);
+    get_time::stop("CalculateEF");
     const auto S_step_rhs = [node](const multi_array<double, 2> &S) { return CalculateSDot(S, node->child[id]); };
     get_time::start("Integrate S");
     integration_methods.at("S")->integrate(node->child[id]->S, S_step_rhs, -1.0 * tau);
@@ -86,16 +103,20 @@ void ttn_integrator::SubflowPhi(cme_internal_node * const node, const double tau
     get_time::stop("S");
 }
 
-template void ttn_integrator::SubflowPhi<0>(cme_internal_node * const node, const double tau) const;
+template void ps_integrator::SubflowPhi<0>(cme_internal_node * const node, const double tau) const;
 
-template void ttn_integrator::SubflowPhi<1>(cme_internal_node * const node, const double tau) const;
+template void ps_integrator::SubflowPhi<1>(cme_internal_node * const node, const double tau) const;
 
-void ttn_integrator::SubflowPsi(cme_internal_node * const node, const double tau) const
+void ps_integrator::SubflowPsi(cme_internal_node * const node, const double tau) const
 {
     multi_array<double, 2> Qmat({prod(node->RankOut()), node->RankIn()});
 
+    get_time::start("CalculateGH");
     node->CalculateGH(blas);
+    get_time::stop("CalculateGH");
+    get_time::start("Mat/Ten");
     Matrix::Matricize(node->Q, Qmat, 2);
+    get_time::stop("Mat/Ten");
 
     const auto Q_step_rhs = [node](const multi_array<double, 2> &Qmat)
     { return CalculateQDot(Qmat, node); };
@@ -103,10 +124,12 @@ void ttn_integrator::SubflowPsi(cme_internal_node * const node, const double tau
     integration_methods.at("Q")->integrate(Qmat, Q_step_rhs, tau);
     get_time::stop("Integrate Q");
 
+    get_time::start("Mat/Ten");
     Matrix::Tensorize(Qmat, node->Q, 2);
+    get_time::stop("Mat/Ten");
 }
 
-void ttn_integrator::operator()(cme_internal_node * const node, const double tau) const
+void ps_integrator::operator()(cme_internal_node * const node, const double tau) const
 {
     SubflowPhi<0>(node, tau);
     SubflowPhi<1>(node, tau);

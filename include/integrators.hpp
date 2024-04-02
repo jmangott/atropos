@@ -18,18 +18,4 @@ struct integrator_base
     const std::map<std::string, integration_method*> integration_methods;
 };
 
-struct ttn_integrator : integrator_base
-{
-    ttn_integrator(const blas_ops &_blas, const std::map<std::string, integration_method*> &_integration_methods)
-    : integrator_base(_blas, _integration_methods)
-    {}
-
-    void operator()(cme_internal_node * const node, const double tau) const;
-
-    template <Index id>
-    void SubflowPhi(cme_internal_node *const node, const double tau) const;
-
-    void SubflowPsi(cme_internal_node *const node, const double tau) const;
-};
-
 #endif

@@ -129,10 +129,11 @@ set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
                      ${ENSIGN_SRC_DIR}/src/generic/kernels.cu
                      ${ENSIGN_SRC_DIR}/src/generic/netcdf.cpp)
 
-set(SRC_FILES ${SRC}/grid_class.cpp
+set(SRC_FILES ${SRC}/bug_integrator.cpp
+              ${SRC}/grid_class.cpp
               ${SRC}/matrix.cpp
               ${SRC}/print_functions.cpp
-              ${SRC}/integrators.cpp
+              ${SRC}/ps_integrator.cpp
               ${SRC}/timer_class.cpp
               ${SRC}/tree_class.cpp)
 

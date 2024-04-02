@@ -9,7 +9,7 @@
 #include "grid_class.hpp"
 
 // TODO: rename A->C, B->D, A_bar->A and B_bar->B
-
+// TODO: delete F and H coefficients
 struct cme_coeff
 {
     std::vector<multi_array<double, 2>> A, B, A_bar, B_bar;
