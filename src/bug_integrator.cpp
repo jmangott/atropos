@@ -111,6 +111,11 @@ void bug_integrator::SubflowPsi(cme_internal_node * const node, const double tau
     get_time::stop("Mat/Ten");
 }
 
+void bug_integrator::SubflowTheta(cme_internal_node* const node) const
+{
+
+}
+
 void bug_integrator::operator()(cme_internal_node * const node, const double tau) const
 {
     SubflowPhi<0>(node, tau);
