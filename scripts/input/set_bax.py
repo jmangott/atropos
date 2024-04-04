@@ -40,7 +40,7 @@ parser.add_argument('-r',
                     nargs='+', 
                     type=int, 
                     required=True, 
-                    help="Specify the ranks of the  internal nodes",
+                    help="Specify the ranks of the internal nodes",
                     )
 args = parser.parse_args()
 
