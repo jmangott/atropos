@@ -1,5 +1,7 @@
+"""Script for setting the initial conditions for the lambda phage model."""
+import argparse
 import numpy as np
-import matplotlib.pyplot as plt
+import sys
 from scipy.special import factorial
 
 from scripts.grid_class import GridParms
@@ -9,11 +11,41 @@ from scripts.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
 
 import scripts.models.lambda_phage as model
 
-# Partition string
-partition_str = "((0 1)(2 4))(3)"
+partition = ['((0 1)(2 3))(4)', 
+             '((0 1)(2))(3 4)', 
+             '((0)(1 2))(3 4)']
 
-# Rank
-r_out = np.array([5, 4])
+parser = argparse.ArgumentParser(
+                    prog='set_lambda_phage',
+                    usage='python3 scripts/input/set_lambda_phage.py --partition "'+partition[0]+'" --rank 5 5',
+                    description='This script sets the initial conditions for the lambda phage model.')
+
+for i, p in enumerate(partition):
+    parser.add_argument('-p'+str(i), 
+                        '--partition'+str(i), 
+                        action='store_const', 
+                        const=p,
+                        required=False, 
+                        help='Set the partition string to '+p,
+                        dest='partition', 
+                        )
+parser.add_argument('-r', 
+                    '--rank', 
+                    nargs='+', 
+                    type=int, 
+                    required=True, 
+                    help="Specify the ranks of the internal node",
+                    )
+args = parser.parse_args()
+
+if args.partition == None:
+    print("usage:", parser.usage)
+    print(parser.prog+":", "error: the following arguments are required: -p[n]/--partition[n], n=0,...,"+str(len(partition)-1))
+    sys.exit(1)
+
+partition_str = args.partition
+r_out = np.array(args.rank)
+n_basisfunctions = np.ones(r_out.size, dtype="int")
 
 # Grid parameters
 n = np.array([16, 41, 11, 11, 11])
@@ -92,7 +124,7 @@ x01_sum = np.sum(x01, axis=0)
 x1_sum = np.sum(x1, axis=0)
 x0_sum = np.array([x00_sum @ q0[:, :, i] @ x01_sum.T for i in range(r_out[0])])
 norm = x0_sum @ q @ x1_sum.T
-print(norm)
+print("norm:", norm)
 
 X0 = np.array([x00 @ q0[:, :, i] @ x01_sum.T for i in range(q0.shape[-1])]).T
 P_sum = X0 @ q @ x1_sum.T
@@ -100,7 +132,3 @@ P_sum = X0 @ q @ x1_sum.T
 x = np.arange(0, 16)
 y = np.arange(0, 41)
 X, Y = np.meshgrid(x, y, indexing="ij")
-
-plt.figure(1)
-plt.contour(X, Y, np.reshape(P_sum, (16, 41), order="F"))
-plt.show()
