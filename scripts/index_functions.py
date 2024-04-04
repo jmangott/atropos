@@ -48,7 +48,6 @@ def incrVecIndex(vec_index: np.ndarray, interval: np.ndarray, dim: int) -> None:
         vec_index[dim - 1] += 1
     return
 
-@njit
 def tensorUnfold(tensor, mode):
     """
     Cf. https://stackoverflow.com/questions/49970141/using-numpy-reshape-to-perform-3rd-rank-tensor-unfold-operation
