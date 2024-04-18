@@ -5,6 +5,7 @@ __pycache__
 __init__.py
 *.egg-info
 *.npy
+*.npz
 *.out
 /build/
 /bin/
