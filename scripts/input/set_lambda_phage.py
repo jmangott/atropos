@@ -11,9 +11,10 @@ from scripts.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
 
 import scripts.models.lambda_phage as model
 
-partition = ['((0 1)(2 3))(4)', 
-             '((0 1)(2))(3 4)', 
-             '((0)(1 2))(3 4)']
+partition = ['(0 1)((2 3)(4))',
+             '((0 1)(4))(2 3)',
+             '((0 1)(2))(3 4)',
+             '(0 1)(2 3 4)']
 
 parser = argparse.ArgumentParser(
                     prog='set_lambda_phage',
@@ -86,21 +87,39 @@ q = np.diag(s[:tree.root.rankOut()])
 x1 = vh[:tree.root.rankOut(), :].T
 
 # SVD of x0
-q0 = np.zeros((r_out[1], r_out[1], r_out[0]))
-x0_tensor = np.zeros((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx(), tree.root.rankOut()))
+if partition_str is partition[0]:
+    q1 = np.zeros((r_out[1], r_out[1], r_out[0]))
+    x1_tensor = np.zeros((tree.root.child[1].child[0].grid.dx(), tree.root.child[1].child[1].grid.dx(), tree.root.rankOut()))
 
-for i in range(tree.root.rankOut()):
-    x0_tensor[:, :, i] = x0[:, i].reshape((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx()), order="F")
+    for i in range(tree.root.rankOut()):
+        x1_tensor[:, :, i] = x1[:, i].reshape((tree.root.child[1].child[0].grid.dx(), tree.root.child[1].child[1].grid.dx()), order="F")
 
-x0_mat = tensorUnfold(x0_tensor, 0)
-u, _, _ = np.linalg.svd(x0_mat, full_matrices=False)
-x00 = u[:, :tree.root.child[0].rankOut()]
+    x1_mat = tensorUnfold(x1_tensor, 0)
+    u, _, _ = np.linalg.svd(x1_mat, full_matrices=False)
+    x10 = u[:, :tree.root.child[1].rankOut()]
 
-x0_mat = tensorUnfold(x0_tensor, 1)
-u, _, _ = np.linalg.svd(x0_mat, full_matrices=False)
-x01 = u[:, :tree.root.child[0].rankOut()]
+    x1_mat = tensorUnfold(x1_tensor, 1)
+    u, _, _ = np.linalg.svd(x1_mat, full_matrices=False)
+    x11 = u[:, :tree.root.child[1].rankOut()]
 
-q0 = np.einsum('ik,jl,ijm', x00, x01, x0_tensor)
+    q1 = np.einsum('ik,jl,ijm', x10, x11, x1_tensor)
+
+elif partition_str is not partition[3]:
+    q0 = np.zeros((r_out[1], r_out[1], r_out[0]))
+    x0_tensor = np.zeros((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx(), tree.root.rankOut()))
+
+    for i in range(tree.root.rankOut()):
+        x0_tensor[:, :, i] = x0[:, i].reshape((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx()), order="F")
+
+    x0_mat = tensorUnfold(x0_tensor, 0)
+    u, _, _ = np.linalg.svd(x0_mat, full_matrices=False)
+    x00 = u[:, :tree.root.child[0].rankOut()]
+
+    x0_mat = tensorUnfold(x0_tensor, 1)
+    u, _, _ = np.linalg.svd(x0_mat, full_matrices=False)
+    x01 = u[:, :tree.root.child[0].rankOut()]
+
+    q0 = np.einsum('ik,jl,ijm', x00, x01, x0_tensor)
 
 # Number of basisfunctions
 n_basisfunctions = r_out
@@ -108,27 +127,39 @@ n_basisfunctions = r_out
 # Low-rank initial conditions
 initial_conditions = InitialCondition(tree, n_basisfunctions)
 
-initial_conditions.Q[0][:, :, 0] = q
-initial_conditions.Q[1][:] = q0
+if partition_str is partition[3]:
+    initial_conditions.Q[0][:, :, 0] = q
+    initial_conditions.X[0][:] = x0
+    initial_conditions.X[1][:] = x1
 
-initial_conditions.X[0][:] = x00
-initial_conditions.X[1][:] = x01
-initial_conditions.X[2][:] = x1
+    x0_sum = np.sum(x0, axis=0)
+    x1_sum = np.sum(x1, axis=0)
+elif partition_str is partition[0]:
+    initial_conditions.Q[0][:, :, 0] = q
+    initial_conditions.Q[1][:] = q1
+    initial_conditions.X[0][:] = x0
+    initial_conditions.X[1][:] = x10
+    initial_conditions.X[2][:] = x11
+
+    x10_sum = np.sum(x10, axis=0)
+    x11_sum = np.sum(x11, axis=0)
+    x0_sum = np.sum(x0, axis=0)
+    x1_sum = np.array([x10_sum @ q1[:, :, i] @ x11_sum.T for i in range(r_out[0])])
+else:
+    initial_conditions.Q[0][:, :, 0] = q
+    initial_conditions.Q[1][:] = q0
+    initial_conditions.X[0][:] = x00
+    initial_conditions.X[1][:] = x01
+    initial_conditions.X[2][:] = x1
+
+    x00_sum = np.sum(x00, axis=0)
+    x01_sum = np.sum(x01, axis=0)
+    x0_sum = np.array([x00_sum @ q0[:, :, i] @ x01_sum.T for i in range(r_out[0])])
+    x1_sum = np.sum(x1, axis=0)
+
+norm = x0_sum @ q @ x1_sum.T
+print("norm:", norm)
 
 # Print tree and write it to a netCDF file
 print(tree)
 tree.write()
-
-x00_sum = np.sum(x00, axis=0)
-x01_sum = np.sum(x01, axis=0)
-x1_sum = np.sum(x1, axis=0)
-x0_sum = np.array([x00_sum @ q0[:, :, i] @ x01_sum.T for i in range(r_out[0])])
-norm = x0_sum @ q @ x1_sum.T
-print("norm:", norm)
-
-X0 = np.array([x00 @ q0[:, :, i] @ x01_sum.T for i in range(q0.shape[-1])]).T
-P_sum = X0 @ q @ x1_sum.T
-
-x = np.arange(0, 16)
-y = np.arange(0, 41)
-X, Y = np.meshgrid(x, y, indexing="ij")
