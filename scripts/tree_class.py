@@ -12,7 +12,7 @@ import xarray as xr
 from scripts.grid_class import GridParms
 from scripts.id_class import Id
 from scripts.reaction_class import ReactionSystem
-from scripts.index_functions import incrVecIndex, vecIndexToCombIndex
+from scripts.index_functions import incrVecIndex, vecIndexToCombIndex, tensorUnfold
 
 class Node:
     def __init__(self, _id: Id, _grid: GridParms):
@@ -256,7 +256,7 @@ class Tree:
         self.__write(self.root.child[1], dt)
         dt.to_netcdf(fname)
     
-    def __calculateObservables(self, node: Node, idx_n: int, slice_vec: npt.NDArray[np.int_]):
+    def __calculateObservableHelper(self, node: Node, idx_n: int, slice_vec: npt.NDArray[np.int_]):
         if isinstance(node, ExternalNode):
             if idx_n in node.grid.species:
                 # Sliced distribution
@@ -277,19 +277,43 @@ class Tree:
                 sliced_distribution = node.X[vecIndexToCombIndex(partition_slice_vec, node.grid.n), :]
                 marginal_distribution = np.sum(node.X, axis=0)
         elif isinstance(node, InternalNode):
-            X0_sliced, X0_marginal = self.__calculateObservables(node.child[0], idx_n, slice_vec)
-            X1_sliced, X1_marginal = self.__calculateObservables(node.child[1], idx_n, slice_vec)
+            X0_sliced, X0_marginal = self.__calculateObservableHelper(node.child[0], idx_n, slice_vec)
+            X1_sliced, X1_marginal = self.__calculateObservableHelper(node.child[1], idx_n, slice_vec)
             if (X0_sliced.ndim > 1):
-                sliced_distribution = np.einsum("ij,jkl,k->il", X0_sliced, node.Q, X1_sliced)
-                marginal_distribution = np.einsum("ij,jkl,k->il", X0_marginal, node.Q, X1_marginal)
+                rule = "ij,jkl,k->il"
             elif (X1_sliced.ndim > 1):
-                sliced_distribution = np.einsum("i,ijk,lj->lk", X0_sliced, node.Q, X1_sliced)
-                marginal_distribution = np.einsum("i,ijk,lj->lk", X0_marginal, node.Q, X1_marginal)
+                rule = "i,ijk,lj->lk"
             else:
-                sliced_distribution = np.einsum("i,ijk,j->k", X0_sliced, node.Q, X1_sliced)
-                marginal_distribution = np.einsum("i,ijk,j->k", X0_marginal, node.Q, X1_marginal)
+                rule = "i,ijk,j->k"
+            sliced_distribution = np.einsum(rule, X0_sliced, node.Q, X1_sliced)
+            marginal_distribution = np.einsum(rule, X0_marginal, node.Q, X1_marginal)
         return sliced_distribution, marginal_distribution
 
-    def calculateObservables(self, idx_n: int, slice_vec: npt.NDArray[np.int_]):
-        sliced_distribution, marginal_distribution = self.__calculateObservables(self.root, idx_n, slice_vec)
+    def __calculateObservable(self, idx_n: int, slice_vec: npt.NDArray[np.int_]):
+        sliced_distribution, marginal_distribution = self.__calculateObservableHelper(self.root, idx_n, slice_vec)
         return sliced_distribution[:, 0], marginal_distribution[:, 0]
+
+    def calculateObservables(self, slice_vec: npt.NDArray[np.int_]):
+        sliced_distributions = []
+        marginal_distributions = []
+        for i in range(self.grid.d()):
+            sliced, marginal = self.__calculateObservable(i, slice_vec)
+            sliced_distributions.append(sliced)
+            marginal_distributions.append(marginal)
+        return sliced_distributions, marginal_distributions
+    
+    def __calculateFullDistributionHelper(self, node: Node):
+        if isinstance(node, ExternalNode):
+            X = node.X
+        elif isinstance(node, InternalNode):
+            X0 = self.__calculateFullDistributionHelper(node.child[0])
+            X1 = self.__calculateFullDistributionHelper(node.child[1])
+            X_tensor = np.einsum("lmk,il,jm->ijk", node.Q, X0, X1)
+            X = tensorUnfold(X_tensor, 2).T
+        return X
+    
+    def calculateFullDistribution(self):
+        """
+        This method only works when all species occur in ascending order in the partition string. The full probability distribution is computed, therefore this method should be used only for small system sizes. 
+        """
+        return self.__calculateFullDistributionHelper(self.root)[:, 0]
