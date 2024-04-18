@@ -108,7 +108,11 @@ class TimeSeries:
 
     def getD(self):
         with xr.open_dataset(self.__list_of_files[0]) as ds:
-            return ds["n"].values.size
+            return ds.dims["n"]
+
+    def getDx(self):
+        with xr.open_dataset(self.__list_of_files[0]) as ds:
+            return np.prod(ds["n"].values.astype(int))
 
     def getMassErr(self):
         mass_error = np.zeros(self.__number_of_files)
@@ -124,24 +128,31 @@ class TimeSeries:
         for i, filename in enumerate(self.__list_of_files):
             tree = readTree(filename)
             slice_vec = np.zeros(tree.grid.d(), dtype="int")
+            _, marginal_distribution = tree.calculateObservables(slice_vec)
             for j, n_j in enumerate(tree.grid.n):
-                _, marginal_distribution = tree.calculateObservables(j, slice_vec)
                 state = vecIndexToState(np.arange(n_j), tree.grid.liml[j], tree.grid.binsize[j])
                 for m in range(n_moments):
-                    moments[m][i, j] = np.dot(marginal_distribution, state ** (m + 1))
+                    moments[m][i, j] = np.dot(marginal_distribution[j], state ** (m + 1))
         return moments
+    
+    def calculateFullDistribution(self):
+        P = np.zeros((self.__number_of_files, self.getDx()))
 
+        for i, filename in enumerate(self.__list_of_files):
+            tree = readTree(filename)
+            P[i, :] = tree.calculateFullDistribution()
 
-def calculateMarginalDistributionError(filename, DLR_marginal_distribution, SSA_marginal_distribution, ssa_sol):
+        return P
+
+def calculateDistributionError(filename, ref_sliced_distribution, ref_marginal_distribution, slice_vec):
     tree = readTree(filename)
-    DLR_marginal_err = np.zeros(tree.grid.d())
-    SSA_marginal_err = np.zeros(tree.grid.d())
-    slice_vec = np.zeros(tree.grid.d(), dtype="int")
+    sliced_err = np.zeros(tree.grid.d())
+    marginal_err = np.zeros(tree.grid.d())
+    sliced, marginal = tree.calculateObservables(slice_vec)
     for i in range(tree.grid.d()):
-        _, marginal_p1_r5_15_15 = tree.calculateObservables(i, slice_vec)
-        DLR_marginal_err[i] = np.linalg.norm(marginal_p1_r5_15_15 - DLR_marginal_distribution[i], np.inf)
-        SSA_marginal_err[i] = np.linalg.norm(marginal_p1_r5_15_15[ssa_sol.n_min[i] : ssa_sol.n_min[i]+ssa_sol.n[i]] - SSA_marginal_distribution[i][:tree.grid.n[i]], np.inf)
-    return DLR_marginal_err, SSA_marginal_err
+        sliced_err[i] = np.linalg.norm(sliced[i] - ref_sliced_distribution[i]) # Frobenius norm
+        marginal_err[i] = np.linalg.norm(marginal[i] - ref_marginal_distribution[i], np.inf) # Inf norm
+    return sliced_err, marginal_err
 
 @njit
 def calculateXSum(input_array: np.ndarray, n: np.ndarray) -> list[np.ndarray]:
