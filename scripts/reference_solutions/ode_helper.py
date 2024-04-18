@@ -66,7 +66,6 @@ def constructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
     return P0 / np.sum(P0)
 
 
-@njit
 def calculateObservables(y: np.ndarray, interval: np.ndarray, r: int, m1: int, slice_vec: np.ndarray, idx_2D: np.ndarray):
     """Calculate marginal and sliced distributions and the best approximation."""
     dx = np.prod(interval)
