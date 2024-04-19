@@ -108,7 +108,7 @@ class TimeSeries:
 
     def getD(self):
         with xr.open_dataset(self.__list_of_files[0]) as ds:
-            return ds.dims["n"]
+            return ds["n"].values.size
 
     def getDx(self):
         with xr.open_dataset(self.__list_of_files[0]) as ds:
