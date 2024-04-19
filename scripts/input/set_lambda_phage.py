@@ -12,7 +12,7 @@ from scripts.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
 import scripts.models.lambda_phage as model
 
 partition = ['(0 1)((2 3)(4))',
-             '((0 1)(4))(2 3)',
+             '((0 1)(2 3))(4)',
              '((0 1)(2))(3 4)',
              '(0 1)(2 3 4)']
 
