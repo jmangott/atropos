@@ -19,3 +19,6 @@ class ReactionSystem:
     
     def size(self):
         return len(self.reactions)
+    
+    def d(self):
+        return len(self.species_names)
