@@ -144,14 +144,14 @@ class TimeSeries:
 
         return P
 
-def calculateDistributionError(filename, ref_sliced_distribution, ref_marginal_distribution, slice_vec):
+def calculateDistributionError(filename, ref_sliced_distribution, ref_marginal_distribution, slice_vec, ssa_sol):
     tree = readTree(filename)
     sliced_err = np.zeros(tree.grid.d())
     marginal_err = np.zeros(tree.grid.d())
     sliced, marginal = tree.calculateObservables(slice_vec)
     for i in range(tree.grid.d()):
-        sliced_err[i] = np.linalg.norm(sliced[i] - ref_sliced_distribution[i]) # Frobenius norm
-        marginal_err[i] = np.linalg.norm(marginal[i] - ref_marginal_distribution[i], np.inf) # Inf norm
+        sliced_err[i] = np.linalg.norm(sliced[i][ssa_sol.n_min[i] : ssa_sol.n_min[i]+ssa_sol.n[i]] - ref_sliced_distribution[i][:tree.grid.n[i]]) # Frobenius norm
+        marginal_err[i] = np.linalg.norm(marginal[i][ssa_sol.n_min[i] : ssa_sol.n_min[i]+ssa_sol.n[i]] - ref_marginal_distribution[i][:tree.grid.n[i]]) # Frobenius norm
     return sliced_err, marginal_err
 
 @njit

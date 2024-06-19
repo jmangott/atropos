@@ -1,4 +1,4 @@
-"""Script for setting the initial conditions for the BAX pore assembly model."""
+"""Script for setting the initial conditions for the toggle switch model."""
 import argparse
 import numpy as np
 import sys
@@ -8,53 +8,28 @@ from scripts.initial_condition_class import InitialCondition
 from scripts.tree_class import Tree
 from scripts.index_functions import incrVecIndex
 
-import scripts.models.bax as model
-
-partition = ['(0 1 2)(((3 4 6 7)(5 8))(9 10))', 
-             '((0 1 2)(3 4 5))((6 7 9)(8 10))', 
-             '((0 1)(2 3 4))((5 6 7 8)(9 10))']
+import scripts.models.toggle_switch as model
 
 parser = argparse.ArgumentParser(
-                    prog='set_bax',
-                    usage='python3 scripts/input/set_bax.py --partition "'+partition[0]+'" --rank 5 4 3',
-                    description='This script sets the initial conditions for the BAX pore assembly model.')
+                    prog='set_toggle_switch',
+                    usage='python3 scripts/input/set_toggle_switch.py --rank 5',
+                    description='This script sets the initial conditions for the toggle switch model.')
 
-for i, p in enumerate(partition):
-    parser.add_argument('-p'+str(i), 
-                        '--partition'+str(i), 
-                        action='store_const', 
-                        const=p,
-                        required=False, 
-                        help='Set the partition string to '+p,
-                        dest='partition', 
-                        )
-parser.add_argument('-p', 
-                    '--partition', 
-                    type=str, 
-                    required=False, 
-                    help='Specify a general partition string',
-                    dest='partition', 
-                    )
 parser.add_argument('-r', 
                     '--rank', 
-                    nargs='+', 
                     type=int, 
                     required=True, 
                     help="Specify the ranks of the internal nodes",
                     )
+
 args = parser.parse_args()
 
-if args.partition == None:
-    print("usage:", parser.usage)
-    print(parser.prog+":", "error: the following arguments are required: -p/--partition` or -p[n]/--partition[n], n=0,...,"+str(len(partition)-1))
-    sys.exit(1)
-
-partition_str = args.partition
-r_out = np.array(args.rank)
+partition_str = '(0)(1)'
+r_out = np.array([args.rank])
 n_basisfunctions = np.ones(r_out.size, dtype="int")
 
 # Grid parameters
-n = np.array([46, 16, 16, 11, 11, 11, 4, 4, 4, 56, 56])
+n = np.array([51, 51])
 d = n.size
 binsize = np.ones(d, dtype=int)
 liml = np.zeros(d)
@@ -66,7 +41,7 @@ tree.initialize(model.reaction_system, r_out)
 
 C = 0.2
 Cinv = 1 / C
-mu = np.array([40, 0, 0, 0, 0, 0, 0, 0, 0, 50, 0])
+mu = np.array([30, 5])
 
 def eval_x(x: np.ndarray, mu: np.ndarray):
     return np.exp(-0.5 * Cinv * np.dot(np.transpose(x - mu), (x - mu)))
