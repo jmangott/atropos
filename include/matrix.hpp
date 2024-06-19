@@ -62,7 +62,7 @@ namespace Matrix
     }
 
     template <class T>
-    multi_array<T, 2> Orthogonalize(multi_array<T, 2> &input, const Index n_basisfunctions, std::function<T(T *, T *)> inner_product, const blas_ops &blas)
+    multi_array<T, 2> Orthogonalize(multi_array<T, 2> &input, const Index n_basisfunctions, const T weight, const blas_ops &blas)
     {
         Index rows = input.shape()[0];
         Index cols = input.shape()[1];
@@ -85,8 +85,8 @@ namespace Matrix
 
         multi_array<T, 2> R({cols, cols});
 
-        gram_schmidt gs(&blas);
-        gs(input, R, inner_product);
+        orthogonalize gs(&blas);
+        gs(input, R, weight);
 
         for (Index j = n_basisfunctions; j < cols; ++j)
         {

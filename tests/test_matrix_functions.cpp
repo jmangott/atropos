@@ -117,11 +117,10 @@ TEST_CASE("Orthogonalize", "[Orthogonalize]")
     set_zero(mat_ref);
     mat(0, 0) = 1.0;
     std::function<double (double*, double*)> ip;
-    ip = inner_product_from_const_weight(1.0, dx);
     blas_ops blas;
 
     multi_array<double, 2> Q(mat), R({r, r});
-    R = Matrix::Orthogonalize(Q, n_basisfunctions, ip, blas);
+    R = Matrix::Orthogonalize(Q, n_basisfunctions, 1.0, blas);
 
     multi_array<double, 2> Q2({r, r}), id_r({r, r});
     set_identity(id_r);

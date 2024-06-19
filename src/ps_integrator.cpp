@@ -5,17 +5,16 @@ void ps_integrator::SubflowPhi(cme_internal_node * const node, const double tau)
 {
     Index id_c = (id == 0) ? 1 : 0;
 
-    gram_schmidt gs(&blas);
+    orthogonalize gs(&blas);
     multi_array<double, 2> Qmat({node->RankIn() * node->RankOut()[id_c], node->RankOut()[id]});
-    std::function<double(double *, double *)> ip;
-    ip = inner_product_from_const_weight(1.0, node->RankIn() * node->RankOut()[id_c]);
+    // std::function<double(double *, double *)> ip;
 
     // Compute QR decomposition C^n = G^n * (S^(n+id))^T
     get_time::start("Mat/Ten");
     Matrix::Matricize(node->Q, Qmat, id);
     get_time::stop("Mat/Ten");
     get_time::start("gs");
-    gs(Qmat, node->child[id]->S, ip);
+    gs(Qmat, node->child[id]->S, 1.0);
     get_time::stop("gs");
     get_time::start("Mat/Ten");
     Matrix::Tensorize(Qmat, node->G, id);
@@ -42,10 +41,10 @@ void ps_integrator::SubflowPhi(cme_internal_node * const node, const double tau)
         get_time::stop("Integrate K");
 
         // Perform the QR decomposition K = X * S
-        std::function<double(double *, double *)> ip_x;
-        ip_x = inner_product_from_const_weight(child_node->grid.h_mult, child_node->grid.dx);
+        // std::function<double(double *, double *)> ip_x;
+        // ip_x = inner_product_from_const_weight(child_node->grid.h_mult, child_node->grid.dx);
         get_time::start("gs");
-        gs(child_node->X, child_node->S, ip_x);
+        gs(child_node->X, child_node->S, child_node->grid.h_mult);
         get_time::stop("gs");
         get_time::stop("External");
     }
@@ -71,11 +70,11 @@ void ps_integrator::SubflowPhi(cme_internal_node * const node, const double tau)
 
         get_time::start("Internal");
         // Compute QR decomposition C^(n+id) = Q^(n+id) * S^(n+id)
-        std::function<double(double *, double *)> ip_child;
-        ip_child = inner_product_from_const_weight(1.0, prod(child_node->RankOut()));
+        // std::function<double(double *, double *)> ip_child;
+        // ip_child = inner_product_from_const_weight(1.0, prod(child_node->RankOut()));
         Matrix::Matricize(child_node->Q, Cmat_child, 2);
         get_time::start("gs");
-        gs(Cmat_child, child_node->S, ip_child);
+        gs(Cmat_child, child_node->S, 1.0);
         get_time::stop("gs");
         Matrix::Tensorize(Cmat_child, child_node->Q, 2);
         get_time::stop("Internal");

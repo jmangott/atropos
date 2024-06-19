@@ -210,10 +210,11 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node, const blas
         cme_external_node* node_left = (cme_external_node*) node->child[0];
         cme_external_node* node_right = (cme_external_node*) node->child[1];
 
-        ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
-        ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
-        R0 = node_left->Orthogonalize(ip0, blas);
-        R1 = node_right->Orthogonalize(ip1, blas);
+        // ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
+        // ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
+
+        R0 = node_left->Orthogonalize(node_left->grid.h_mult, blas);
+        R1 = node_right->Orthogonalize(node_right->grid.h_mult, blas);
     }
     else if (node->child[0]->IsExternal() and node->child[1]->IsInternal())
     {
@@ -222,11 +223,11 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node, const blas
 
         OrthogonalizeHelper(node_right, blas);
 
-        ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
-        ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
+        // ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
+        // ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
 
-        R0 = node_left->Orthogonalize(ip0, blas);
-        R1 = node_right->Orthogonalize(ip1, blas);
+        R0 = node_left->Orthogonalize(node_left->grid.h_mult, blas);
+        R1 = node_right->Orthogonalize(1.0, blas);
     }
     else if (node->child[0]->IsInternal() and node->child[1]->IsExternal())
     {
@@ -235,11 +236,11 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node, const blas
 
         OrthogonalizeHelper(node_left, blas);
 
-        ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
-        ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
+        // ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
+        // ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
 
-        R0 = node_left->Orthogonalize(ip0, blas);
-        R1 = node_right->Orthogonalize(ip1, blas);
+        R0 = node_left->Orthogonalize(1.0, blas);
+        R1 = node_right->Orthogonalize(node_right->grid.h_mult, blas);
     }
     else
     {
@@ -249,10 +250,11 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node, const blas
         OrthogonalizeHelper(node_left, blas);
         OrthogonalizeHelper(node_right, blas);
 
-        ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
-        ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
-        R0 = node_left->Orthogonalize(ip0, blas);
-        R1 = node_right->Orthogonalize(ip1, blas);
+        // ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
+        // ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
+
+        R0 = node_left->Orthogonalize(1.0, blas);
+        R1 = node_right->Orthogonalize(1.0, blas);
     }
 
     for (int j = node->child[0]->n_basisfunctions; j < node->RankOut()[0]; ++j)

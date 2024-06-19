@@ -95,7 +95,7 @@ struct internal_node : virtual node<T>
 
     void Write(int ncid, int id_r_in, std::array<int, 2> id_r_out) const;
 
-    multi_array<T, 2> Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas);
+    multi_array<T, 2> Orthogonalize(const T weight, const blas_ops &blas);
 };
 
 template<class T>
@@ -127,7 +127,7 @@ struct external_node : virtual node<T>
 
     void Write(int ncid, int id_r_in, int id_dx) const;
 
-    multi_array<T, 2> Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas);
+    multi_array<T, 2> Orthogonalize(const T weight, const blas_ops &blas);
 };
 
 struct cme_node : virtual node<double>
@@ -226,22 +226,22 @@ namespace ReadHelpers
 }
 
 template <class T>
-multi_array<T, 2> internal_node<T>::Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas)
+multi_array<T, 2> internal_node<T>::Orthogonalize(const T weight, const blas_ops &blas)
 {
     multi_array<T, 2> Qmat({prod(RankOut()), node<T>::RankIn()});
     multi_array<T, 2> Q_R({node<T>::RankIn(), node<T>::RankIn()});
     Matrix::Matricize(Q, Qmat, 2);
-    Q_R = Matrix::Orthogonalize(Qmat, node<T>::n_basisfunctions, inner_product, blas);
+    Q_R = Matrix::Orthogonalize(Qmat, node<T>::n_basisfunctions, weight, blas);
     Matrix::Tensorize(Qmat, Q, 2);
 
     return Q_R;
 };
 
 template <class T>
-multi_array<T, 2> external_node<T>::Orthogonalize(std::function<T(T *, T *)> inner_product, const blas_ops &blas)
+multi_array<T, 2> external_node<T>::Orthogonalize(const T weight, const blas_ops &blas)
 {
     multi_array<T, 2> X_R({node<T>::RankIn(), node<T>::RankIn()});
-    X_R = Matrix::Orthogonalize(X, node<T>::n_basisfunctions, inner_product, blas);
+    X_R = Matrix::Orthogonalize(X, node<T>::n_basisfunctions, weight, blas);
 
     return X_R;
 };
