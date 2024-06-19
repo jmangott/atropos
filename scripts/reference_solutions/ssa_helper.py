@@ -1,4 +1,5 @@
-"""Helper module for solving the CME with the SSA implementation StochKit."""
+"""Helper module for solving the CME with various SSA implementations."""
+import gillespy2
 from numba import njit, int64, float64
 # from numba.experimental import jitclass
 import numpy as np
@@ -129,9 +130,9 @@ def calculateNRuns(eval_P0: callable, sweeps: int, interval: np.ndarray, liml: n
     return n_runs, n_runs_tot
 
 
-def runSSA(n_runs: np.ndarray, n_runs_tot: int, tspan: np.ndarray, interval: np.ndarray, liml: np.ndarray, model: pysb.core.Model, observables: list) -> np.ndarray:
+def runStochkitSSA(n_runs: np.ndarray, n_runs_tot: int, tspan: np.ndarray, interval: np.ndarray, liml: np.ndarray, model: pysb.core.Model, observables: list) -> np.ndarray:
     """
-    Run the Stochkit SSA implementation with starting values in accordance with the initial distribution described by `eval_P0`. `sweeps` is both an approximation and a control parameter for the total number of SSA sweeps. The actual number of total sweeps is given by `n_runs_tot`. `interval` and `liml` determine the sample space, which should cover most of the initial distribution.
+    Run the Stochkit2 SSA implementation with starting values in accordance with the initial distribution described by `eval_P0`. `sweeps` is both an approximation and a control parameter for the total number of SSA sweeps. The actual number of total sweeps is given by `n_runs_tot`. `interval` and `liml` determine the sample space, which should cover most of the initial distribution.
     
     Output: numpy.ndarray with shape `(n_runs_tot, n_time, interval.size)`, which collects all trajectories.
     """
@@ -159,6 +160,40 @@ def runSSA(n_runs: np.ndarray, n_runs_tot: int, tspan: np.ndarray, interval: np.
             for j_runs in range(n_runs[i]):
                 for i_obs, obs in enumerate(observables):
                     result[i_runs + j_runs, :, i_obs] = simulation_result.observables[j_runs][obs]
+            
+            i_runs += n_runs[i]
+        incrVecIndex(vec_index, interval, m)
+    return result
+
+
+def runGillespySSA(n_runs: np.ndarray, n_runs_tot: int, interval: np.ndarray, liml: np.ndarray, model: gillespy2.core.model.Model, observables: list) -> np.ndarray:
+    """
+    Run the Gillespy2 SSA implementation with starting values in accordance with the initial distribution described by `eval_P0`. `sweeps` is both an approximation and a control parameter for the total number of SSA sweeps. The actual number of total sweeps is given by `n_runs_tot`. `interval` and `liml` determine the sample space, which should cover most of the initial distribution.
+    
+    Output: numpy.ndarray with shape `(n_runs_tot, n_time, interval.size)`, which collects all trajectories.
+    """
+    dx = np.prod(interval)
+    m = interval.size
+    i_runs = 0
+    n_time = len(model.tspan)
+
+    result = np.empty((n_runs_tot, n_time, m), dtype="int64")
+    vec_index = np.zeros(m)
+
+    # Loop through the sample space and perform `n_runs[i]` SSA sweeps for state `i`
+    for i in range(dx):
+        if n_runs[i] > 0.0:
+            # Modify the initial conditions
+            state = vec_index + liml
+            for j, species in enumerate(model.get_all_species().keys()):
+                model.get_species(species).initial_value=state[j]
+
+            simulation_result = model.run(number_of_trajectories=n_runs[i], algorithm="SSA")
+
+            # Convert the result into a numpy array
+            for j_runs, trajectory in enumerate(simulation_result):
+                for i_obs, obs in enumerate(observables):
+                    result[i_runs + j_runs, :, i_obs] = trajectory[obs]
             
             i_runs += n_runs[i]
         incrVecIndex(vec_index, interval, m)
