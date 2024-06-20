@@ -179,16 +179,13 @@ class LambdaPhageTestCase(unittest.TestCase):
         sorted = np.argsort(lp_tree.species)
         n = lp_tree.root.grid.n[sorted]
 
+        sliced_distribution, marginal_distribution = lp_tree.calculateObservables(slice_vec)
         for i, n_el in enumerate(n):
-            sliced_distribution, marginal_distribution = lp_tree.calculateObservables(i, slice_vec)
-            self.assertTrue(np.all(sliced_distribution == np.ones(n_el)))
-            self.assertTrue(np.all(marginal_distribution == np.ones(n_el) * norm / n_el))
-
-        with self.assertRaises(Exception):
-            _, _ = lp_tree.calculateObservables(5, slice_vec)
+            self.assertTrue(np.all(sliced_distribution[i] == np.ones(n_el)))
+            self.assertTrue(np.all(marginal_distribution[i] == np.ones(n_el) * norm / n_el))
         
         with self.assertRaises(Exception):
-            _, _ = lp_tree.calculateObservables(4, np.zeros(lp_tree.grid.d() + 1))
+            _, _ = lp_tree.calculateObservables(np.zeros(lp_tree.grid.d() + 1))
 
 if __name__ == "__main__":
     unittest.main()
