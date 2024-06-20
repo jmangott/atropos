@@ -40,7 +40,7 @@ double CalculateNorm(lr2<double> &lr_sol, grid_info &grid)
 
 void IntegrateFirstOrder(lr2<double> &lr_sol, const vector<multi_array<double, 2>> &w_x_dep, vector<multi_array<double, 3>> &c_coeff1, vector<multi_array<double, 3>> &d_coeff1, vector<multi_array<double, 3>> &c_coeff2, vector<multi_array<double, 3>> &d_coeff2, multi_array<double, 4> &e_coeff, multi_array<double, 4> &f_coeff, const vector<Index> sigma1, const vector<Index> sigma2, mysys &mysystem, grid_info &grid, partition_info<1> &partition1, partition_info<2> &partition2, std::function<double(double *, double *)> ip_xx1, std::function<double(double *, double *)> ip_xx2, blas_ops &blas, double tau, double &norm)
 {
-    gram_schmidt gs(&blas);
+    orthogonalize gs(&blas);
 
     // Temporary objects for multiplication and integration
     multi_array<double, 2> tmp_x1({grid.dx1, grid.r});
@@ -110,7 +110,7 @@ void IntegrateFirstOrder(lr2<double> &lr_sol, const vector<multi_array<double, 2
 
 void IntegrateSecondOrder(lr2<double> &lr_sol, const vector<multi_array<double, 2>> &w_x_dep, vector<multi_array<double, 3>> &c_coeff1, vector<multi_array<double, 3>> &d_coeff1, vector<multi_array<double, 3>> &c_coeff2, vector<multi_array<double, 3>> &d_coeff2, multi_array<double, 4> &e_coeff, multi_array<double, 4> &f_coeff, const vector<Index> sigma1, const vector<Index> sigma2, mysys &mysystem, grid_info &grid, partition_info<1> &partition1, partition_info<2> &partition2, std::function<double(double *, double *)> ip_xx1, std::function<double(double *, double *)> ip_xx2, blas_ops &blas, double tau, Index n_substeps, double &norm)
 {
-    gram_schmidt gs(&blas);
+    orthogonalize gs(&blas);
 
     double tau_sub = 1.0 / n_substeps;
 
