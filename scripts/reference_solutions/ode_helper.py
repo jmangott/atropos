@@ -66,7 +66,7 @@ def constructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
     return P0 / np.sum(P0)
 
 
-def calculateObservables(y: np.ndarray, interval: np.ndarray, r: int, m1: int, slice_vec: np.ndarray, idx_2D: np.ndarray):
+def calculateObservables(y: np.ndarray, interval: np.ndarray, slice_vec: np.ndarray, idx_2D: np.ndarray):
     """Calculate marginal and sliced distributions and the best approximation."""
     dx = np.prod(interval)
     m = interval.size
@@ -76,7 +76,6 @@ def calculateObservables(y: np.ndarray, interval: np.ndarray, r: int, m1: int, s
     P_marginal2D = [np.zeros(interval[idx_2D]) for _ in range(y.shape[0])]
     P_sliced = [[np.zeros(n_el) for n_el in interval] for _ in range(y.shape[0])]
     P_sliced2D = [np.zeros(interval[idx_2D]) for _ in range(y.shape[0])]
-    P_best_approximation = np.zeros(y.shape)
 
     vec_index_c = np.zeros(m - 2, dtype="int64")
     vec_index_k = np.zeros(m - 1, dtype="int64")
@@ -102,12 +101,19 @@ def calculateObservables(y: np.ndarray, interval: np.ndarray, r: int, m1: int, s
 
             incrVecIndex(vec_index, interval, m)
 
-        P = y[i, :].reshape((np.prod(interval[m1:]), np.prod(interval[:m1])))
-        u, s, vh = np.linalg.svd(P, full_matrices=False)
-        # Use only the first `r` singular values
-        X1 = u[:, :r]
-        S = s[:r]
-        X2h = np.ascontiguousarray(vh[:r, :])
+    return P_full, P_marginal, P_marginal2D, P_sliced, P_sliced2D
+
+
+def calculateBestApproximation(y: np.ndarray, interval: np.ndarray, r: int, m1: int):
+    P_best_approximation = np.zeros(y.shape)
+    P = y[i, :].reshape((np.prod(interval[m1:]), np.prod(interval[:m1])))
+    u, s, vh = np.linalg.svd(P, full_matrices=False)
+    # Use only the first `r` singular values
+    X1 = u[:, :r]
+    S = s[:r]
+    X2h = np.ascontiguousarray(vh[:r, :])
+
+    for i in range(y.shape[0]):
         P_best_approximation[i, :] = ((X1 * S) @ X2h).flatten()
 
-    return P_full, P_marginal, P_marginal2D, P_sliced, P_sliced2D, P_best_approximation
+    return P_best_approximation
