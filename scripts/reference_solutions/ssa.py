@@ -16,7 +16,7 @@ parser.add_argument('-m',
                     '--model', 
                     type=str, 
                     required=True, 
-                    help='Specify a model ("toggle_switch", "lambda_phage", "diffusive_toggle_switch" or "bax")',
+                    help='Specify a model ("toggle_switch", "lambda_phage", "diffusive_toggle_switch", "enzymatic_futile_cycle", "cascade")',
                     )
 parser.add_argument('-n', 
                     '--n_runs', 
@@ -89,13 +89,21 @@ elif model == "enzymatic_futile_cycle":
     import scripts.models.enzymatic_futile_cycle_gillespy as gillespy_model
 
     liml = np.array([30, 90, 2, 2, 0, 0])
-    n = np.ones(6, dtype="int")
+    n = np.ones(liml.size, dtype="int")
+
+    def eval_P0(x: np.ndarray) -> float:
+        return 1.0
+
+elif model == "cascade":
+    import scripts.models.cascade_gillespy as gillespy_model
+    liml = np.zeros(20)
+    n = np.ones(liml.size, dtype="int")
 
     def eval_P0(x: np.ndarray) -> float:
         return 1.0
 
 else:
-    print(parser.prog+":", 'error: the following arguments for `model` are allowed: "toggle_switch", "lambda_phage", "diffusive_toggle_switch" or "enzymatic_futile_cycle"')
+    print(parser.prog+":", 'error: the following arguments for `model` are allowed: "toggle_switch", "lambda_phage", "diffusive_toggle_switch", "enzymatic_futile_cycle" or "cascade"')
     sys.exit(1)
 
 m = n.size # len(pysb_model.model.observables)
