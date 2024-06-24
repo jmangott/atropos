@@ -1,4 +1,4 @@
-"""Script for setting the initial conditions for the diffusive toggle switch model."""
+"""Script for setting the initial conditions for the enzymatic futile cycle model."""
 import argparse
 import numpy as np
 import sys
@@ -15,20 +15,21 @@ parser = argparse.ArgumentParser(
                     usage='python3 scripts/input/set_enzymatic_futile_cycle.py --rank 5',
                     description='This script sets the initial conditions for the enzymatic futile cycle model.')
 
-parser.add_argument('-r', 
-                    '--rank', 
-                    type=int, 
-                    required=True, 
+parser.add_argument('-r',
+                    '--rank',
+                    nargs='+',
+                    type=int,
+                    required=True,
                     help="Specify the ranks of the internal nodes",
                     )
 args = parser.parse_args()
 
 partition_str = "(0 1 2)(3 4 5)"
-r_out = np.array([args.rank])
+r_out = np.array(args.rank)
 n_basisfunctions = np.ones(r_out.size, dtype="int")
 
 # Grid parameters
-n = np.array([135, 4, 4, 135, 4, 4])
+n = np.array([128, 4, 4, 128, 4, 4])
 d = n.size
 binsize = np.ones(d, dtype=int)
 liml = np.zeros(d)
