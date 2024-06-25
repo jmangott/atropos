@@ -10,8 +10,10 @@ from scripts.index_functions import incrVecIndex
 
 import scripts.models.cascade as model
 
-partition = ['((((0 1)(2 3)))(4 5))((6 7)(8 9)))(((10 11)(12 13))((14 15)((16 17)(18 19))))', 
-             '(0 1)((2 3)((4 5)((6 7)((8 9)((10 11)((12 13)((14 15)((16 17)(18 19)))))))))']
+partition = ['((((0 1)(2 3))(4 5))((6 7)(8 9)))(((10 11)(12 13))((14 15)((16 17)(18 19))))',
+             '(0 1)((2 3)((4 5)((6 7)((8 9)((10 11)((12 13)((14 15)((16 17)(18 19)))))))))',
+             '(0)((1)((2)((3)((4)((5)((6)((7)((8)((9)((10)((11)((12)((13)((14)((15)((16)((17)((18)(19)))))))))))))))))))',
+             '(((((0)(1))((2)(3)))((4)(5)))(((6)(7))((8)(9))))((((10)(11))((12)(13)))(((14)(15))(((16)(17))((18)(19)))))']
 
 parser = argparse.ArgumentParser(
                     prog='set_cascade',
@@ -42,8 +44,6 @@ if args.partition == None:
     sys.exit(1)
 
 partition_str = args.partition
-r_out = np.ones(9, dtype="int") * args.rank
-n_basisfunctions = np.ones(r_out.size, dtype="int")
 
 # Grid parameters
 d = 20
@@ -54,6 +54,9 @@ grid = GridParms(n, binsize, liml)
 
 # Set up the partition tree
 tree = Tree(partition_str, grid)
+
+r_out = np.ones(tree.n_internal_nodes, dtype="int") * args.rank
+n_basisfunctions = np.ones(r_out.size, dtype="int")
 tree.initialize(model.reaction_system, r_out)
 
 def eval_x(x: np.ndarray):
