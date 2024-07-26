@@ -17,7 +17,7 @@ void cme_internal_node::Initialize(int ncid)
 {
     internal_node::Initialize(ncid);
 
-    // initialize A, B, E and F for the root
+    // initialize A and B for the root
     if (parent == nullptr)
     {
         for (Index mu = 0; mu < grid.n_reactions; ++mu)
@@ -27,8 +27,6 @@ void cme_internal_node::Initialize(int ncid)
             coefficients.A_bar[mu](0, 0) = 1.0;
             coefficients.B_bar[mu](0, 0) = 1.0;
         }
-        coefficients.E(0, 0, 0, 0) = 1.0;
-        coefficients.F(0, 0, 0, 0) = 1.0;
     }
     return;
 }
@@ -49,7 +47,7 @@ void cme_external_node::Initialize(int ncid)
     external_node::Initialize(ncid);
 
     // read propensity
-    external_coefficients.propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
+    propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
     return;
 }
 
@@ -520,7 +518,7 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
                 {
                     Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]), std::begin(this_node->grid.idx_dep[mu]), std::end(this_node->grid.idx_dep[mu]));
 
-                    weight(alpha) = this_node->external_coefficients.propensity[mu][alpha_dep] * this_node->grid.h_mult;
+                    weight(alpha) = this_node->propensity[mu][alpha_dep] * this_node->grid.h_mult;
                     IndexFunction::IncrVecIndex(std::begin(this_node->grid.n), std::begin(vec_index), std::end(vec_index));
                 }
                 coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
@@ -533,47 +531,44 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
         cme_internal_node *this_node = (cme_internal_node *) this;
         std::array<Index, 2> rank_out = this_node->RankOut();
 
-        multi_array<double, 2> Qmat({prod(rank_out), this_node->RankIn()});
-        Matrix::Matricize(this_node->Q, Qmat, 2);
-
 #ifdef __OPENMP__
 #pragma omp parallel
 #endif
         {
-            multi_array<double, 2> AA_bar({prod(rank_out), prod(rank_out)});
-            multi_array<double, 2> BB_bar({prod(rank_out), prod(rank_out)});
-            multi_array<double, 2> A_tmp1({prod(rank_out), this_node->RankIn()});
-            multi_array<double, 2> B_tmp1({prod(rank_out), this_node->RankIn()});
-            multi_array<double, 2> A_tmp2({this_node->RankIn(), this_node->RankIn()});
-            multi_array<double, 2> B_tmp2({this_node->RankIn(), this_node->RankIn()});
+            multi_array<double, 2> QA0_tilde({prod(rank_out), this_node->RankIn()});
+            multi_array<double, 2> QA1_tilde({prod(rank_out), this_node->RankIn()});
+
+            multi_array<double, 2> Q0_mat({this_node->RankIn() * rank_out[1], rank_out[0]});
+            multi_array<double, 2> Q1_mat({this_node->RankIn() * rank_out[0], rank_out[1]});
+            multi_array<double, 2> QA0_mat(Q0_mat.shape());
+            multi_array<double, 2> QA1_mat(Q1_mat.shape());
+
+            multi_array<double, 3> QA0(this_node->Q.shape());
+            multi_array<double, 3> QA1(this_node->Q.shape());
+
+            Matrix::Matricize<0>(this_node->Q, Q0_mat);
+            Matrix::Matricize<1>(this_node->Q, Q1_mat);
+
 #ifdef __OPENMP__
 #pragma omp for
 #endif
             for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
             {
-                for (Index j1 = 0; j1 < rank_out[1]; ++j1)
-                {
-                    for (Index i1 = 0; i1 < rank_out[1]; ++i1)
-                    {
-                        for (Index j0 = 0; j0 < rank_out[0]; ++j0)
-                        {
-                            for (Index i0 = 0; i0 < rank_out[0]; ++i0)
-                            {
-                                AA_bar(i0 + rank_out[0] * i1, j0 + rank_out[0] * j1) = this_node->child[0]->coefficients.A_bar[mu](i0, j0) * this_node->child[1]->coefficients.A_bar[mu](i1, j1);
-                                BB_bar(i0 + rank_out[0] * i1, j0 + rank_out[0] * j1) = this_node->child[0]->coefficients.B_bar[mu](i0, j0) * this_node->child[1]->coefficients.B_bar[mu](i1, j1);
-                            }
-                        }
-                    }
-                }
+                blas.matmul(Q0_mat, this_node->child[0]->coefficients.A_bar[mu], QA0_mat);
+                Matrix::Tensorize<0>(QA0_mat, QA0);
+                Matrix::Matricize<2>(QA0, QA0_tilde);
+                blas.matmul_transb(Q1_mat, this_node->child[1]->coefficients.A_bar[mu], QA1_mat);
+                Matrix::Tensorize<1>(QA1_mat, QA1);
+                Matrix::Matricize<2>(QA1, QA1_tilde);
+                blas.matmul_transa(QA0_tilde, QA1_tilde, coefficients.A_bar[mu]);
 
-                blas.matmul(AA_bar, Qmat, A_tmp1);
-                blas.matmul_transa(Qmat, A_tmp1, A_tmp2);
-
-                blas.matmul(BB_bar, Qmat, B_tmp1);
-                blas.matmul_transa(Qmat, B_tmp1, B_tmp2);
-
-                coefficients.A_bar[mu] = A_tmp2;
-                coefficients.B_bar[mu] = B_tmp2;
+                blas.matmul(Q0_mat, this_node->child[0]->coefficients.B_bar[mu], QA0_mat);
+                Matrix::Tensorize<0>(QA0_mat, QA0);
+                Matrix::Matricize<2>(QA0, QA0_tilde);
+                blas.matmul_transb(Q1_mat, this_node->child[1]->coefficients.B_bar[mu], QA1_mat);
+                Matrix::Tensorize<1>(QA1_mat, QA1);
+                Matrix::Matricize<2>(QA1, QA1_tilde);
+                blas.matmul_transa(QA0_tilde, QA1_tilde, coefficients.B_bar[mu]);
             }
         }
     }
@@ -617,7 +612,7 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
                     std::end(node->grid.idx_dep[mu]));
                 IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
 
-                weight(i) = node->external_coefficients.propensity[mu][alpha];
+                weight(i) = node->propensity[mu][alpha];
             }
 
             ptw_mult_row(KA, weight, aKA);
@@ -639,136 +634,105 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
     return K_dot;
 }
 
-void cme_node::CalculateEF(const blas_ops& blas)
-{
-    multi_array<double, 4>& E_temp = coefficients.E;
-    std::fill(std::begin(E_temp), std::end(E_temp), 0.0);
-
-#ifdef __OPENMP__
-#pragma omp parallel reduction(+: E_temp)
-#endif
-    {
-        multi_array<double, 4> E_thread(coefficients.E.shape());
-        std::fill(std::begin(E_thread), std::end(E_thread), 0.0);
-
-#ifdef __OPENMP__
-#pragma omp for
-#endif
-        for (Index mu = 0; mu < grid.n_reactions; ++mu)
-        {
-            for (Index l = 0; l < RankIn(); ++l)
-            {
-                for (Index k = 0; k < RankIn(); ++k)
-                {
-                    for (Index j = 0; j < RankIn(); ++j)
-                    {
-                        for (Index i = 0; i < RankIn(); ++i)
-                        {
-                            E_thread(i, j, k, l) += (coefficients.A_bar[mu](i, k) * coefficients.A[mu](j, l) - coefficients.B_bar[mu](i, k) * coefficients.B[mu](j, l));
-                        }
-                    }
-                }
-            }
-        }
-        E_temp += E_thread;
-    }
-}
-
-multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node)
+multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node, const blas_ops &blas)
 {
     multi_array<double, 2> S_dot(S.shape());
     set_zero(S_dot);
 
-    for (Index l = 0; l < node->RankIn(); l++)
+#ifdef __OPENMP__
+#pragma omp parallel reduction(+ : S_dot)
+#endif
     {
-        for (Index k = 0; k < node->RankIn(); k++)
+        multi_array<double, 2> S_dot_thread(S_dot);
+        multi_array<double, 2> AS(S_dot);
+        multi_array<double, 2> ASa(S_dot);
+        multi_array<double, 2> BS(S_dot);
+        multi_array<double, 2> BSb(S_dot);
+
+#ifdef __OPENMP__
+#pragma omp for
+#endif
+        for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
         {
-            for (Index j = 0; j < node->RankIn(); j++)
-            {
-                for (Index i = 0; i < node->RankIn(); i++)
-                {
-                    S_dot(i, j) += node->coefficients.E(i, j, k, l) * S(k, l);
-                }
-            }
+            blas.matmul(node->coefficients.A_bar[mu], S, AS);
+            blas.matmul_transb(AS, node->coefficients.A[mu], ASa);
+            blas.matmul(node->coefficients.B_bar[mu], S, BS);
+            blas.matmul_transb(BS, node->coefficients.B[mu], BSb);
+            S_dot_thread += ASa;
+            S_dot_thread -= BSb;
         }
+        S_dot += S_dot_thread;
     }
+
     return S_dot;
 }
 
-void cme_internal_node::CalculateGH(const blas_ops& blas)
-{
-    multi_array<double, 4> &G_temp = internal_coefficients.G;
-    std::fill(std::begin(G_temp), std::end(G_temp), 0.0);
-
-    Index rank_in = RankIn();
-    std::array<Index, 2> rank_out = RankOut();
-    Index prod_rank_out = prod(rank_out);
-
-#ifdef __OPENMP__
-#pragma omp parallel reduction(+: G_temp)
-#endif
-    {
-        multi_array<double, 4> G_thread(internal_coefficients.G.shape());
-        std::fill(std::begin(G_thread), std::end(G_thread), 0.0);
-
-        multi_array<double, 2> AAbar({prod_rank_out, prod_rank_out});
-        multi_array<double, 2> BBbar({prod_rank_out, prod_rank_out});
-
-#ifdef __OPENMP__
-#pragma omp for 
-#endif
-        for (Index mu = 0; mu < grid.n_reactions; ++mu)
-        {
-            for (Index j1 = 0; j1 < RankOut()[1]; ++j1)
-            {
-                for (Index i1 = 0; i1 < RankOut()[1]; ++i1)
-                {
-                    for (Index j0 = 0; j0 < RankOut()[0]; ++j0)
-                    {
-                        for (Index i0 = 0; i0 < RankOut()[0]; ++i0)
-                        {
-                            AAbar(i0 + rank_out[0] * i1, j0 + rank_out[0] * j1) = child[0]->coefficients.A_bar[mu](i0, j0) * child[1]->coefficients.A_bar[mu](i1, j1);
-                            BBbar(i0 + rank_out[0] * i1, j0 + rank_out[0] * j1) = child[0]->coefficients.B_bar[mu](i0, j0) * child[1]->coefficients.B_bar[mu](i1, j1);
-                        }
-                    }
-                }
-            }
-
-            for (Index j = 0; j < rank_in; ++j)
-            {
-                for (Index i = 0; i < rank_in; ++i)
-                {
-                    for (Index j0_comb = 0; j0_comb < prod_rank_out; ++j0_comb)
-                    {
-                        for (Index i0_comb = 0; i0_comb < prod_rank_out; ++i0_comb)
-                        {
-                            G_thread(i0_comb, j0_comb, i, j) += (coefficients.A[mu](i, j) * AAbar(i0_comb, j0_comb) - coefficients.B[mu](i, j) * BBbar(i0_comb, j0_comb));
-                        }
-                    }
-                }
-            }
-        }
-        G_temp += G_thread;
-    }
-}
-
-multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node)
+multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node, const blas_ops &blas)
 {
     multi_array<double, 2> Q_dot(Qmat.shape());
-    std::fill(std::begin(Q_dot), std::end(Q_dot), 0.0);
+    set_zero(Q_dot);
 
-    for (Index j = 0; j < node->RankIn(); ++j)
+#ifdef __OPENMP__
+#pragma omp parallel reduction(+ : Q_dot)
+#endif
     {
-        for (Index j0 = 0; j0 < prod(node->RankOut()); ++j0)
+        multi_array<double, 3> Q_ten({node->RankOut()[0], node->RankOut()[1], node->RankIn()});
+        multi_array<double, 2> Q_dot_thread(Q_dot);
+
+        multi_array<double, 2> Qa(Q_dot);
+        multi_array<double, 2> Qa_mat({node->RankOut()[1] * node->RankIn(), node->RankOut()[0]});
+        multi_array<double, 2> QaA0(Qa_mat.shape());
+        multi_array<double, 2> QaA0_mat({node->RankOut()[0] * node->RankIn(), node->RankOut()[1]});
+        multi_array<double, 2> QaA0A1(QaA0_mat.shape());
+
+        multi_array<double, 2> Qb(Q_dot);
+        multi_array<double, 2> Qb_mat({node->RankOut()[1] * node->RankIn(), node->RankOut()[0]});
+        multi_array<double, 2> QbB0(Qb_mat.shape());
+        multi_array<double, 2> QbB0_mat({node->RankOut()[0] * node->RankIn(), node->RankOut()[1]});
+        multi_array<double, 2> QbB0B1(QbB0_mat.shape());
+
+#ifdef __OPENMP__
+#pragma omp for
+#endif
+        for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
         {
-            for (Index i = 0; i < node->RankIn(); ++i)
-            {
-                for (Index i0 = 0; i0 < prod(node->RankOut()); ++i0)
-                {
-                    Q_dot(i0, i) += node->internal_coefficients.G(i0, j0, i, j) * Qmat(j0, j);
-                }
-            }
+            blas.matmul_transb(Qmat, node->coefficients.A[mu], Qa);
+            get_time::start("Mat/Ten");
+            Matrix::Tensorize<2>(Qa, Q_ten);
+            Matrix::Matricize<0>(Q_ten, Qa_mat);
+            get_time::stop("Mat/Ten");
+            blas.matmul_transb(Qa_mat, node->child[0]->coefficients.A_bar[mu], QaA0);
+            get_time::start("Mat/Ten");
+            Matrix::Tensorize<0>(QaA0, Q_ten);
+            Matrix::Matricize<1>(Q_ten, QaA0_mat);
+            get_time::stop("Mat/Ten");
+            blas.matmul_transb(QaA0_mat, node->child[1]->coefficients.A_bar[mu], QaA0A1);
+            get_time::start("Mat/Ten");
+            Matrix::Tensorize<1>(QaA0A1, Q_ten);
+            Matrix::Matricize<2>(Q_ten, Qa);
+            get_time::stop("Mat/Ten");
+
+            blas.matmul_transb(Qmat, node->coefficients.B[mu], Qb);
+            get_time::start("Mat/Ten");
+            Matrix::Tensorize<2>(Qb, Q_ten);
+            Matrix::Matricize<0>(Q_ten, Qb_mat);
+            get_time::stop("Mat/Ten");
+            blas.matmul_transb(Qb_mat, node->child[0]->coefficients.B_bar[mu], QbB0);
+            get_time::start("Mat/Ten");
+            Matrix::Tensorize<0>(QbB0, Q_ten);
+            Matrix::Matricize<1>(Q_ten, QbB0_mat);
+            get_time::stop("Mat/Ten");
+            blas.matmul_transb(QbB0_mat, node->child[1]->coefficients.B_bar[mu], QbB0B1);
+            get_time::start("Mat/Ten");
+            Matrix::Tensorize<1>(QbB0B1, Q_ten);
+            Matrix::Matricize<2>(Q_ten, Qb);
+            get_time::stop("Mat/Ten");
+
+            Q_dot_thread += Qa;
+            Q_dot_thread -= Qb;
         }
+        Q_dot += Q_dot_thread;
     }
+
     return Q_dot;
 }
