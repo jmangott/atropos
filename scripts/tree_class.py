@@ -254,8 +254,8 @@ class Tree:
         dt.attrs["partition_str"] = self.partition_str
         self.__write(self.root.child[0], dt)
         self.__write(self.root.child[1], dt)
-        dt.to_netcdf(fname)
-    
+        dt.to_netcdf(fname, engine="netcdf4")
+
     def __calculateObservableHelper(self, node: Node, idx_n: int, slice_vec: npt.NDArray[np.int_]):
         if isinstance(node, ExternalNode):
             if idx_n in node.grid.species:
