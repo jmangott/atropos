@@ -246,7 +246,7 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
         X1_ortho
         );
 
-    Matrix::Matricize(((cme_internal_node*) tree.root->child[0])->Q, Q0_mat, 2);
+    Matrix::Matricize<2>(((cme_internal_node*) tree.root->child[0])->Q, Q0_mat);
     blas.matmul_transa(Q0_mat, Q0_mat, Q0_ortho);
 
     multi_array<double, 2> id_r({r, r}), id_r0({r0, r0}), id_1({1, 1});

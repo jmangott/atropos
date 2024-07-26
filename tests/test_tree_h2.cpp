@@ -218,17 +218,15 @@ TEST_CASE("tree_h2", "[tree_h2]")
     node00->X = X00;
     node01->X = X01;
 
-    node1->external_coefficients.propensity = propensity1;
-    node00->external_coefficients.propensity = propensity00;
-    node01->external_coefficients.propensity = propensity01;
+    node1->propensity = propensity1;
+    node00->propensity = propensity00;
+    node01->propensity = propensity01;
 
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         root->coefficients.A[mu](0, 0) = 1.0;
         root->coefficients.B[mu](0, 0) = 1.0;
     }
-    root->coefficients.E(0, 0, 0, 0) = 1.0;
-    root->coefficients.F(0, 0, 0, 0) = 1.0;
 
     root->child[0] = node0;
     root->child[1] = node1;
@@ -302,7 +300,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
     Q0_mat(0, 0) = 1.0;
     Q0_mat(1, 1) = 1.0;
     Q0_mat(2, 2) = 1.0;
-    Matrix::Tensorize(Q0_mat, Q0, 2);
+    Matrix::Tensorize<2>(Q0_mat, Q0);
 
     set_zero(X00);
     set_zero(X01);

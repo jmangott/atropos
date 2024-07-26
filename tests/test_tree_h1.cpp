@@ -133,16 +133,14 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node0->X = X0;
     node1->X = X1;
 
-    node0->external_coefficients.propensity = propensity0;
-    node1->external_coefficients.propensity = propensity1;
+    node0->propensity = propensity0;
+    node1->propensity = propensity1;
 
     for (Index mu = 0; mu < grid.n_reactions; ++mu)
     {
         root->coefficients.A[mu](0, 0) = 1.0;
         root->coefficients.B[mu](0, 0) = 1.0;
     }
-    root->coefficients.E(0, 0, 0, 0) = 1.0;
-    root->coefficients.F(0, 0, 0, 0) = 1.0;
 
     root->child[0] = node0;
     root->child[1] = node1;
@@ -355,236 +353,12 @@ TEST_CASE("tree_h1", "[tree_h1]")
     S0_dot_comparison(1, 0) = std::exp(-0.5);
     S0_dot_comparison(1, 1) =-0.5 * std::exp(-0.5);
 
-    node0->CalculateEF(blas);
-
-    multi_array<double, 4> E_comparison({node0->RankIn(), node0->RankIn(), node0->RankIn(), node0->RankIn()});
-    multi_array<double, 4> F_comparison({node0->RankIn(), node0->RankIn(), node0->RankIn(), node0->RankIn()});
-
-    // E_comparison, mu = 0
-    E_comparison(0, 0, 0, 0) = 0.5;
-    E_comparison(0, 0, 1, 0) =-0.5;
-    E_comparison(1, 0, 0, 0) = 0.5;
-    E_comparison(1, 0, 1, 0) =-0.5;
-
-    E_comparison(0, 0, 0, 1) = 0.0;
-    E_comparison(0, 0, 1, 1) = 0.0;
-    E_comparison(1, 0, 0, 1) = 0.0;
-    E_comparison(1, 0, 1, 1) = 0.0;
-
-    E_comparison(0, 1, 0, 0) = 0.0;
-    E_comparison(0, 1, 1, 0) = 0.0;
-    E_comparison(1, 1, 0, 0) = 0.0;
-    E_comparison(1, 1, 1, 0) = 0.0;
-
-    E_comparison(0, 1, 0, 1) = 0.5;
-    E_comparison(0, 1, 1, 1) =-0.5;
-    E_comparison(1, 1, 0, 1) = 0.5;
-    E_comparison(1, 1, 1, 1) =-0.5;
-
-    // F_comparison, mu = 0
-    F_comparison(0, 0, 0, 0) = 0.5;
-    F_comparison(0, 0, 1, 0) =-0.5;
-    F_comparison(1, 0, 0, 0) =-0.5;
-    F_comparison(1, 0, 1, 0) = 0.5;
-
-    F_comparison(0, 0, 0, 1) = 0.0;
-    F_comparison(0, 0, 1, 1) = 0.0;
-    F_comparison(1, 0, 0, 1) = 0.0;
-    F_comparison(1, 0, 1, 1) = 0.0;
-
-    F_comparison(0, 1, 0, 0) = 0.0;
-    F_comparison(0, 1, 1, 0) = 0.0;
-    F_comparison(1, 1, 0, 0) = 0.0;
-    F_comparison(1, 1, 1, 0) = 0.0;
-
-    F_comparison(0, 1, 0, 1) = 0.5;
-    F_comparison(0, 1, 1, 1) =-0.5;
-    F_comparison(1, 1, 0, 1) =-0.5;
-    F_comparison(1, 1, 1, 1) = 0.5;
-
-    // E_comparison, mu = 1
-    E_comparison(0, 0, 0, 0) += 0.5;
-    E_comparison(0, 0, 1, 0) += 0.0;
-    E_comparison(1, 0, 0, 0) += 0.0;
-    E_comparison(1, 0, 1, 0) += 0.5;
-
-    E_comparison(0, 0, 0, 1) += -0.5;
-    E_comparison(0, 0, 1, 1) += -0.0;
-    E_comparison(1, 0, 0, 1) += -0.0;
-    E_comparison(1, 0, 1, 1) += -0.5;
-
-    E_comparison(0, 1, 0, 0) += 0.5;
-    E_comparison(0, 1, 1, 0) += 0.0;
-    E_comparison(1, 1, 0, 0) += 0.0;
-    E_comparison(1, 1, 1, 0) += 0.5;
-
-    E_comparison(0, 1, 0, 1) += -0.5;
-    E_comparison(0, 1, 1, 1) += -0.0;
-    E_comparison(1, 1, 0, 1) += -0.0;
-    E_comparison(1, 1, 1, 1) += -0.5;
-
-    // F_comparison, mu = 1
-    F_comparison(0, 0, 0, 0) += 0.5;
-    F_comparison(0, 0, 1, 0) += 0.0;
-    F_comparison(1, 0, 0, 0) += 0.0;
-    F_comparison(1, 0, 1, 0) += 0.5;
-
-    F_comparison(0, 0, 0, 1) += -0.5;
-    F_comparison(0, 0, 1, 1) += -0.0;
-    F_comparison(1, 0, 0, 1) += -0.0;
-    F_comparison(1, 0, 1, 1) += -0.5;
-
-    F_comparison(0, 1, 0, 0) += -0.5;
-    F_comparison(0, 1, 1, 0) += -0.0;
-    F_comparison(1, 1, 0, 0) += -0.0;
-    F_comparison(1, 1, 1, 0) += -0.5;
-
-    F_comparison(0, 1, 0, 1) += 0.5;
-    F_comparison(0, 1, 1, 1) += 0.0;
-    F_comparison(1, 1, 0, 1) += 0.0;
-    F_comparison(1, 1, 1, 1) += 0.5;
-
-    // E_comparison, mu = 2
-    E_comparison(0, 0, 0, 0) += 0.375;
-    E_comparison(0, 0, 1, 0) += 0.375;
-    E_comparison(1, 0, 0, 0) +=-0.375;
-    E_comparison(1, 0, 1, 0) +=-0.375;
-
-    E_comparison(0, 0, 0, 1) += 0.125;
-    E_comparison(0, 0, 1, 1) += 0.125;
-    E_comparison(1, 0, 0, 1) +=-0.125;
-    E_comparison(1, 0, 1, 1) +=-0.125;
-
-    E_comparison(0, 1, 0, 0) += 0.125;
-    E_comparison(0, 1, 1, 0) += 0.125;
-    E_comparison(1, 1, 0, 0) +=-0.125;
-    E_comparison(1, 1, 1, 0) +=-0.125;
-
-    E_comparison(0, 1, 0, 1) += 0.375;
-    E_comparison(0, 1, 1, 1) += 0.375;
-    E_comparison(1, 1, 0, 1) +=-0.375;
-    E_comparison(1, 1, 1, 1) +=-0.375;
-
-    // F_comparison, mu = 2
-    F_comparison(0, 0, 0, 0) += 0.75;
-    F_comparison(0, 0, 1, 0) += 0.0;
-    F_comparison(1, 0, 0, 0) += 0.0;
-    F_comparison(1, 0, 1, 0) += 0.75;
-
-    F_comparison(0, 0, 0, 1) += 0.25;
-    F_comparison(0, 0, 1, 1) += 0.0;
-    F_comparison(1, 0, 0, 1) += 0.0;
-    F_comparison(1, 0, 1, 1) += 0.25;
-
-    F_comparison(0, 1, 0, 0) += 0.25;
-    F_comparison(0, 1, 1, 0) += 0.0;
-    F_comparison(1, 1, 0, 0) += 0.0;
-    F_comparison(1, 1, 1, 0) += 0.25;
-
-    F_comparison(0, 1, 0, 1) += 0.75;
-    F_comparison(0, 1, 1, 1) += 0.0;
-    F_comparison(1, 1, 0, 1) += 0.0;
-    F_comparison(1, 1, 1, 1) += 0.75;
-
-    // E_comparison, mu = 3
-    E_comparison(0, 0, 0, 0) += 0.375;
-    E_comparison(0, 0, 1, 0) += 0.125;
-    E_comparison(1, 0, 0, 0) += 0.125;
-    E_comparison(1, 0, 1, 0) += 0.375;
-
-    E_comparison(0, 0, 0, 1) += 0.375;
-    E_comparison(0, 0, 1, 1) += 0.125;
-    E_comparison(1, 0, 0, 1) += 0.125;
-    E_comparison(1, 0, 1, 1) += 0.375;
-
-    E_comparison(0, 1, 0, 1) += -0.375;
-    E_comparison(0, 1, 1, 1) += -0.125;
-    E_comparison(1, 1, 0, 1) += -0.125;
-    E_comparison(1, 1, 1, 1) += -0.375;
-
-    E_comparison(0, 1, 0, 0) += -0.375;
-    E_comparison(0, 1, 1, 0) += -0.125;
-    E_comparison(1, 1, 0, 0) += -0.125;
-    E_comparison(1, 1, 1, 0) += -0.375;
-
-    // F_comparison, mu = 3
-    F_comparison(0, 0, 0, 0) += 0.75;
-    F_comparison(0, 0, 1, 0) += 0.25;
-    F_comparison(1, 0, 0, 0) += 0.25;
-    F_comparison(1, 0, 1, 0) += 0.75;
-
-    F_comparison(0, 0, 0, 1) += 0.0;
-    F_comparison(0, 0, 1, 1) += 0.0;
-    F_comparison(1, 0, 0, 1) += 0.0;
-    F_comparison(1, 0, 1, 1) += 0.0;
-
-    F_comparison(0, 1, 0, 0) += 0.0;
-    F_comparison(0, 1, 1, 0) += 0.0;
-    F_comparison(1, 1, 0, 0) += 0.0;
-    F_comparison(1, 1, 1, 0) += 0.0;
-
-    F_comparison(0, 1, 0, 1) += 0.75;
-    F_comparison(0, 1, 1, 1) += 0.25;
-    F_comparison(1, 1, 0, 1) += 0.25;
-    F_comparison(1, 1, 1, 1) += 0.75;
-
-    E_comparison -= F_comparison;
-
-    REQUIRE(bool(node0->coefficients.E == E_comparison));
-
-    S0_dot = CalculateSDot(node0->S, node0);
+    S0_dot = CalculateSDot(node0->S, node0, blas);
 
     REQUIRE(bool(S0_dot_comparison == S0_dot));
 
-    // Test the relation G(i0, k1, i) * G(j0, l1, j) * g(i, i0, i1, j, j0, j1) = e(i1, k1, j1, l1)
-    multi_array<double, 2> S1({tree.root->RankOut()[1], tree.root->RankOut()[1]});
-    multi_array<double, 2> K1(node1->X.shape());
-    set_zero(S1);
-    S1(0, 0) = 2.0 * std::exp(-0.5);
-
-    root->Q = Q;
-    root->G = G;
-    node0->S = S0;
-    node1->S = S1;
-    node0->X = X0;
-    node1->X = X1;
-
-    root->CalculateAB<1>(blas);
-    node1->CalculateEF(blas);
-    root->CalculateGH(blas);
-
-    std::fill(std::begin(E_comparison), std::end(E_comparison), 0.0);
-
-    for (Index i = 0; i < root->RankIn(); ++i)
-    {
-        for (Index j = 0; j < root->RankIn(); ++j)
-        {
-            for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
-            {
-                for (Index j0 = 0; j0 < root->RankOut()[0]; ++j0)
-                {
-                    for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1)
-                    {
-                        for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
-                        {
-                            for (Index k1 = 0; k1 < root->RankOut()[1]; ++k1)
-                            {
-                                for (Index l1 = 0; l1 < root->RankOut()[1]; ++l1)
-                                {
-                                    E_comparison(i1, k1, j1, l1) += root->internal_coefficients.G(i0 + root->RankOut()[0] * i1, j0 + root->RankOut()[0] * j1, i, j) * root->G(i0, k1, i) * root->G(j0, l1, j);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    REQUIRE(bool(node1->coefficients.E == E_comparison));
-
     // Test the relation S1_dot(i1, j1) = Q_dot(i0, i1, i) * G(i0, j1, i)
-    multi_array<double, 2> S1_dot(S1.shape());
+    multi_array<double, 2> S1_dot({tree.root->RankOut()[1], tree.root->RankOut()[1]});
     multi_array<double, 3> Q_dot(root->Q.shape());
     multi_array<double, 2> Qmat1({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
     multi_array<double, 2> Qmat2({prod(root->RankOut()), root->RankIn()});
@@ -592,15 +366,15 @@ TEST_CASE("tree_h1", "[tree_h1]")
     multi_array<double, 2> Gmat1(Qmat1.shape());
     set_zero(Qmat1);
 
-    S1_dot = CalculateSDot(node1->S, node1);
+    S1_dot = CalculateSDot(node1->S, node1, blas);
 
-    Matrix::Matricize(root->G, Gmat1, 1);
+    Matrix::Matricize<1>(root->G, Gmat1);
     blas.matmul_transb(Gmat1, node1->S, Qmat1);
-    Matrix::Tensorize(Qmat1, root->Q, 1);
+    Matrix::Tensorize<1>(Qmat1, root->Q);
 
-    Matrix::Matricize(root->Q, Qmat2, 2);
-    Qmat2_dot = CalculateQDot(Qmat2, root);
-    Matrix::Tensorize(Qmat2_dot, Q_dot, 2);
+    Matrix::Matricize<2>(root->Q, Qmat2);
+    Qmat2_dot = CalculateQDot(Qmat2, root, blas);
+    Matrix::Tensorize<2>(Qmat2_dot, Q_dot);
 
     multi_array<double, 2> Q_dotG(S1_dot.shape());
     set_zero(Q_dotG);

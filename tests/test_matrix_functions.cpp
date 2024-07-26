@@ -34,9 +34,9 @@ TEST_CASE("Matricize_Tensorize", "[Matricize_Tensorize]")
 
     std::generate(std::begin(ten), std::end(ten), generator{});
 
-    Matrix::Matricize(ten, mat2, 2);
-    Matrix::Matricize(ten, mat1, 1);
-    Matrix::Matricize(ten, mat0, 0);
+    Matrix::Matricize<2>(ten, mat2);
+    Matrix::Matricize<1>(ten, mat1);
+    Matrix::Matricize<0>(ten, mat0);
 
     generator generator2{};
     for (Index k = 0; k < d2; ++k)
@@ -78,9 +78,9 @@ TEST_CASE("Matricize_Tensorize", "[Matricize_Tensorize]")
     REQUIRE(bool(mat1 == mat1_ref));
     REQUIRE(bool(mat0 == mat0_ref));
 
-    Matrix::Tensorize(mat2, ten2, 2);
-    Matrix::Tensorize(mat1, ten1, 1);
-    Matrix::Tensorize(mat0, ten0, 0);
+    Matrix::Tensorize<2>(mat2, ten2);
+    Matrix::Tensorize<1>(mat1, ten1);
+    Matrix::Tensorize<0>(mat0, ten0);
 
     REQUIRE(bool(ten2 == ten));
     REQUIRE(bool(ten1 == ten));
