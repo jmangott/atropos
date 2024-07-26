@@ -143,45 +143,39 @@ struct cme_node : virtual node<double>
     , coefficients(_grid.n_reactions, _r_in)
     {}
     void CalculateAB_bar(const blas_ops &blas);
-    void CalculateEF(const blas_ops& blas);
 };
 
 struct cme_internal_node : cme_node, internal_node<double>
 {
-    cme_internal_coeff internal_coefficients;
-
     cme_internal_node(const std::string _id, cme_internal_node * const _parent, const grid_parms _grid, const Index _r_in, const std::array<Index, 2> _r_out, const Index _n_basisfunctions) 
     : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
     , internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
-    , internal_coefficients(_r_in, _r_out)
     {}
     void Initialize(int ncid) override;
 
     template <Index id>
     void CalculateAB(const blas_ops &blas);
-    void CalculateGH(const blas_ops &blas);
-    void CalculateQ(const double tau);
 };
 
 struct cme_external_node : cme_node, external_node<double>
 {
-    cme_external_coeff external_coefficients;
+    std::vector<std::vector<double>> propensity;
 
     cme_external_node(const std::string _id, cme_internal_node * const _parent, const grid_parms _grid, const Index _r_in, const Index _n_basisfunctions)
     : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
     , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
     , external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
-    , external_coefficients(_grid.n_reactions)
+    , propensity(_grid.n_reactions)
     {}
     void Initialize(int ncid) override;
 };
 
 multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas);
 
-multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node);
+multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node, const blas_ops &blas);
 
-multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node);
+multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node, const blas_ops &blas);
 
 struct cme_lr_tree
 {
@@ -230,9 +224,9 @@ multi_array<T, 2> internal_node<T>::Orthogonalize(const T weight, const blas_ops
 {
     multi_array<T, 2> Qmat({prod(RankOut()), node<T>::RankIn()});
     multi_array<T, 2> Q_R({node<T>::RankIn(), node<T>::RankIn()});
-    Matrix::Matricize(Q, Qmat, 2);
+    Matrix::Matricize<2>(Q, Qmat);
     Q_R = Matrix::Orthogonalize(Qmat, node<T>::n_basisfunctions, weight, blas);
-    Matrix::Tensorize(Qmat, Q, 2);
+    Matrix::Tensorize<2>(Qmat, Q);
 
     return Q_R;
 };
@@ -250,49 +244,47 @@ template <Index id>
 void cme_internal_node::CalculateAB(const blas_ops &blas)
 {
     const Index id_c = (id == 0) ? 1 : 0;
+    Index rank_out = RankOut()[id];
     Index rank_out_c = RankOut()[id_c];
-
-    multi_array<double, 2> Gmat({RankIn() * rank_out_c, RankOut()[id]});
-    Matrix::Matricize(G, Gmat, id);
 
 #ifdef __OPENMP__
 #pragma omp parallel
 #endif
     {
-        multi_array<double, 2> AA_bar({RankIn() * rank_out_c, RankIn() * rank_out_c});
-        multi_array<double, 2> BB_bar({RankIn() * rank_out_c, RankIn() * rank_out_c});
-        multi_array<double, 2> A_tmp1({RankIn() * rank_out_c, RankOut()[id]});
-        multi_array<double, 2> B_tmp1({RankIn() * rank_out_c, RankOut()[id]});
-        multi_array<double, 2> A_tmp2({RankOut()[id], RankOut()[id]});
-        multi_array<double, 2> B_tmp2({RankOut()[id], RankOut()[id]});
+        multi_array<double, 2> GA_tilde({rank_out_c * RankIn(), rank_out});
+        multi_array<double, 2> Ga_tilde({rank_out_c * RankIn(), rank_out});
+
+        multi_array<double, 2> GA_mat_temp({rank_out * RankIn(), rank_out_c});
+        multi_array<double, 2> Ga_mat_temp({rank_out * rank_out_c, RankIn()});
+        multi_array<double, 2> GA_mat(GA_mat_temp.shape());
+        multi_array<double, 2> Ga_mat(Ga_mat_temp.shape());
+
+        multi_array<double, 3> GA(G.shape());
+        multi_array<double, 3> Ga(G.shape());
+
+        Matrix::Matricize<id_c>(G, GA_mat_temp);
+        Matrix::Matricize<2>(G, Ga_mat_temp);
+
 #ifdef __OPENMP__
 #pragma omp for
 #endif
         for (Index mu = 0; mu < grid.n_reactions; ++mu)
         {
-            for (Index i1 = 0; i1 < rank_out_c; ++i1)
-            {
-                for (Index j1 = 0; j1 < rank_out_c; ++j1)
-                {
-                    for (Index i = 0; i < RankIn(); ++i)
-                    {
-                        for (Index j = 0; j < RankIn(); ++j)
-                        {
-                            AA_bar(i1 + rank_out_c * i, j1 + rank_out_c * j) = coefficients.A[mu](i, j) * child[id_c]->coefficients.A_bar[mu](i1, j1);
-                            BB_bar(i1 + rank_out_c * i, j1 + rank_out_c * j) = coefficients.B[mu](i, j) * child[id_c]->coefficients.B_bar[mu](i1, j1);
-                        }
-                    }
-                }
-            }
+            blas.matmul(GA_mat_temp, child[id_c]->coefficients.A_bar[mu], GA_mat);
+            Matrix::Tensorize<id_c>(GA_mat, GA);
+            Matrix::Matricize<id>(GA, GA_tilde);
+            blas.matmul_transb(Ga_mat_temp, coefficients.A[mu], Ga_mat);
+            Matrix::Tensorize<2>(Ga_mat, Ga);
+            Matrix::Matricize<id>(Ga, Ga_tilde);
+            blas.matmul_transa(GA_tilde, Ga_tilde, child[id]->coefficients.A[mu]);
 
-            blas.matmul(AA_bar, Gmat, A_tmp1);
-            blas.matmul_transa(Gmat, A_tmp1, A_tmp2);
-
-            blas.matmul(BB_bar, Gmat, B_tmp1);
-            blas.matmul_transa(Gmat, B_tmp1, B_tmp2);
-
-            child[id]->coefficients.A[mu] = A_tmp2;
-            child[id]->coefficients.B[mu] = B_tmp2;
+            blas.matmul(GA_mat_temp, child[id_c]->coefficients.B_bar[mu], GA_mat);
+            Matrix::Tensorize<id_c>(GA_mat, GA);
+            Matrix::Matricize<id>(GA, GA_tilde);
+            blas.matmul_transb(Ga_mat_temp, coefficients.B[mu], Ga_mat);
+            Matrix::Tensorize<2>(Ga_mat, Ga);
+            Matrix::Matricize<id>(Ga, Ga_tilde);
+            blas.matmul_transa(GA_tilde, Ga_tilde, child[id]->coefficients.B[mu]);
         }
     }
 };
