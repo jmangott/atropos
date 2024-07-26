@@ -63,8 +63,8 @@ git clone git@github.com:jmangott/CME-integrator.git
 and build the program by executing
 ```shell
 cd CME-integrator
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+cmake -B <build> -DCMAKE_BUILD_TYPE=Release
+cmake --build <build>
 ```
 
 <!-- ```shell
@@ -78,15 +78,15 @@ The generated executable `hierarchical-cme` can be found in `bin`.
 To enable compiler options for debugging, use `-DCMAKE_BUILD_TYPE=Debug` instead.
 Unit tests for C++ files are provided in the `tests` folder. They can be run with 
 ```shell
-ctest --test-dir build
+ctest --test-dir <build>
 ```
 
 ### Intel MKL
 If you prefer to use Intel MKL as the BLAS and LAPACK backend instead of OpenBLAS set 
 ```shell
 export MKLROOT=/path/to/intel/mkl
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DMKL_ENABLED=ON
-cmake --build build
+cmake -B <build> -DCMAKE_BUILD_TYPE=Release -DMKL_ENABLED=ON
+cmake --build <build>
 ```
 and make sure to add the MKL libraries to your `LD_LIBRARY_PATH`, i.e.
 ```shell
@@ -97,11 +97,11 @@ before running the executable.
 ### OpenMP
 OpenMP can be activated via
 ```shell
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DOPENMP=ON
+cmake -B <build> -DCMAKE_BUILD_TYPE=Release -DOPENMP=ON
 ```
 Make sure that the `OMP_NUM_THREADS` environment variable is in accordance with your hardware specification and run the unit tests via 
 ```shell
-ctest --test-dir build
+ctest --test-dir <build>
 ```
 to ensure that OpenMP and `hierarchical-cme` work correctly.
 
