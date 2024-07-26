@@ -78,11 +78,14 @@ def convertToSeconds(time_string):
 
 class TimeSeries:
     def __init__(self, _foldername):
-        self.foldername = _foldername
-        self.time = []
-        self.__list_of_files = sorted(glob.glob(_foldername + "/*.nc"), key=self.__getT)
-        self.time.sort()
-        self.__number_of_files = len(self.__list_of_files)
+        if os.path.exists(_foldername):
+            self.foldername = _foldername
+            self.time = []
+            self.__list_of_files = sorted(glob.glob(_foldername + "/*.nc"), key=self.__getT)
+            self.time.sort()
+            self.__number_of_files = len(self.__list_of_files)
+        else:
+            raise Exception("`_foldername` does not exist")
 
     def __getT(self, filename):
         with xr.open_dataset(filename) as ds:
