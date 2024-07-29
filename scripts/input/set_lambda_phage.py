@@ -69,6 +69,24 @@ def multinomial(x):
         p0 = 0.0
     return p0
 
+# Helper function for factorizing a low-rank factor
+def factorizeLRFactor(x, node):
+    x_tensor = np.zeros((node.child[0].grid.dx(), node.child[1].grid.dx(), node.rankIn()))
+    for i in range(node.rankIn()):
+        x_tensor[:, :, i] = x[:, i].reshape((node.child[0].grid.dx(), node.child[1].grid.dx()), order="F")
+
+    x_mat = tensorUnfold(x_tensor, 0)
+    u, _, _ = np.linalg.svd(x_mat, full_matrices=False)
+    x0 = u[:, :node.child[0].rankIn()]
+
+    x_mat = tensorUnfold(x_tensor, 1)
+    u, _, _ = np.linalg.svd(x_mat, full_matrices=False)
+    x1 = u[:, :node.child[1].rankIn()]
+
+    q = np.einsum('ik,jl,ijm', x0, x1, x_tensor)
+
+    return q, x0, x1
+
 p0 = np.zeros(grid.dx())
 vec_index = np.zeros(grid.d())
 for i in range(grid.dx()):
@@ -88,38 +106,10 @@ x1 = vh[:tree.root.rankOut(), :].T
 
 # SVD of x0
 if partition_str is partition[0]:
-    q1 = np.zeros((r_out[1], r_out[1], r_out[0]))
-    x1_tensor = np.zeros((tree.root.child[1].child[0].grid.dx(), tree.root.child[1].child[1].grid.dx(), tree.root.rankOut()))
-
-    for i in range(tree.root.rankOut()):
-        x1_tensor[:, :, i] = x1[:, i].reshape((tree.root.child[1].child[0].grid.dx(), tree.root.child[1].child[1].grid.dx()), order="F")
-
-    x1_mat = tensorUnfold(x1_tensor, 0)
-    u, _, _ = np.linalg.svd(x1_mat, full_matrices=False)
-    x10 = u[:, :tree.root.child[1].rankOut()]
-
-    x1_mat = tensorUnfold(x1_tensor, 1)
-    u, _, _ = np.linalg.svd(x1_mat, full_matrices=False)
-    x11 = u[:, :tree.root.child[1].rankOut()]
-
-    q1 = np.einsum('ik,jl,ijm', x10, x11, x1_tensor)
+    q1, x10, x11 = factorizeLRFactor(x1, tree.root.child[1])
 
 elif partition_str is not partition[3]:
-    q0 = np.zeros((r_out[1], r_out[1], r_out[0]))
-    x0_tensor = np.zeros((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx(), tree.root.rankOut()))
-
-    for i in range(tree.root.rankOut()):
-        x0_tensor[:, :, i] = x0[:, i].reshape((tree.root.child[0].child[0].grid.dx(), tree.root.child[0].child[1].grid.dx()), order="F")
-
-    x0_mat = tensorUnfold(x0_tensor, 0)
-    u, _, _ = np.linalg.svd(x0_mat, full_matrices=False)
-    x00 = u[:, :tree.root.child[0].rankOut()]
-
-    x0_mat = tensorUnfold(x0_tensor, 1)
-    u, _, _ = np.linalg.svd(x0_mat, full_matrices=False)
-    x01 = u[:, :tree.root.child[0].rankOut()]
-
-    q0 = np.einsum('ik,jl,ijm', x00, x01, x0_tensor)
+    q0, x00, x01 = factorizeLRFactor(x1, tree.root.child[1])
 
 # Number of basisfunctions
 n_basisfunctions = r_out
