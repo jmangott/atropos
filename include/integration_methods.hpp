@@ -48,6 +48,39 @@ struct explicit_euler : integration_method
     const unsigned int substeps;
 };
 
+struct rk4 : integration_method
+{
+    rk4(const unsigned int _substeps)
+    : substeps(_substeps)
+    {};
+
+    void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const override
+    {
+        multi_array<double, 2> k1(arr.shape());
+        multi_array<double, 2> k2(arr.shape());
+        multi_array<double, 2> k3(arr.shape());
+        multi_array<double, 2> k4(arr.shape());
+
+        double tau_substep = tau / substeps;
+        for (auto i = 0U; i < substeps; ++i)
+        {
+            k1 = rhs(arr);
+            k2 = rhs(arr + k1 * (0.5 * tau_substep));
+            k3 = rhs(arr + k2 * (0.5 * tau_substep));
+            k4 = rhs(arr + k3 * tau_substep);
+
+            arr += (k1 + k2 + k3 + k4) * (tau_substep / 6.0);
+        }
+    }
+
+    std::string get_name() const override
+    {
+        return "rk4 (" + std::to_string(substeps) + " substeps)";
+    }
+
+    const unsigned int substeps;
+};
+
 struct implicit_euler : integration_method
 {
     implicit_euler(const unsigned int _substeps)

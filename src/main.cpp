@@ -20,7 +20,7 @@ int main(int argc, char** argv)
         ("t,tau", "Time step size", cxxopts::value<double>())
         ("f,tfinal", "Final integration time", cxxopts::value<double>())
         ("n,substeps", "Number of integration substeps", cxxopts::value<unsigned int>()->default_value("1"))
-        ("m,method", "Integration method (`e` (explicit Euler), `i` (implicit Euler), `c` (Crank-Nicolson))", cxxopts::value<char>()->default_value("i"))
+        ("m,method", "Integration method (`e` (explicit Euler), `r` (explicit RK4), `i` (implicit Euler), `c` (Crank-Nicolson))", cxxopts::value<char>()->default_value("i"))
         ("h,help", "Print usage")
         ;
 
@@ -47,6 +47,11 @@ int main(int argc, char** argv)
         integration_methods["Q"] = new explicit_euler(substeps);
         integration_methods["S"] = new explicit_euler(substeps);
         break;
+    case 'r':
+        integration_methods["K"] = new rk4(substeps);
+        integration_methods["Q"] = new rk4(substeps);
+        integration_methods["S"] = new rk4(substeps);
+        break;
     case 'i':
         integration_methods["K"] = new implicit_euler(substeps);
         integration_methods["Q"] = new explicit_euler(substeps);
@@ -58,7 +63,7 @@ int main(int argc, char** argv)
         integration_methods["S"] = new crank_nicolson(substeps);
         break;
     default:
-        std::cout << "Error: Command line option `m` must be either `e`, `i` or `c`!" << std::endl;
+        std::cout << "Error: Command line option `m` must be either `e`, `r`, `i` or `c`!" << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
