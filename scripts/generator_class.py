@@ -28,7 +28,7 @@ class Model:
         for key, value in list(propensities.items()):
             for i, sym in enumerate(self.species):
                 if(key == sym):
-                    prop_dict[i] = lambda x: value.subs(sym,x)
+                    prop_dict[i] = sp.lambdify(sym, value)
         
         self.reactions.append(Reaction(prop_dict, nu_vec))
 
@@ -85,7 +85,7 @@ print(model.species, model.reactions)
 model.add_reaction(3*NF + 7*GR, 2*H + O, {NF: NF**2, H: 1/(1 + H**2)})
 print(model.reactions)
 
-model.add_reactions([7*H + GR, 2*H],[NF, 3*O + 2*NF],[{H: H}, {H: 3*H}])        #TODO: Some error here, dictionary used in tree generation only works with last species
+model.add_reactions([7*H + GR, 2*H],[NF, 3*O + 2*NF],[{H: H}, {O: 3*O}])
 print(model.reactions)
 
 model.generate_reaction_system()
