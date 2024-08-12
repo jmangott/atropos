@@ -1,6 +1,6 @@
 netCDF4
 numba
-numpy
+numpy==1.26.4
 matplotlib
 regex
 scipy
