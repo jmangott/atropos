@@ -1,6 +1,6 @@
 from distutils.core import setup
 
-setup(name='kinetic-cme-scripts',
+setup(name='hierarchical-cme-scripts',
       version='1.0',
       description='Scripts for generating input files and plotting output files',
       packages = ['scripts.models'],
