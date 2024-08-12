@@ -37,7 +37,7 @@ with rank $`r`$, low-rank factors $`X_i^1(t,x_{(1)})`$ and $`X_i^2(t,x_{(2)})`$ 
 ## Requirements
 - CMake (3.22.1 or later)
 - C++20 compatible C++ compiler
-- Eigen 3.4 (if the implicit Euler integrator is used)
+- Eigen 3.4 (if the implicit Euler or Crank-Nicolson integrators are used)
 - Fortran compiler (if OpenBLAS is used)
 - HDF5 (1.10.x)
 - netCDF4
@@ -48,7 +48,6 @@ Check via `nc-config --has-hdf5`, whether HDF5 was used in the netCDF4 build.
 Optionally:
 - OpenMP
 - Intel MKL
-- StochKit2 (for generating reference solutions for the example problems)
 
 ## Installation
 Clone the repository via
@@ -122,10 +121,6 @@ conda create -n my_venv python --file pip-requirements.txt
 conda activate my_venv
 pip install -e .
 ```
-In order to generate reference solutions for the example problems, the PySB package (and StochKit2) has to be installed additionally. PySB is installed in an anaconda environment via
-```shell
-conda install -c alubbock pysb
-```
 All scripts and notebooks have to be executed from the project root. When using a IDE, make sure to adjust the settings accordingly. In Microsoft Visual Studio Code one has to set the "Notebook File Root" to `{workspaceFolder}` to run the notebooks.
 Unit tests for Python files are located in the `scripts/tests` folder. They can be run in the Python environment via
 ```shell
@@ -155,13 +150,13 @@ The user can choose between a first-order explicit and implicit Euler integrator
 <!-- TODO: ### Binning -->
 
 ### Preparing input data
-The `set_bax.py` script located in `scripts/input` folder generates input data for the BAX pore assembly model. It gives an example on how the initial conditions have to be set up. The `input/input.nc` file is generated with the `set_bax.py` script via
+The `set_lambda_phage.py` script located in `scripts/input` folder generates input data for the lambda phage model. It gives an example on how the initial conditions have to be set up. The `input/input.nc` file is generated with the `set_lambda_phage.py` script via
 ```shell
-python3 scripts/input/set_bax.py --partition "(0 1 2)(((3 4 6 7)(5 8))(9 10))" --rank 5 15 15
+python3 scripts/input/set_bax.py --partition "((0 1)(2))(3 4)" --rank 5 4
 ```
 and a short documentation for this script is provided by
 ```shell
-python3 scripts/input/set_bax.py --help
+python3 scripts/input/set_lambda_phage.py --help
 ```
 <!-- TODO: ### Describe examples in more detail -->
 

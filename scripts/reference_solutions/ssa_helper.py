@@ -1,10 +1,7 @@
 """Helper module for solving the CME with various SSA implementations."""
 import gillespy2
 from numba import njit, int64, float64
-# from numba.experimental import jitclass
 import numpy as np
-import pysb.core
-from pysb.simulator import StochKitSimulator
 
 from scripts.index_functions import vecIndexToCombIndex, incrVecIndex
 
@@ -128,42 +125,6 @@ def calculateNRuns(eval_P0: callable, sweeps: int, interval: np.ndarray, liml: n
     print("n_runs_tot:", n_runs_tot)
     print("error:", err)
     return n_runs, n_runs_tot
-
-
-def runStochkitSSA(n_runs: np.ndarray, n_runs_tot: int, tspan: np.ndarray, interval: np.ndarray, liml: np.ndarray, model: pysb.core.Model, observables: list) -> np.ndarray:
-    """
-    Run the Stochkit2 SSA implementation with starting values in accordance with the initial distribution described by `eval_P0`. `sweeps` is both an approximation and a control parameter for the total number of SSA sweeps. The actual number of total sweeps is given by `n_runs_tot`. `interval` and `liml` determine the sample space, which should cover most of the initial distribution.
-    
-    Output: numpy.ndarray with shape `(n_runs_tot, n_time, interval.size)`, which collects all trajectories.
-    """
-    dx = np.prod(interval)
-    m = interval.size
-    i_runs = 0
-    n_time = tspan.size
-
-    result = np.empty((n_runs_tot, n_time, m), dtype="int64")
-    vec_index = np.zeros(m)
-
-    # Loop through the sample space and perform `n_runs[i]` SSA sweeps for state `i`
-    for i in range(dx):
-        if n_runs[i] > 0.0:
-            # Modify the initial conditions
-            state = vec_index + liml
-            for j, ic in enumerate(model.initials):
-                parameter_name = ic.value.name
-                model.parameters[parameter_name].value = state[j]
-
-            sim = StochKitSimulator(model, tspan=tspan)
-            simulation_result = sim.run(n_runs=n_runs[i])
-
-            # Convert the result into a numpy array
-            for j_runs in range(n_runs[i]):
-                for i_obs, obs in enumerate(observables):
-                    result[i_runs + j_runs, :, i_obs] = simulation_result.observables[j_runs][obs]
-            
-            i_runs += n_runs[i]
-        incrVecIndex(vec_index, interval, m)
-    return result
 
 
 def runGillespySSA(n_runs: np.ndarray, n_runs_tot: int, interval: np.ndarray, liml: np.ndarray, model: gillespy2.core.model.Model, observables: list) -> np.ndarray:
