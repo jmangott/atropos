@@ -9,9 +9,7 @@
     - [Python environment](#python-environment)
   - [Run the program](#run-the-program)
   - [Input](#input)
-    - [Integrators](#integrators)
     - [Preparing input data](#preparing-input-data)
-      - [Writing a model file with the `ReactionSystem` class](#writing-a-model-file-with-the-reactionsystem-class)
   - [Output](#output)
   - [Example problems](#example-problems)
   - [References](#references)
@@ -21,16 +19,10 @@
 ```math
 \partial_t{P}(t,x) = \sum_{\mu = 1}^{M}\left(a_\mu(x-\nu_\mu)P(t,x-\nu_\mu) - a_\mu(x)P(t,x)\right)
 ```
-with the projector-splitting integrator for Tree Tensor networks.[^fn1]
+according to the algorithm proposed in https://arxiv.org/abs/2407.11792, which is based on the projector-splitting integrator for Tree Tensor networks.[^fn1]
 
 $`P(t,x)\,\mathrm{d}t`$ is the probability of finding a population number of $`x = (x_1, \dots, x_N)`$ molecules of species $`S_1, \dots, S_N`$ in the time interval $`[t,\,t + \mathrm{d}t]`$.
 The CME describes the time evolution of this probability distribution $`P(t,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x-\nu_\mu)`$ are proportional to the transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
-
-<!-- In our approach, the reaction network has to be separated recursively into two parts, such that $`x=(x_{(1)},x_{(2)})`$. The probability distribution is then approximated by
-```math
-P(t,x) \approx \sum_{i,j=1}^r X_i^1(t,x_{(1)})\,S_{ij}(t)\,X_i^2(t,x_{(2)})
-```
-with rank $`r`$, low-rank factors $`X_i^1(t,x_{(1)})`$ and $`X_i^2(t,x_{(2)})`$ and coupling coefficients $`S_{ij}(t)`$. The rank is usually a small number. -->
 
 `hierarchical-cme` makes use of the low-rank framework `Ensign`.[^fn2]
 
@@ -52,16 +44,16 @@ Optionally:
 ## Installation
 Clone the repository via
 ```shell
-git clone git@github.com:jmangott/CME-integrator.git
+git clone https://git.uibk.ac.at/c7021158/kinetic-cme.git
 ```
 
 <!-- ```shell
-# git clone https://git.uibk.ac.at/c7021158/kinetic-cme.git
+# git clone git@github.com:jmangott/CME-integrator.git
 ``` -->
 
 and build the program by executing
 ```shell
-cd CME-integrator
+cd kinetic-cme
 cmake -B <build> -DCMAKE_BUILD_TYPE=Release
 cmake --build <build>
 ```
@@ -133,24 +125,26 @@ pytest scripts/tests
   ./bin/hierarchical-cme [OPTION...]
 ```
 and expects the following command line arguments:
+- `-i`, `--input`: Name of the input .nc file (default: `input/input.nc`)
 - `-o`, `--output`: Name of the output folder, stored in `output/`
 - `-s`, `--snapshot`: Number of steps between two snapshots
 - `-t`, `--tau`: Time step size
 - `-f`, `--tfinal`: Final integration time
+- `-n`, `--substeps`: Number of integration substeps (default: `1`)
+- `-m`, `--method`: Integration method (`e` (explicit Euler), `r` (explicit RK4), `i` 
+                      (implicit Euler), `c` (Crank-Nicolson)) (default: `i`)
 - `-h`, `--help`: Print usage
 
 ## Input
-Input netCDF files have to be stored as `input/input.nc` and can be generated with the input scripts provided in `scripts/input`.
+Input netCDF files have to be stored as `input/input.nc` (the directory can be changed using the `-i` flag) and can be generated with the input scripts provided in `scripts/input_generation`.
 
 **Caution:** As `Ensign` stores arrays in column-major (Fortran) order, it is assumed that input arrays also follow this convention.
 <!-- TODO: Give more detais -->
 
-### Integrators
-The user can choose between a first-order explicit and implicit Euler integrator for the K step, where the low-rank factors depending on the population numbers are updated.
 <!-- TODO: ### Binning -->
 
 ### Preparing input data
-The `set_lambda_phage.py` script located in `scripts/input` folder generates input data for the lambda phage model. It gives an example on how the initial conditions have to be set up. The `input/input.nc` file is generated with the `set_lambda_phage.py` script via
+Let us consider the input script `set_lambda_phage.py` located in the `scripts/input_generation` folder, which generates input data for the lambda phage model. It gives an example on how the initial conditions have to be set up. The `input/input.nc` file is generated via
 ```shell
 python3 scripts/input/set_bax.py --partition "((0 1)(2))(3 4)" --rank 5 4
 ```
@@ -162,8 +156,8 @@ python3 scripts/input/set_lambda_phage.py --help
 
 Note that `hierarchical-cme` assumes that the propensity function is factorizable for the species in different partitions. However, the input scripts rely on the `ReactionSystem` class (cf. `scripts/reaction_class.py`), which assumes that the propensity function is factorizable in *all* species. This is a valid assumption for most scenarios. For problems where species in a partition are not factorizable, the propensity function can be adjusted manually after initializing the `Tree` with the method `initialize`.
 
-#### Writing a model file with the `ReactionSystem` class
-The model file contains all reactions $`R_\mu`$ ($`\mu=1,\dots,M`$) of the specific problem and has to be imported in the input scripts.
+<!-- #### Writing a model file with the `ReactionSystem` class
+The model file contains all reactions $`R_\mu`$ ($`\mu=1,\dots,M`$) of the specific problem and has to be imported in the input scripts. -->
 
 <!-- TODO: More detailed description. -->
 
@@ -175,11 +169,20 @@ The low-rank factors and coupling coefficients as well as the chosen model param
 <!-- TODO: Describe the structure of the .netCDF file -->
 
 ## Example problems
-Input generation scripts for the example problems (toggle switch, lambda phage and BAX pore aggregation) are provided in `scripts/input/` and model files can be found in `scripts/models`.
+Input generation scripts for the example problems (lambda phage and reaction cascade) are provided in `scripts/input_generation` and the corresponding model files can be found in `scripts/models`.
 
-Interactive Python notebooks for comparison of the DLR results with reference solutions for the example problems can be found in `scripts/output`.
-
-Before executing the notebooks, one has to generate the output files with `hierarchical-cme` and the corresponding reference solutions. These can in turn be generated with the scripts located in `scripts/reference_solutions`.
+All required output files and reference solutions for reproducing the plots in https://arxiv.org/abs/2407.11792 can be computed with the shell scripts provided in `scripts/shell`. Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
+```shell
+mkdir plots
+```
+Then, for the lambda phage example one has to run
+```shell
+sh scripts/shell/run_lambda_phage.sh
+```
+and for the cascade reaction example
+```shell
+sh scripts/shell/run_cascade.sh
+```
 
 ## References
 [^fn1]: Ceruti, G., Lubich, C., and Walach, H.: Time integration of Tree Tensor networks", SIAM J. Numer. Anal. **59** (2021)
