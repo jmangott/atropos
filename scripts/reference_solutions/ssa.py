@@ -106,7 +106,7 @@ else:
     print(parser.prog+":", 'error: the following arguments for `model` are allowed: "toggle_switch", "lambda_phage", "diffusive_toggle_switch", "enzymatic_futile_cycle" or "cascade"')
     sys.exit(1)
 
-m = n.size # len(pysb_model.model.observables)
+m = n.size
 observables = [obs for obs in gillespy_model.model.get_all_species().keys()]
 
 n_runs, n_runs_tot = calculateNRuns(eval_P0, sweeps, n, liml)
