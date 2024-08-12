@@ -69,7 +69,7 @@ struct rk4 : integration_method
             k3 = rhs(arr + k2 * (0.5 * tau_substep));
             k4 = rhs(arr + k3 * tau_substep);
 
-            arr += (k1 + k2 + k3 + k4) * (tau_substep / 6.0);
+            arr += (k1 + k2 * 2.0 + k3 * 2.0 + k4) * (tau_substep / 6.0);
         }
     }
 
