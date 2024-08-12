@@ -1,5 +1,6 @@
 from scipy.integrate import solve_ivp
 from scipy.special import factorial
+import time
 
 from ode_helper import *
 
@@ -109,7 +110,11 @@ P0 = constructP0(eval_P0, n)
 # Solve the system
 t_step = 1
 t_eval = np.arange(0, t + t_step, t_step)
+
+t_start = time.time_ns()
 sol = solve_ivp(lambda t, P: cme(t, P, n), [0, t + 1], P0, method='RK45', t_eval=t_eval)
+t_stop = time.time_ns()
+wall_time = (t_stop - t_start) * 1e-9
 
 y = np.zeros((t_eval.size, dx))
 for i in range(t_eval.size):
@@ -120,4 +125,4 @@ P_full, P_marginal, P_marginal2D, P_sliced, P_sliced2D, P_best_approximation = c
     y, n, 5, m1, slice_vec, np.array([0, 1], dtype="int64"))
 
 with open("scripts/reference_solutions/lp_ode_ref_r5.npz", "wb") as f:
-    np.savez(f, P_full=P_full, P_best_approximation=P_best_approximation)
+    np.savez(f, P_full=P_full, P_best_approximation=P_best_approximation, wall_time=wall_time)

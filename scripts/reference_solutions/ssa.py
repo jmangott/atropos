@@ -114,5 +114,7 @@ n_runs, n_runs_tot = calculateNRuns(eval_P0, sweeps, n, liml)
 t_start = time.time_ns()
 result = runGillespySSA(n_runs, n_runs_tot, n, liml, gillespy_model.model, observables)
 t_stop = time.time_ns()
-print("Time elapsed:", str((t_stop - t_start) * 1e-9)+"s")
-np.save("scripts/reference_solutions/" + model + "_ssa_{:.0e}".format(sweeps) + ".npy", result)
+wall_time = (t_stop - t_start) * 1e-9
+print("Time elapsed:", str(wall_time)+"s")
+with open("scripts/reference_solutions/" + model + "_ssa_{:.0e}".format(sweeps) + ".npz", "wb") as f:
+    np.savez(f, result=result, wall_time=wall_time)

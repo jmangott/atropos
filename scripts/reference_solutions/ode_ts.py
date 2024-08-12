@@ -1,4 +1,5 @@
 from scipy.integrate import solve_ivp
+import time
 
 from ode_helper import *
 plt.style.use("./scripts/output/notebooks/custom_style.mplstyle")
@@ -69,7 +70,11 @@ P0 = constructP0(eval_P0, n)
 # Solve the system
 t_step = 10
 t_eval = np.arange(0, t + t_step, t_step)
+
+t_start = time.time_ns()
 sol = solve_ivp(lambda t, P: cme(t, P, n), [0, t + 1], P0, method='RK45', t_eval=t_eval)
+t_stop = time.time_ns()
+wall_time = (t_stop - t_start) * 1e-9
 
 y = np.zeros((t_eval.size, dx))
 for i in range(t_eval.size):
@@ -85,6 +90,7 @@ with open("scripts/reference_solutions/ts_ode_ref.npy", "wb") as f:
     np.save(f, P_sliced)
     np.save(f, P_best_approximation)
     np.save(f, n)
+    np.save(f, wall_time)
 
 P_mat = P_full[-1].reshape(n[0], n[1], order="F");
 u, s, vh = np.linalg.svd(P_mat)
