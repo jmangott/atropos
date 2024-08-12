@@ -31,6 +31,9 @@ class Id(str):
         else:
             raise ValueError("Subtraction not defined")
         
+    def __int__(self: 'Id'):
+         return int("0b" + self.id, 2)
+
 if __name__=="__main__":
      a = Id("")
      print(str(a))
