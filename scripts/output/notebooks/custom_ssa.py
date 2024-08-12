@@ -71,23 +71,3 @@ def runSimulation(sample_times, t_stop, initial_state, n_runs, reaction_system):
         trajectory = calculateTrajectory(sample_times, t_stop, initial_state, reaction_system)
         result[i, :, :] = trajectory
     return result
-
-
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    from lambda_phage import reaction_system
-
-    # random.seed(42)
-    sample_times = np.linspace(0.0, 10.0, 10+1)
-    initial_state = np.zeros(reaction_system.d(), dtype="int64")
-    trajectory = runSimulation(sample_times, 10.0, initial_state, 50, reaction_system)
-
-    plt.plot(sample_times, trajectory[:, :, 1].T)
-    plt.show()
-    # fig, axs = plt.subplots(2, 1)
-    # for i in range(5):
-    #     time, trajectory = calculateFullTrajectory(100.0, initial_state, reaction_system)
-    #     axs[0].plot(time, trajectory[:, 0])
-    #     axs[1].plot(time, trajectory[:, 1])
-    # plt.show()
-
