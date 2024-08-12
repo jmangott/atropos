@@ -9,7 +9,7 @@ from ssa_helper import *
 
 parser = argparse.ArgumentParser(
                     prog='ssa',
-                    usage='python3 scripts/input/ssa.py --model lambda_phage --nruns 10000',
+                    usage='python3 scripts/reference_solutions/ssa.py --model lambda_phage --nruns 10000',
                     description='This script generates the SSA solution for a given model.')
 
 parser.add_argument('-m', 
