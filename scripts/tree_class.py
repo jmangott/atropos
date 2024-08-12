@@ -166,12 +166,12 @@ class Tree:
         if isinstance(node, InternalNode):
             next_r_out = next(self.__r_out_iter)
             node.Q.resize((next_r_out, next_r_out, node.parent.rankOut()))
-            self.__initialize(node.child[0], self.reaction_system)
-            self.__initialize(node.child[1], self.reaction_system)
+            self.__initialize(node.child[0])
+            self.__initialize(node.child[1])
 
         if isinstance(node, ExternalNode):
             node.X.resize((node.grid.dx(), node.parent.rankOut()))
-            self.propensity = self.__calculatePropensity(node)
+            node.propensity = self.__calculatePropensity(node)
 
         return
 
