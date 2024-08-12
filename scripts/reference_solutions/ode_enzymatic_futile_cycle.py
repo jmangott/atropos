@@ -1,5 +1,4 @@
 from scipy.integrate import solve_ivp
-from scipy.special import factorial
 
 from scripts.reference_solutions.ode_helper import *
 from scripts.index_functions import vecIndexToCombIndex
