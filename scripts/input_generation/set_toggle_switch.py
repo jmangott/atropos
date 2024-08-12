@@ -12,7 +12,7 @@ import scripts.models.toggle_switch as model
 
 parser = argparse.ArgumentParser(
                     prog='set_toggle_switch',
-                    usage='python3 scripts/input/set_toggle_switch.py --rank 5',
+                    usage='python3 scripts/input_generation/set_toggle_switch.py --rank 5',
                     description='This script sets the initial conditions for the toggle switch model.')
 
 parser.add_argument('-r', 

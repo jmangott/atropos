@@ -16,7 +16,7 @@ partition = ['(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)(17 18 19 20 21 22 23 24
 
 parser = argparse.ArgumentParser(
                     prog='set_bax',
-                    usage='python3 scripts/input/set_boolean_pancreatic_cancer.py --rank 5',
+                    usage='python3 scripts/input_generation/set_boolean_pancreatic_cancer.py --rank 5',
                     description='This script sets the initial conditions for the Boolean pancreatic cancer model.')
 
 for i, p in enumerate(partition):

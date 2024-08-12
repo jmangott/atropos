@@ -12,7 +12,7 @@ import scripts.models.enzymatic_futile_cycle as model
 
 parser = argparse.ArgumentParser(
                     prog='set_enzymatic_futile_cycle',
-                    usage='python3 scripts/input/set_enzymatic_futile_cycle.py --rank 5',
+                    usage='python3 scripts/input_generation/set_enzymatic_futile_cycle.py --rank 5',
                     description='This script sets the initial conditions for the enzymatic futile cycle model.')
 
 parser.add_argument('-r',

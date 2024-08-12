@@ -15,7 +15,7 @@ partition = ['(((0)(1))((2)(3)))(((4)(5))((6)(7)))',
 
 parser = argparse.ArgumentParser(
                     prog='set_diffusive_toggle_switch',
-                    usage='python3 scripts/input/set_diffusive_toggle_switch.py --partition0 --rank 5',
+                    usage='python3 scripts/input_generation/set_diffusive_toggle_switch.py --partition0 --rank 5',
                     description='This script sets the initial conditions for the diffusive toggle switch model.')
 
 for i, p in enumerate(partition):

@@ -16,7 +16,7 @@ partition = ['(0 1 2)(((3 4 6 7)(5 8))(9 10))',
 
 parser = argparse.ArgumentParser(
                     prog='set_bax',
-                    usage='python3 scripts/input/set_bax.py --partition "'+partition[0]+'" --rank 5 4 3',
+                    usage='python3 scripts/input_generation/set_bax.py --partition "'+partition[0]+'" --rank 5 4 3',
                     description='This script sets the initial conditions for the BAX pore assembly model.')
 
 for i, p in enumerate(partition):

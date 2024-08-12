@@ -18,7 +18,7 @@ partition = ['(0 1)((2 3)(4))',
 
 parser = argparse.ArgumentParser(
                     prog='set_lambda_phage',
-                    usage='python3 scripts/input/set_lambda_phage.py --partition "'+partition[0]+'" --rank 5 5',
+                    usage='python3 scripts/input_generation/set_lambda_phage.py --partition "'+partition[0]+'" --rank 5 5',
                     description='This script sets the initial conditions for the lambda phage model.')
 
 for i, p in enumerate(partition):
