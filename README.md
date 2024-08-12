@@ -146,11 +146,11 @@ Input netCDF files have to be stored as `input/input.nc` (the directory can be c
 ### Preparing input data
 Let us consider the input script `set_lambda_phage.py` located in the `scripts/input_generation` folder, which generates input data for the lambda phage model. It gives an example on how the initial conditions have to be set up. The `input/input.nc` file is generated via
 ```shell
-python3 scripts/input/set_bax.py --partition "((0 1)(2))(3 4)" --rank 5 4
+python3 scripts/input_generation/set_lamba_phage.py --partition "(0 1)((2 3)(4))" --rank 5 4
 ```
 and a short documentation for this script is provided by
 ```shell
-python3 scripts/input/set_lambda_phage.py --help
+python3 scripts/input_generation/set_lambda_phage.py --help
 ```
 <!-- TODO: ### Describe examples in more detail -->
 
