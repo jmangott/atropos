@@ -247,6 +247,7 @@ class Tree:
         self.grid.permute(self.species)
 
         ds = self.__createDataset(self.root)
+        ds["species_names"] = (["d"], self.reaction_system.species_names)
         ds["Q"] = (["n_basisfunctions", "r_out0", "r_out1"], self.root.Q.T)
         dt = DataTree(name=str(self.root.id), data=ds)
         dt.attrs["partition_str"] = self.partition_str
