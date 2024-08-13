@@ -85,6 +85,7 @@ class Tree:
 
         self.reaction_system = None
         self.G = None
+        self.species_names = None
         self.partition_str = _partition_str
         self.grid = copy.deepcopy(_grid)
         root_id = Id("")
@@ -190,6 +191,7 @@ class Tree:
         self.__initialize(self.root.child[0])
         self.__initialize(self.root.child[1])
         self.G = self.__getReactionGraph()
+        self.species_names = self.reaction_system.species_names
 
     def __print(self, node: Node, os: str) -> str:
         os = " ".join([os, str(type(node)), "id:", str(node.id), "n:", str(node.grid), "species:", str(node.grid.species)])
@@ -247,7 +249,7 @@ class Tree:
         self.grid.permute(self.species)
 
         ds = self.__createDataset(self.root)
-        ds["species_names"] = (["d"], self.reaction_system.species_names)
+        ds["species_names"] = (["d"], self.species_names)
         ds["Q"] = (["n_basisfunctions", "r_out0", "r_out1"], self.root.Q.T)
         dt = DataTree(name=str(self.root.id), data=ds)
         dt.attrs["partition_str"] = self.partition_str

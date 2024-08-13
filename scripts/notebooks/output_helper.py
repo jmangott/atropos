@@ -45,6 +45,7 @@ def readTree(filename: str) -> Tree:
         grid = GridParms(n, binsize, liml)
         tree = Tree(partition_str, grid)
 
+        tree.species_names = ds['species_names'].values
         tree.root.Q = ds["Q"].values.T
         __readTree(tree.root.child[0], filename)
         __readTree(tree.root.child[1], filename)
