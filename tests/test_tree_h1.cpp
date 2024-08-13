@@ -366,6 +366,12 @@ TEST_CASE("tree_h1", "[tree_h1]")
     multi_array<double, 2> Gmat1(Qmat1.shape());
     set_zero(Qmat1);
 
+    multi_array<double, 2> S1({tree.root->RankOut()[1], tree.root->RankOut()[1]});
+    set_zero(S1);
+    S1(0, 0) = 2.0 * std::exp(-0.5);
+    node1->S = S1;
+
+    root->CalculateAB<1>(blas);
     S1_dot = CalculateSDot(node1->S, node1, blas);
 
     Matrix::Matricize<1>(root->G, Gmat1);
