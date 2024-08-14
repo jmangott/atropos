@@ -1,8 +1,10 @@
 from scripts.reaction_class import Reaction, ReactionSystem
 from scripts.grid_class import GridParms
 from scripts.tree_class import Tree
+from scripts.initial_condition_class import InitialCondition
 import sympy as sp
 import numpy as np
+import os
 
 class Model:
 
@@ -40,6 +42,7 @@ class Model:
         self.reaction_system = ReactionSystem(self.reactions, self.species)
 
 
+
 class Partitioning:     # maybe better to call it tree?
 
     def __init__(self, _partition, _r, _model):
@@ -59,54 +62,13 @@ class Partitioning:     # maybe better to call it tree?
         self.tree = Tree(self.partition, self.grid)
         self.tree.initialize(self.model.reaction_system, self.r)
 
+    def generate_initial_condition(self, n_basisfunctions):
+
+        self.initial_conditions = InitialCondition(self.tree, n_basisfunctions)
+
     
-        
 
-
-def run(model, partitioning):
-    pass
-
-
-
-
-"""
-Define some symbols, to then try out with those symbols
-"""
-NF, GR, O, H = sp.symbols("NF, GR, O, H")
-
-
-
-"""
-Try out model
-"""
-model = Model((NF, GR, O, H))
-print(model.species, model.reactions)
-
-model.add_reaction(3*NF + 7*GR, 2*H + O, {NF: NF**2, H: 1/(1 + H**2)})
-print(model.reactions)
-
-model.add_reactions([7*H + GR, 2*H],[NF, 3*O + 2*NF],[{H: H}, {O: 3*O}])
-print(model.reactions)
-
-model.generate_reaction_system()
-print(model.reaction_system)
-
-
-
-"""
-Try out partitioning
-"""
-r = np.array([5,5])
-partitioning = Partitioning('((NF GR)(O))(H)', r, model)
-print(partitioning.partition)
-
-n = np.array([16, 11, 11, 11])
-d = n.size
-binsize = np.ones(d, dtype=int)
-liml = np.zeros(d)
-partitioning.add_grid_params(n, binsize, liml)
-print(partitioning.grid)
-
-partitioning.generate_tree()
-print(partitioning.tree)
-
+def run(partitioning, input, output, snapshot, tau, tfinal, substeps, method):
+    partitioning.tree.write()
+    cmd = f'bin/hierarchical-cme -i {input} -o {output} -s {snapshot} -t {tau} -f {tfinal} -n {substeps} -m {method}'
+    os.system(cmd)
