@@ -77,6 +77,7 @@ void cme_lr_tree::Read(const std::string fn)
 
     NETCDF_CHECK(nc_open(fn.c_str(), NC_NOWRITE, &ncid));
     partition_str = ReadHelpers::ReadPartitionStr(ncid);
+    species_names = ReadHelpers::ReadSpeciesNames(ncid);
     grid_parms grid = ReadHelpers::ReadGridParms(ncid);
     std::array<Index, 2> r_out = ReadHelpers::ReadRankOut(ncid);
     root = new cme_internal_node("root", nullptr, grid, 1, r_out, 1);
@@ -97,7 +98,10 @@ void cme_lr_tree::Write(const std::string fn, const double t, const double tau, 
     int ncid;
 
     NETCDF_CHECK(nc_create(fn.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
+    // `WriteNode` sets netCDF dim `d`, therefore it must be called before `WriteSpeciesNames`
+    WriteHelpers::WriteNode(ncid, root);
     WriteHelpers::WritePartitionStr(ncid, partition_str);
+    WriteHelpers::WriteSpeciesNames(ncid, species_names);
 
     int varid_tt, varid_tau, varid_dm;
     NETCDF_CHECK(nc_def_var(ncid, "t", NC_DOUBLE, 0, 0, &varid_tt));
@@ -107,7 +111,6 @@ void cme_lr_tree::Write(const std::string fn, const double t, const double tau, 
     NETCDF_CHECK(nc_def_var(ncid, "dm", NC_DOUBLE, 0, 0, &varid_dm));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_dm, &dm));
 
-    WriteHelpers::WriteNode(ncid, root);
 
     NETCDF_CHECK(nc_close(ncid));
 }
@@ -116,6 +119,19 @@ void WriteHelpers::WritePartitionStr(int ncid, const std::string partition_str)
 {
     size_t len = partition_str.size() + 1;
     NETCDF_CHECK(nc_put_att_text(ncid, NC_GLOBAL, "partition_str", len, partition_str.data()));
+}
+
+void WriteHelpers::WriteSpeciesNames(int ncid, const std::vector<std::string> species_names)
+{
+    int id_d;
+    NETCDF_CHECK(nc_inq_dimid(ncid, "d", &id_d));
+
+    std::vector<const char*> species_names_char(species_names.size());
+    std::transform(species_names.begin(), species_names.end(), species_names_char.begin(), std::mem_fun_ref(&std::string::c_str));
+
+    int varid_species_names;
+    NETCDF_CHECK(nc_def_var(ncid, "species_names", NC_STRING, 1, &id_d, &varid_species_names));
+    NETCDF_CHECK(nc_put_var_string(ncid, varid_species_names, species_names_char.data()));
 }
 
 void WriteHelpers::WriteGridParms(int ncid, const grid_parms grid)
@@ -155,7 +171,7 @@ void WriteHelpers::WriteNode(int ncid, cme_node const * const node)
     }
     else
     {
-        cme_internal_node *this_node = (cme_internal_node *)node;
+        cme_internal_node *this_node = (cme_internal_node*) node;
 
         // Write r_out
         std::array<int, 2> id_r_out;
@@ -367,6 +383,32 @@ std::string ReadHelpers::ReadPartitionStr(int ncid)
     NETCDF_CHECK(nc_get_att_text(ncid, NC_GLOBAL, "partition_str", partition_str.data()));
 
     return partition_str;
+}
+
+std::vector<std::string> ReadHelpers::ReadSpeciesNames(int ncid)
+{
+    // read dimension
+    int id_d;
+    NETCDF_CHECK(nc_inq_dimid(ncid, "d", &id_d));
+
+    size_t d_t;
+    char tmp[NC_MAX_NAME + 1];
+    NETCDF_CHECK(nc_inq_dim(ncid, id_d, tmp, &d_t));
+
+    size_t start[] = { 0 };
+    size_t count[] = { d_t };
+
+    // read variable
+    int id_species_names;
+
+    NETCDF_CHECK(nc_inq_varid(ncid, "species_names", &id_species_names));
+
+    std::vector<char*> species_names_char(d_t);
+
+    NETCDF_CHECK(nc_get_vara_string(ncid, id_species_names, start, count, species_names_char.data()));
+    std::vector<std::string> species_names(std::begin(species_names_char), std::end(species_names_char));
+
+    return species_names;
 }
 
 grid_parms ReadHelpers::ReadGridParms(int ncid)

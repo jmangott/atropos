@@ -181,6 +181,7 @@ struct cme_lr_tree
 {
     cme_internal_node * root;
     std::string partition_str;
+    std::vector<std::string> species_names;
 
     friend std::ostream &operator<<(std::ostream &os, cme_lr_tree const& tree)
     {
@@ -205,6 +206,7 @@ struct cme_lr_tree
 namespace WriteHelpers
 {
     void WritePartitionStr(int ncid, const std::string partition_str);
+    void WriteSpeciesNames(int ncid, const std::vector<std::string> species_names);
     void WriteGridParms(int ncid, const grid_parms grid);
     void WriteNode(int ncid, cme_node const * const node);
 }
@@ -212,6 +214,7 @@ namespace WriteHelpers
 namespace ReadHelpers
 {
     std::string ReadPartitionStr(int ncid);
+    std::vector<std::string> ReadSpeciesNames(int ncid);
     grid_parms ReadGridParms(int ncid);
     std::array<Index, 2> ReadRankOut(int ncid);
     Index ReadNBasisfunctions(int ncid);
