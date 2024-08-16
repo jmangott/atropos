@@ -121,8 +121,9 @@ for i in range(t_eval.size):
     y[i, :] = sol.y[:, i]
 
 # Calculate the output
-P_full, P_marginal, P_marginal2D, P_sliced, P_sliced2D, P_best_approximation = calculateObservables(
-    y, n, 5, m1, slice_vec, np.array([0, 1], dtype="int64"))
+P_full, P_marginal, P_marginal2D, P_sliced, P_sliced2D = calculateObservables(
+    y, n, slice_vec, np.array([0, 1], dtype="int64"))
+P_best_approximation = calculateBestApproximation(y, n, 5, m1)
 
 with open("scripts/reference_solutions/lp_ode_ref_r5.npz", "wb") as f:
     np.savez(f, P_full=P_full, P_best_approximation=P_best_approximation, wall_time=wall_time)

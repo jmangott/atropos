@@ -81,8 +81,8 @@ for i in range(t_eval.size):
     y[i, :] = sol.y[:, i]
 
 # Calculate output
-P_full, P_marginal, _, P_sliced, _, P_best_approximation = calculateObservables(
-    y, n, r, m1, slice_vec, np.array([0, 1], dtype="int64"))
+P_full, P_marginal, _, P_sliced, _ = calculateObservables(y, n, slice_vec, np.array([0, 1], dtype="int64"))
+P_best_approximation = calculateBestApproximation(y, n, r, m1)
 
 with open("scripts/reference_solutions/ts_ode_ref.npy", "wb") as f:
     np.save(f, P_full)

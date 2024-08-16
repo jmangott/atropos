@@ -106,14 +106,13 @@ def calculateObservables(y: np.ndarray, interval: np.ndarray, slice_vec: np.ndar
 
 def calculateBestApproximation(y: np.ndarray, interval: np.ndarray, r: int, m1: int):
     P_best_approximation = np.zeros(y.shape)
-    P = y[i, :].reshape((np.prod(interval[m1:]), np.prod(interval[:m1])))
-    u, s, vh = np.linalg.svd(P, full_matrices=False)
-    # Use only the first `r` singular values
-    X1 = u[:, :r]
-    S = s[:r]
-    X2h = np.ascontiguousarray(vh[:r, :])
-
     for i in range(y.shape[0]):
+        P = y[i, :].reshape((np.prod(interval[m1:]), np.prod(interval[:m1])))
+        u, s, vh = np.linalg.svd(P, full_matrices=False)
+        # Use only the first `r` singular values
+        X1 = u[:, :r]
+        S = s[:r]
+        X2h = np.ascontiguousarray(vh[:r, :])
         P_best_approximation[i, :] = ((X1 * S) @ X2h).flatten()
 
     return P_best_approximation
