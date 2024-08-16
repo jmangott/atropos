@@ -181,6 +181,10 @@ class Tree:
         if r_out.size != self.n_internal_nodes:
             raise Exception(
                 "`r_out.size` must be equal to the number of internal nodes")
+        
+        if self.grid.d() != reaction_system.d():
+            raise Exception(
+                "`self.grid.d()` must be equal to the number of species in the reaction system")
 
         self.reaction_system = reaction_system
         self.grid.initialize(reaction_system)
@@ -295,12 +299,12 @@ class Tree:
         return sliced_distribution[:, 0], marginal_distribution[:, 0]
 
     def calculateObservables(self, slice_vec: npt.NDArray[np.int_]):
-        sliced_distributions = []
-        marginal_distributions = []
-        for i in range(self.grid.d()):
+        sliced_distributions = {}
+        marginal_distributions = {}
+        for i in self.species:
             sliced, marginal = self.__calculateObservable(i, slice_vec)
-            sliced_distributions.append(sliced)
-            marginal_distributions.append(marginal)
+            sliced_distributions[self.species_names[i]] = sliced
+            marginal_distributions[self.species_names[i]] = marginal
         return sliced_distributions, marginal_distributions
     
     def __calculateFullDistributionHelper(self, node: Node):
