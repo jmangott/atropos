@@ -42,27 +42,11 @@ Optionally:
 - Intel MKL
 
 ## Installation
-Clone the repository via
+Build the program in the project root by executing
 ```shell
-git clone https://git.uibk.ac.at/c7021158/kinetic-cme.git
-```
-
-<!-- ```shell
-# git clone git@github.com:jmangott/CME-integrator.git
-``` -->
-
-and build the program by executing
-```shell
-cd kinetic-cme
 cmake -B <build> -DCMAKE_BUILD_TYPE=Release
 cmake --build <build>
 ```
-
-<!-- ```shell
-cd kinetic-cme
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-``` -->
 
 The generated executable `hierarchical-cme` can be found in `bin`.
 
