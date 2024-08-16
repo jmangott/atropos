@@ -13,7 +13,6 @@ import scripts.models.cascade as model
 partition = ['((((0 1)(2 3))(4 5))((6 7)(8 9)))(((10 11)(12 13))((14 15)((16 17)(18 19))))',
              '(0 1)((2 3)((4 5)((6 7)((8 9)((10 11)((12 13)((14 15)((16 17)(18 19)))))))))',
              '(((((0)(1))((2)(3)))((4)(5)))(((6)(7))((8)(9))))((((10)(11))((12)(13)))(((14)(15))(((16)(17))((18)(19)))))',
-             '(0)((1)((2)((3)((4)((5)((6)((7)((8)((9)((10)((11)((12)((13)((14)((15)((16)((17)((18)(19)))))))))))))))))))',
              '((0)(1))(((2)(3))(((4)(5))(((6)(7))(((8)(9))(((10)(11))(((12)(13))(((14)(15))(((16)(17))((18)(19))))))))))']
 
 parser = argparse.ArgumentParser(
@@ -79,7 +78,7 @@ for node in range(tree.n_external_nodes):
 
 # Calculate norm
 _, marginal_distribution = tree.calculateObservables(np.zeros(tree.root.grid.d(), dtype="int"))
-norm = np.sum(marginal_distribution[0])
+norm = np.sum(marginal_distribution["S0"])
 
 # import matplotlib.pyplot as plt
 # plt.plot(np.arange(tree.grid.n[0]), marginal_distribution[0], label="$x_0$")
