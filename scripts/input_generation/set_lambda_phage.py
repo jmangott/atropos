@@ -109,7 +109,7 @@ if partition_str is partition[0]:
     q1, x10, x11 = factorizeLRFactor(x1, tree.root.child[1])
 
 elif partition_str is not partition[3]:
-    q0, x00, x01 = factorizeLRFactor(x1, tree.root.child[1])
+    q0, x00, x01 = factorizeLRFactor(x0, tree.root.child[0])
 
 # Number of basisfunctions
 n_basisfunctions = r_out
