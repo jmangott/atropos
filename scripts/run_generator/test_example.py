@@ -49,9 +49,10 @@ n_basisfunctions = np.ones(r.size, dtype="int")
 partitioning.generate_initial_condition(n_basisfunctions)
 print(partitioning.initial_conditions)
 
+partitioning.set_initial_condition({NF: 3*NF, GR: 2*GR, O: O, H: 3*H})
 
 
 """
 Try out run
 """
-run(partitioning, 'input/input.nc', 'test_example', 100, 1e-3, 1, 1, 'i')
+run(partitioning, 'test_example', 10, 1e-3, 1, 1)

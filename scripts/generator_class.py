@@ -2,9 +2,11 @@ from scripts.reaction_class import Reaction, ReactionSystem
 from scripts.grid_class import GridParms
 from scripts.tree_class import Tree
 from scripts.initial_condition_class import InitialCondition
+from scripts.index_functions import incrVecIndex
 import sympy as sp
 import numpy as np
 import os
+import sys
 
 class Model:
 
@@ -17,16 +19,40 @@ class Model:
     Different function to add single or multiple reactions to our model
     """
     def add_reaction(self, reactants, products, propensities):
-        
+
         num_symbols = len(self.species)
-        reactants = reactants * (-1)
-        eq_sp = reactants + products
+        eq_sp = products - reactants
 
         nu_vec = np.zeros(num_symbols)
         for i, sym in enumerate(self.species):
             nu_vec[i] = eq_sp.coeff(sym)
 
         prop_dict = {}
+        # Test if we only have coefficient as variable, if so, generate propensity in non factorised form
+        if type(propensities) == int or type(propensities) == float:
+            for sym in self.species:
+                propensities *= sp.Pow(sym, reactants.coeff(sym))
+
+        # If propensites in non factorised form, factorise it and generate a dictionary
+        if(isinstance(propensities, sp.Expr)):
+            after_factor = sp.factor_list(propensities)     # !!! Works only for polynomials right now !!!
+
+            num_factors = len(after_factor[1])
+            coefficient = after_factor[0]**(1.0/num_factors)
+            
+            propensities = {}
+
+            for i in range(num_factors):
+                factor = sp.Pow(after_factor[1][i][0],after_factor[1][i][1])
+                elements = list(factor.atoms(sp.Symbol))
+
+                if(len(elements) != 1):
+                    print("ERROR: Propensity non factorizable")
+                    sys.exit()
+
+                propensities[elements[0]] = factor * coefficient
+
+        # Using the dictionary, generate the lambda functions to append the reactions
         for key, value in list(propensities.items()):
             for i, sym in enumerate(self.species):
                 if(key == sym):
@@ -43,7 +69,7 @@ class Model:
 
 
 
-class Partitioning:     # maybe better to call it tree?
+class Partitioning:
 
     def __init__(self, _partition, _r, _model):
         
@@ -66,9 +92,40 @@ class Partitioning:     # maybe better to call it tree?
 
         self.initial_conditions = InitialCondition(self.tree, n_basisfunctions)
 
+    def set_initial_condition(self, polynomials_dict):
+        
+        polynomials = []
+        for sym in self.model.species:
+            for key, value in list(polynomials_dict.items()):
+                if(key == sym):
+                    polynomials.append(sp.lambdify(sym,value))
+
+        for Q in self.initial_conditions.Q:
+            Q[0, 0, 0] = 1.0
+
+        species_idx = 0
+        for node in range(self.tree.n_external_nodes):
+            vec_index = np.zeros(self.initial_conditions.external_nodes[node].grid.d())
+            for i in range(self.initial_conditions.external_nodes[node].grid.dx()):
+                self.initial_conditions.X[node][i, :] = 1
+                for j in range(self.initial_conditions.external_nodes[node].grid.d()):
+                    self.initial_conditions.X[node][i, :] *= polynomials[species_idx + j](vec_index[j])
+                incrVecIndex(vec_index, self.initial_conditions.external_nodes[node].grid.n, self.initial_conditions.external_nodes[node].grid.d())
+            species_idx += len(vec_index)
     
 
-def run(partitioning, input, output, snapshot, tau, tfinal, substeps, method):
+def run(partitioning, output, snapshot, tau, tfinal, substeps, method = "implicit_Euler"):
     partitioning.tree.write()
-    cmd = f'bin/hierarchical-cme -i {input} -o {output} -s {snapshot} -t {tau} -f {tfinal} -n {substeps} -m {method}'
+    snap = int(np.floor((tfinal/tau)/snapshot))
+    if method == "implicit_Euler":
+        m = 'i'
+    elif method == "explicit_Euler":
+        m = 'e'
+    elif method == "Crank-Nicolson":
+        m = 'c'
+    elif method == "RK4":
+        m = 'r'
+    else:
+        print("Possible inputs for method: implicit_Euler, explicit_Euler, Crank-Nicolson, RK4")
+    cmd = f'bin/hierarchical-cme -i input/input.nc -o {output} -s {snap} -t {tau} -f {tfinal} -n {substeps} -m {m}'
     os.system(cmd)

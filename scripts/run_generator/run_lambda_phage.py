@@ -51,7 +51,7 @@ model.generate_reaction_system()
 
 
 """
-Generate tree (second part mainly from Julians code, ask if this needs to be done seperately for every equation or if it can be put together in a class)
+Generate tree and initial condition
 """
 r = np.array([5,4])
 p0 = '(S1 S2)((S3 S4)(S5))'
@@ -144,4 +144,4 @@ print(partitioning.tree)
 """
 write input file and run
 """
-run(partitioning, 'input/input.nc', 'lambda_phage_Stefan', 100, 1e-3, 1, 1, 'i')
+run(partitioning, 'lambda_phage_Stefan', 10, 1e-3, 1, 1, "implicit_Euler")
