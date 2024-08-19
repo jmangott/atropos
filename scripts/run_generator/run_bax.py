@@ -1,0 +1,90 @@
+from scripts.generator_class import Model, Partitioning, run
+import numpy as np
+import sympy as sp
+
+"""
+Define variables
+"""
+S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10 = sp.symbols("S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10")
+
+"""
+Generate model
+"""
+model = Model((S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10))
+
+kA0 = 0.0002
+kA1 = 0.001
+kA2 = 0.0002
+kA3 = 0.001
+kA4 = 0.0002
+kA5 = 0.001
+kA6 = 0.0002
+kA7 = 0.001
+kA8 = 0.0002
+kA9 = 0.001
+
+kA10 = 3.0e-5
+kA11 = 0.001
+kA12 = 10.0
+kA13 = 3.0e-5
+kA14 = 0.001
+kA15 = 10.0
+kA16 = 3.0e-5
+kA17 = 0.001
+kA18 = 10.0
+
+model.add_reaction(2*S0, S1, {S0: 0.5 * kA0 * S0 * (S0 - 1.0)})
+model.add_reaction(S1, 2*S0, {S1: kA1 * S1})
+model.add_reaction(S0 + S1, S2, {S0: np.sqrt(kA2) * S0, S1: np.sqrt(kA2) * S1})
+model.add_reaction(S2, S0 + S1, {S2: kA3 * S2})
+model.add_reaction(S0 + S2, S3, {S0: np.sqrt(kA4) * S0, S2: np.sqrt(kA4) * S2})
+model.add_reaction(S3, S0 + S2, {S3: kA5 * S3})
+model.add_reaction(S0 + S3, S4, {S0: np.sqrt(kA6) * S0, S3: np.sqrt(kA6) * S3})
+model.add_reaction(S4, S0 + S3, {S4: kA7 * S4})
+model.add_reaction(S0 + S4, S5, {S0: np.sqrt(kA8) * S0, S4: np.sqrt(kA8) * S4})
+model.add_reaction(S5, S0 + S4, {S5: kA9 * S5})
+model.add_reaction(S3 + S9, S6, {S3: np.sqrt(kA10) * S3, S9: np.sqrt(kA10) * S9})
+model.add_reaction(S6, S3 + S9, {S6: kA11 * S6})
+model.add_reaction(S6, S3 + S10, {S6: kA12 * S6})
+model.add_reaction(S4 + S9, S7, {S4: np.sqrt(kA13) * S4, S9: np.sqrt(kA13) * S9})
+model.add_reaction(S7, S4 + S9, {S7: kA14 * S7})
+model.add_reaction(S7, S4 + S10, {S7: kA15 * S7})
+model.add_reaction(S5 + S9, S8, {S5: np.sqrt(kA16) * S5, S9: np.sqrt(kA16) * S9})
+model.add_reaction(S8, S5 + S9, {S8: kA17 * S8})
+model.add_reaction(S8, S5 + S10, {S8: kA18 * S8})
+
+model.generate_reaction_system()
+
+
+
+"""
+Generate tree and initial condition
+"""
+r = np.array([5,4,3])
+p0 = '(S0 S1 S2)(((S3 S4 S6 S7)(S5 S8))(S9 S10))'
+partitioning = Partitioning(p0, r, model)
+
+n = np.array([46, 16, 16, 11, 11, 11, 4, 4, 4, 56, 56])
+d = n.size
+binsize = np.ones(d, dtype=int)
+liml = np.zeros(d)
+partitioning.add_grid_params(n, binsize, liml)
+
+partitioning.generate_tree()
+
+n_basisfunctions = np.ones(r.size, dtype="int")
+
+partitioning.generate_initial_condition(n_basisfunctions)
+
+polynomials_dict = {}           # Add the correct functions
+partitioning.set_initial_condition(polynomials_dict)
+
+print(partitioning.tree)
+
+
+
+"""
+write input file and run
+"""
+run(partitioning, 'bax_Stefan', 10, 1e-3, 1, 1, "implicit_Euler")
+
