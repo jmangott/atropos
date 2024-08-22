@@ -11,12 +11,13 @@ import numpy as np
 import numpy.typing as npt
 import os
 import regex
+from scipy.special import xlogy
 import xarray as xr
 
 from scripts.grid_class import GridParms
 from scripts.id_class import Id
+from scripts.index_functions import incrVecIndex, vecIndexToCombIndex, vecIndexToState, tensorUnfold
 from scripts.reaction_class import ReactionSystem
-from scripts.index_functions import incrVecIndex, vecIndexToCombIndex, tensorUnfold
 
 class Node:
     def __init__(self, _id: Id, _grid: GridParms):
@@ -352,35 +353,109 @@ class Tree:
                     propensity[mu][i] *= reaction.propensity[reactant](vec_index[j])
                 incrVecIndex(vec_index, n_dep, n_dep.size)
         return propensity
-    
-    def calculateEntropy(self, node: InternalNode):
-        S = np.zeros(node.grid.n_reactions())
-        propensity0 = self.__calculatePropensity(node.child[0])
-        propensity1 = self.__calculatePropensity(node.child[1])
 
-        for mu in range(node.grid.n_reactions()):
-            dx_dep0 = np.prod(node.child[0].grid.n[node.child[0].grid.dep[:, mu]])
-            dx_dep1 = np.prod(node.child[1].grid.n[node.child[1].grid.dep[:, mu]])
+    def __getReactionDependencies(self):
+        """
+        This method computes the input/output dependencies of the reaction network as a dictionary.
+        """
+        reaction_dependencies = collections.defaultdict(list)
+        for mu, reaction in enumerate(self.reaction_system.reactions):
+            input = tuple([tree.species_names[k] for k in reaction.propensity.keys()])
+            output = tuple([tree.species_names[k] for k in np.nonzero(reaction.nu)[0]])
+            reaction_dependencies[(input, output)].append(mu)
+        return reaction_dependencies
+
+    # TODO: check if this function also works for general kinetic models
+    # TODO: for kinetic models the products may be more than one, 
+    # but then the reactions have to be converted to a 'normal' form, where only a single product is present
+    def calculateEntropy(self, node: InternalNode):
+        reaction_dependencies = self.__getReactionDependencies()
+        S = {}
+
+        for (key), val in reaction_dependencies.items():
+            S[key] = 0
+
+            # take the first reaction (all other reactions have the same `grid.dep` values)
+            mu_0 = reaction_dependencies[key][0]
+
+            # mapping species_names <-> species_id for the products
+            products = findIndex(tree.species_names, key[1])
+            
+            # TODO: rewrite this function that it is clearly visible that only a single product is allowed
+            prod_lies_in_partition_0 = (products[0] in node.child[0].grid.species)
+            if prod_lies_in_partition_0:
+                grid0 = node.child[0].grid
+                grid1 = node.child[1].grid
+                propensity0 = self.__calculatePropensity(node.child[0])
+                propensity1 = self.__calculatePropensity(node.child[1])
+            else: # exchange the partitions
+                grid0 = node.child[1].grid
+                grid1 = node.child[0].grid
+                propensity0 = self.__calculatePropensity(node.child[1])
+                propensity1 = self.__calculatePropensity(node.child[0])
+
+            d0 = grid0.d()
+            d1 = grid1.d()
+            dep0 = grid0.dep[:, mu_0]
+            dep1 = grid1.dep[:, mu_0]
+            n_dep0 = grid0.n[grid0.dep[:, mu_0]]
+            n_dep1 = grid1.n[grid1.dep[:, mu_0]]
+            dx_dep0 = np.prod(grid0.n[grid0.dep[:, mu_0]])
+            dx_dep1 = np.prod(grid1.n[grid1.dep[:, mu_0]])
+
+            species0 = list(grid0.species)
+            species1 = list(grid1.species)
+
+            # obtain species_id for the products in partition 0 and 1
+            products0 = findIndex(species0, products)
+            products1 = findIndex(species1, products)
+
+            state0 = np.zeros(d0)
+            dep_vec_index0 = np.zeros(n_dep0.size, dtype=int)
 
             for i0 in range(dx_dep0):
-                c0 = 0
-                c1 = 0
+                count = collections.defaultdict(int)
+                state1 = np.zeros(d1)
+                dep_vec_index1 = np.zeros(n_dep1.size, dtype=int)
                 for i1 in range(dx_dep1):
-                    propensity = propensity0[mu][i0] * propensity1[mu][i1]
-                    if propensity == 0:
-                        c0 += 1
-                    else:
-                        c1 += 1
-                    
-                if (c0 != 0 and c1 != 0):
-                    p0 = c0 / (c0 + c1)
-                    p1 = c1 / (c0 + c1)
-                    S[mu] -= p0 * np.log2(p0) + p1 * np.log2(p1)
+                    product_population_number0 = state0[products0]
+                    product_population_number1 = state1[products1]
+                    weight = 1.0
+                    for mu in val: # `val` are all reactions with the same input/output dependencies
+                        nu0 = self.reaction_system.reactions[mu].nu[species0]
+                        nu1 = self.reaction_system.reactions[mu].nu[species1]
+                        propensity = propensity0[mu][i0] * propensity1[mu][i1]
+                        if not np.isclose(propensity, 0.0, atol=1e-12):
+                            weight *= propensity
+                            product_population_number0 += nu0[products0]
+                            product_population_number1 += nu1[products1]
 
-            S[mu] /= dx_dep0 * dx_dep1
+                    count[(tuple(product_population_number0), tuple(product_population_number1))] += weight 
+                    incrVecIndex(dep_vec_index1, n_dep1, n_dep1.size)
+                    state1[dep1] = dep_vec_index1
 
-        return S
+                count_values = np.array(list(count.values()))
+                sum_count_values = np.sum(count_values)
+                if sum_count_values != 0:
+                    probabilities = count_values / sum_count_values
+                    # NOTE: `xlogy` handles the special case `probability=0`
+                    S[key] -= np.sum(xlogy(probabilities, probabilities)) / np.log(2.0)
+                incrVecIndex(dep_vec_index0, n_dep0, n_dep0.size)
+                state0[dep0] = dep_vec_index0
+            S[key] /= dx_dep0
 
+        total_entropy = np.sum(np.array(list(S.values())))
+
+        return total_entropy
+
+def findIndex(array: list, values):
+    idx = []
+    for v in values:
+        try:
+            idx.append(array.index(v))
+        except ValueError:
+            pass
+    return idx
 
 def plotReactionGraph(G: nx.Graph):
     """
@@ -397,22 +472,43 @@ def plotReactionGraph(G: nx.Graph):
     nx.draw_networkx_labels(G, pos, nx.get_node_attributes(G, "labels"), font_size=8, ax=ax)
     return fig, ax
 
-if __name__=="__main__":
-    import scripts.models.boolean_pancreatic_cancer as model
 
-    partition = '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)(17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33)'
+if __name__ == "__main__":
+    # import scripts.models.boolean_test_problem as test_model
+
+    # partition = '(1 2)(0)'
+
+    # # Grid parameters
+    # d = 3
+    # n = 2 * np.ones(d, dtype=int)
+    # binsize = np.ones(d, dtype=int)
+    # liml = np.zeros(d)
+    # grid = GridParms(n, binsize, liml)
+
+    # # Set up the partition tree
+    # tree = Tree(partition, grid)
+
+    # r_out = np.array([5])
+    # n_basisfunctions = np.array([1])
+    # tree.initialize(test_model.reaction_system, r_out)
+
+    # S = tree.calculateEntropy(tree.root)
+    # print("S:", S)
+
+
+    import scripts.models.boolean_pancreatic_cancer as model
     d = 34
     n = 2 * np.ones(d, dtype=int)
     binsize = np.ones(d, dtype=int)
     liml = np.zeros(d)
     grid = GridParms(n, binsize, liml)
 
-    tree = Tree(partition, grid)
+    partition_str = '(17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33)(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)'
+
+    tree = Tree(partition_str, grid)
     r_out = np.ones(tree.n_internal_nodes, dtype="int") * 5
     tree.initialize(model.reaction_system, r_out)
-
-    S = tree.calculateEntropy(tree.root)
-    print(np.sum(S))
-
-    fig, ax = plotReactionGraph(tree.G)
-    plt.show()
+    entropy = tree.calculateEntropy(tree.root)
+    # for i, s in enumerate(tree.species_names):
+    #     print(i, s)
+    print(entropy)
