@@ -10,24 +10,42 @@ from scripts.index_functions import incrVecIndex
 
 import scripts.models.boolean_pancreatic_cancer as model
 
-partition = ['(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)(17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33)',
-             '((0 1 2 3 4 5 6 7 8)(9 10 11 12 13 14 15 16))((17 18 19 20 21 22 23 24 25)(26 27 28 29 30 31 32 33))',
-             '(((0 1 2 3 4)(5 6 7 8))(((9 10 11 12)(13 14 15 16)))(((17 18 19 20 21)(22 23 24 25))((I(26 27 28 29)(30 31 32 33)))']
+p_best = '((0 1 2 3 4 5 6 9 12)(7 8 10 11 17 21 23 26))((13 14 19 20 22 27 28 31 33)(15 16 18 24 25 29 30 32))',
+p_worst = '((0 1 2 4 8 11 17 26)(3 5 6 7 9 10 12 21 23))((13 18 19 20 22 25 31 33)(14 15 16 24 27 28 29 30 32))',
+p_reasonable = '((0 1 2 3 4 5 7 9)(13 14 19 20 25 27 29 30 32))((6 10 12 16 18 21 24 26 31)(8 11 15 17 22 23 28 33))'
 
 parser = argparse.ArgumentParser(
                     prog='set_bax',
-                    usage='python3 scripts/input_generation/set_boolean_pancreatic_cancer.py --rank 5',
+                    usage='python3 scripts/input_generation/set_boolean_pancreatic_cancer.py --parition_best --rank 5',
                     description='This script sets the initial conditions for the Boolean pancreatic cancer model.')
 
-for i, p in enumerate(partition):
-    parser.add_argument('-p'+str(i), 
-                        '--partition'+str(i), 
-                        action='store_const', 
-                        const=p,
-                        required=False, 
-                        help='Set the partition string to '+p,
-                        dest='partition', 
-                        )
+parser.add_argument('-p_best', 
+                    '--partition_best', 
+                    action='store_const', 
+                    const=p_best,
+                    required=False, 
+                    help='Set the partition string to the best partition in terms of entropy',
+                    dest='partition', 
+                    )
+
+parser.add_argument('-p_worst',
+                    '--partition_worst', 
+                    action='store_const', 
+                    const=p_worst,
+                    required=False, 
+                    help='Set the partition string to the worst partition in terms of entropy',
+                    dest='partition', 
+                    )
+
+parser.add_argument('-p_reasonable',
+                    '--partition_reasonable', 
+                    action='store_const', 
+                    const=p_reasonable,
+                    required=False, 
+                    help='Set the partition string to the best partition in terms of Kerninghan-Lin counts',
+                    dest='partition', 
+                    )
+
 parser.add_argument('-p', 
                     '--partition', 
                     type=str, 
@@ -46,7 +64,14 @@ args = parser.parse_args()
 
 if args.partition == None:
     print("usage:", parser.usage)
-    print(parser.prog+":", "error: the following arguments are required: -p/--partition` or -p[n]/--partition[n], n=0,...,"+str(len(partition)-1))
+    print(parser.prog+":",
+          """
+          error: one of the following arguments is required:
+          -p/--partition`,
+          -p_best/--partition_best,
+          -p_worst/--partition_worst,
+          -p_reasonable/--partition_reasonable,
+          """)
     sys.exit(1)
 
 partition_str = args.partition
@@ -67,15 +92,15 @@ tree.initialize(model.reaction_system, r_out)
 
 def eval_x(x: np.ndarray, grid: GridParms):
     result = 1.0 / grid.dx()
-    pos0 = np.argwhere(grid.species==0) # HMGB
-    pos4 = np.argwhere(grid.species==4) # RAS
-    pos25 = np.argwhere(grid.species==25) # P54
-    if pos0.size > 0:
-        result *= (1.0 if x[pos0] == 1 else 0.0)
-    if pos4.size > 0:
-        result *= (1.0 if x[pos4] == 1 else 0.0)
-    if pos25.size > 0:
-        result *= (1.0 if x[pos25] == 0 else 0.0)
+    # pos0 = np.argwhere(grid.species==0) # HMGB
+    # pos4 = np.argwhere(grid.species==4) # RAS
+    # pos25 = np.argwhere(grid.species==25) # P54
+    # if pos0.size > 0:
+    #     result *= (1.0 if x[pos0] == 1 else 0.0)
+    # if pos4.size > 0:
+    #     result *= (1.0 if x[pos4] == 1 else 0.0)
+    # if pos25.size > 0:
+    #     result *= (1.0 if x[pos25] == 0 else 0.0)
     return result
 
 # Low-rank initial conditions
@@ -92,7 +117,7 @@ for n_node in range(tree.n_external_nodes):
 
 # Calculate norm
 _, marginal_distribution = tree.calculateObservables(np.zeros(tree.root.grid.d(), dtype="int"))
-norm = np.sum(marginal_distribution[0])
+norm = np.sum(marginal_distribution[tree.species_names[0]])
 print("norm:", norm)
 tree.root.Q[0, 0, 0] /= norm
 
