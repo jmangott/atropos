@@ -4,7 +4,6 @@ Contains the `Tree` class, which stores the low-rank approximation of an initial
 import collections
 import copy
 from datatree import DataTree
-import itertools
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -195,8 +194,8 @@ class Tree:
         self.root.Q.resize((next_r_out, next_r_out, 1))
         self.__initialize(self.root.child[0])
         self.__initialize(self.root.child[1])
-        self.G = self.__getReactionGraph()
         self.species_names = self.reaction_system.species_names
+        self.G = self.__getReactionGraph()
 
     def __print(self, node: Node, os: str) -> str:
         os = " ".join([os, str(type(node)), "id:", str(node.id), "n:", str(node.grid), "species:", str(node.grid.species)])
@@ -325,8 +324,16 @@ class Tree:
         return self.__calculateFullDistributionHelper(self.root)[:, 0]
 
     def __getReactionGraph(self):
-        reactants = [reaction.propensity.keys() for reaction in self.reaction_system.reactions]
-        combinations = [comb for reactant in reactants for comb in itertools.combinations(reactant, 2)]
+        combinations = []
+        reaction_dependencies = self.__getReactionDependencies()
+
+        for (reactants, products) in reaction_dependencies.keys():
+            for reactant in reactants:
+                for product in products:
+                    if reactant != product:
+                        combinations.append((reactant, product))
+
+        # combinations = [comb for reactant in reactants for comb in itertools.combinations(reactant, 2)]
         counter = collections.Counter(combinations)
         edges = counter.keys()
         weights = counter.values()
@@ -334,7 +341,7 @@ class Tree:
 
         # total_species = [e.grid.species for e in self.external_nodes]
         external_ids = self.external_nodes.keys()
-        attributes = {species: {"id": id, "labels": self.reaction_system.species_names[species]} for id in external_ids for species in self.external_nodes[id].grid.species}
+        attributes = {self.species_names[species]: {"id": id} for id in external_ids for species in self.external_nodes[id].grid.species}
 
         G = nx.Graph(edges_weights)
         nx.set_node_attributes(G, attributes)
@@ -360,8 +367,8 @@ class Tree:
         """
         reaction_dependencies = collections.defaultdict(list)
         for mu, reaction in enumerate(self.reaction_system.reactions):
-            input = tuple([tree.species_names[k] for k in reaction.propensity.keys()])
-            output = tuple([tree.species_names[k] for k in np.nonzero(reaction.nu)[0]])
+            input = tuple([self.species_names[k] for k in reaction.propensity.keys()])
+            output = tuple([self.species_names[k] for k in np.nonzero(reaction.nu)[0]])
             reaction_dependencies[(input, output)].append(mu)
         return reaction_dependencies
 
@@ -372,14 +379,14 @@ class Tree:
         reaction_dependencies = self.__getReactionDependencies()
         S = {}
 
-        for (key), val in reaction_dependencies.items():
+        for key, val in reaction_dependencies.items():
             S[key] = 0
 
             # take the first reaction (all other reactions have the same `grid.dep` values)
             mu_0 = reaction_dependencies[key][0]
 
             # mapping species_names <-> species_id for the products
-            products = findIndex(tree.species_names, key[1])
+            products = findIndex(self.species_names, key[1])
             
             # TODO: rewrite this function that it is clearly visible that only a single product is allowed
             prod_lies_in_partition_0 = (products[0] in node.child[0].grid.species)
@@ -426,7 +433,7 @@ class Tree:
                         nu1 = self.reaction_system.reactions[mu].nu[species1]
                         propensity = propensity0[mu][i0] * propensity1[mu][i1]
                         if not np.isclose(propensity, 0.0, atol=1e-12):
-                            weight *= propensity
+                            # weight *= propensity # for the kinetic case?
                             product_population_number0 += nu0[products0]
                             product_population_number1 += nu1[products1]
 
@@ -457,45 +464,22 @@ def findIndex(array: list, values):
             pass
     return idx
 
-def plotReactionGraph(G: nx.Graph):
+def plotReactionGraph(G: nx.Graph, seed=None):
     """
     Helper function for plotting the `nx.Graph` member variable `G` of a `Tree` object.
     """
     widths = np.fromiter(nx.get_edge_attributes(G, 'weight').values(), dtype=float)
-    pos = nx.spring_layout(G)
+    pos = nx.spring_layout(G, seed=seed)
     fig, ax = plt.subplots()
 
     id = nx.get_node_attributes(G, "id")
     color_id = [int(id[id_key]) for id_key in id]
-    nx.draw_networkx_nodes(G, pos, node_size=750, ax=ax, node_color=color_id, cmap="tab20")
+    nx.draw_networkx(G, pos, with_labels=True, node_size=750, ax=ax, node_color=color_id, cmap="tab20")
     nx.draw_networkx_edges(G, pos, width=np.log10(widths*10), alpha=0.6, ax=ax)
-    nx.draw_networkx_labels(G, pos, nx.get_node_attributes(G, "labels"), font_size=8, ax=ax)
     return fig, ax
 
 
 if __name__ == "__main__":
-    # import scripts.models.boolean_test_problem as test_model
-
-    # partition = '(1 2)(0)'
-
-    # # Grid parameters
-    # d = 3
-    # n = 2 * np.ones(d, dtype=int)
-    # binsize = np.ones(d, dtype=int)
-    # liml = np.zeros(d)
-    # grid = GridParms(n, binsize, liml)
-
-    # # Set up the partition tree
-    # tree = Tree(partition, grid)
-
-    # r_out = np.array([5])
-    # n_basisfunctions = np.array([1])
-    # tree.initialize(test_model.reaction_system, r_out)
-
-    # S = tree.calculateEntropy(tree.root)
-    # print("S:", S)
-
-
     import scripts.models.boolean_pancreatic_cancer as model
     d = 34
     n = 2 * np.ones(d, dtype=int)
@@ -503,12 +487,16 @@ if __name__ == "__main__":
     liml = np.zeros(d)
     grid = GridParms(n, binsize, liml)
 
-    partition_str = '(17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33)(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)'
+    partition_str = '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)(17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33)'
 
     tree = Tree(partition_str, grid)
     r_out = np.ones(tree.n_internal_nodes, dtype="int") * 5
+
     tree.initialize(model.reaction_system, r_out)
     entropy = tree.calculateEntropy(tree.root)
     # for i, s in enumerate(tree.species_names):
     #     print(i, s)
     print(entropy)
+
+    fig, ax = plotReactionGraph(tree.G, seed=42)
+    plt.show()
