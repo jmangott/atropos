@@ -35,22 +35,48 @@ class Model:
 
         # If propensites in non factorised form, factorise it and generate a dictionary
         if(isinstance(propensities, sp.Expr)):
-            after_factor = sp.factor_list(propensities)     # !!! Works only for polynomials right now !!!
+            propensities = sp.simplify(propensities)
 
-            num_factors = len(after_factor[1])
-            coefficient = after_factor[0]**(1.0/num_factors)
-            
+            n, d = sp.fraction(propensities)
+
+            after_factor_n = sp.factor_list(n)
+            after_factor_d = sp.factor_list(d)
+
             propensities = {}
 
-            for i in range(num_factors):
-                factor = sp.Pow(after_factor[1][i][0],after_factor[1][i][1])
-                elements = list(factor.atoms(sp.Symbol))
+            num_factors_n = len(after_factor_n[1])
+            num_factors_d = len(after_factor_d[1])
 
-                if(len(elements) != 1):
-                    print("ERROR: Propensity non factorizable")
-                    sys.exit()
+            if (num_factors_n != 0):
 
-                propensities[elements[0]] = factor * coefficient
+                coefficient_n = after_factor_n[0]**(1.0/num_factors_n)
+
+                for i in range(num_factors_n):
+                    factor = sp.Pow(after_factor_n[1][i][0],after_factor_n[1][i][1])
+                    elements = list(factor.atoms(sp.Symbol))
+
+                    if(len(elements) != 1):
+                        print("ERROR: Propensity non factorizable")
+                        sys.exit()
+
+                    propensities[elements[0]] = factor * coefficient_n
+
+            if (num_factors_d != 0):
+
+                coefficient_d = after_factor_d[0]**(1.0/num_factors_d)
+
+                for i in range(num_factors_d):
+                    factor = sp.Pow(after_factor_d[1][i][0],after_factor_d[1][i][1])
+                    elements = list(factor.atoms(sp.Symbol))
+
+                    if(len(elements) != 1):
+                        print("ERROR: Propensity non factorizable")
+                        sys.exit()
+
+                    if elements[0] in propensities.keys():
+                        propensities[elements[0]] *= 1/(factor * coefficient_d)
+                    else:
+                        propensities[elements[0]] = 1/(factor * coefficient_d)
 
         # Using the dictionary, generate the lambda functions to append the reactions
         for key, value in list(propensities.items()):
