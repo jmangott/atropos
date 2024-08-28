@@ -76,8 +76,21 @@ n_basisfunctions = np.ones(r.size, dtype="int")
 
 partitioning.generate_initial_condition(n_basisfunctions)
 
-polynomials_dict = {}           # Add the correct functions
+C = 0.2
+Cinv = 1 / C
+mu = np.array([40, 0, 0, 0, 0, 0, 0, 0, 0, 50, 0])
+mu_perm = mu[partitioning.tree.species]
+
+polynomials_dict = {S0: sp.exp(-0.5 * Cinv * (S0 - mu_perm[0])**2), S1: sp.exp(-0.5 * Cinv * (S1 - mu_perm[1])**2), S2: sp.exp(-0.5 * Cinv * (S2 - mu_perm[2])**2),
+                     S3: sp.exp(-0.5 * Cinv * (S3 - mu_perm[3])**2), S4: sp.exp(-0.5 * Cinv * (S4 - mu_perm[4])**2), S5: sp.exp(-0.5 * Cinv * (S5 - mu_perm[5])**2),
+                       S6: sp.exp(-0.5 * Cinv * (S6 - mu_perm[6])**2), S7: sp.exp(-0.5 * Cinv * (S7 - mu_perm[7])**2), S8: sp.exp(-0.5 * Cinv * (S8 - mu_perm[8])**2),
+                         S9: sp.exp(-0.5 * Cinv * (S9 - mu_perm[9])**2), S10: sp.exp(-0.5 * Cinv * (S10 - mu_perm[10])**2)}
 partitioning.set_initial_condition(polynomials_dict)
+
+_, marginal_distribution = partitioning.tree.calculateObservables(np.zeros(partitioning.tree.root.grid.d(), dtype="int"))
+norm = np.sum(marginal_distribution[0])
+print("norm:", norm)
+partitioning.tree.root.Q[0, 0, 0] /= norm
 
 print(partitioning.tree)
 
