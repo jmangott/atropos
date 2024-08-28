@@ -299,6 +299,8 @@ class Tree:
         return sliced_distribution[:, 0], marginal_distribution[:, 0]
 
     def calculateObservables(self, slice_vec: npt.NDArray[np.int_]):
+        if slice_vec.dtype is not int:
+            raise Exception("`slice_vec` must be an integer np.array")
         sliced_distributions = {}
         marginal_distributions = {}
         for i in self.species:
