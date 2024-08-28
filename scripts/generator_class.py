@@ -31,7 +31,9 @@ class Model:
         # Test if we only have coefficient as variable, if so, generate propensity in non factorised form
         if type(propensities) == int or type(propensities) == float:
             for sym in self.species:
-                propensities *= sp.Pow(sym, reactants.coeff(sym))
+                for i in range(reactants.coeff(sym)):
+                    propensities *= (sym - i)
+                propensities /= np.math.factorial(reactants.coeff(sym))
 
         # If propensites in non factorised form, factorise it and generate a dictionary
         if(isinstance(propensities, sp.Expr)):
