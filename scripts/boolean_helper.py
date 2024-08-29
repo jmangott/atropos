@@ -12,7 +12,8 @@ import scripts.reaction_class
 
 def convertRulesToReactions(filename: str):
     """
-    This function converts a rule file of the Boolean CME integrator of https://bitbucket.org/mprugger/low_rank_cme to a instance of the `ReactionSystem` class.
+    Converts a rule file of the Boolean CME integrator of https://bitbucket.org/mprugger/low_rank_cme to a instance of the `ReactionSystem` class.
+    NOTE: This method is only capable of converting systems with a maximum of 64 species.
     """
     with open(filename) as f:
         line0 = f.readline()
@@ -61,7 +62,7 @@ def convertRulesToReactions(filename: str):
                         tmpdirname + "/rule_set_temp.so",
                         tmpdirname + "/rule_set_temp.cpp"])
 
-        handle = ctypes.CDLL(tmpdirname + "/rule_set_temp.so")     
+    handle = ctypes.CDLL(tmpdirname + "/rule_set_temp.so")
 
     fun_x0 = lambda x: 1 - x
     fun_x1 = lambda x: x
@@ -76,7 +77,9 @@ def convertRulesToReactions(filename: str):
             x_dep = bitarray.util.int2ba(j, length=d_dep, endian="little")
             for k, k_dep in enumerate(dependencies[i]):
                 x[k_dep] = x_dep[k]
-            x_i_prime = handle["rule_{}".format(i)](bitarray.util.ba2int(x))
+            curr_rule = handle["rule_{}".format(i)]
+            curr_rule.argtypes = [ctypes.c_ulonglong] # avoid overflow for large systems
+            x_i_prime = curr_rule(bitarray.util.ba2int(x))
             if x[i] != x_i_prime: # create a reaction only when output is different from input
                 nu = [0] * d
                 nu[i] = 1 if x[i] == 0 else -1
@@ -90,11 +93,12 @@ def convertRulesToReactions(filename: str):
     return reaction_system
 
 if __name__ == "__main__":
-    
-    reaction_system = convertRulesToReactions("test_model.hpp")
+    import numpy as np
+
+    reaction_system = convertRulesToReactions("scripts/models/boolean_rulefiles/pancreatic_cancer.hpp")
 
     for mu, reaction in enumerate(reaction_system.reactions):
-        print("reaction", mu)
+        print("reaction {}, product {}".format(mu, int(np.nonzero(reaction.nu)[0])))
         for k, v in reaction.propensity.items():
             funcString = str(inspect.getsourcelines(v)[0])
             funcString = funcString.strip("['\\n']").split(" = ")[1]
