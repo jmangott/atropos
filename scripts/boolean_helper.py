@@ -3,6 +3,7 @@ import bitarray
 import bitarray.util
 import ctypes
 import inspect
+import numpy as np
 import regex as re
 import subprocess
 import tempfile
@@ -62,7 +63,7 @@ def convertRulesToReactions(filename: str):
                         tmpdirname + "/rule_set_temp.so",
                         tmpdirname + "/rule_set_temp.cpp"])
 
-    handle = ctypes.CDLL(tmpdirname + "/rule_set_temp.so")
+        handle = ctypes.CDLL(tmpdirname + "/rule_set_temp.so")
 
     fun_x0 = lambda x: 1 - x
     fun_x1 = lambda x: x
@@ -81,7 +82,7 @@ def convertRulesToReactions(filename: str):
             curr_rule.argtypes = [ctypes.c_ulonglong] # avoid overflow for large systems
             x_i_prime = curr_rule(bitarray.util.ba2int(x))
             if x[i] != x_i_prime: # create a reaction only when output is different from input
-                nu = [0] * d
+                nu = np.zeros(d)
                 nu[i] = 1 if x[i] == 0 else -1
                 propensity = {}
                 for k_dep in dependencies[i]:
