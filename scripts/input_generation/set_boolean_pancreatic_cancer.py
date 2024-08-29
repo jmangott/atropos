@@ -3,15 +3,16 @@ import argparse
 import numpy as np
 import sys
 
+import scripts.boolean_helper
 from scripts.grid_class import GridParms
 from scripts.initial_condition_class import InitialCondition
 from scripts.tree_class import Tree
 from scripts.index_functions import incrVecIndex
 
-import scripts.models.boolean_pancreatic_cancer as model
+reaction_system = scripts.boolean_helper.convertRulesToReactions("scripts/models/boolean_rulefiles/pancreatic_cancer.hpp")
 
-p_best = '((0 1 2 3 4 5 6 9 12)(7 8 10 11 17 21 23 26))((13 14 19 20 22 27 28 31 33)(15 16 18 24 25 29 30 32))',
-p_worst = '((0 1 2 4 8 11 17 26)(3 5 6 7 9 10 12 21 23))((13 18 19 20 22 25 31 33)(14 15 16 24 27 28 29 30 32))',
+p_best = '((0 1 2 3 4 5 6 9 12)(7 8 10 11 17 21 23 26))((13 14 19 20 22 27 28 31 33)(15 16 18 24 25 29 30 32))'
+p_worst = '((0 1 2 4 8 11 17 26)(3 5 6 7 9 10 12 21 23))((13 18 19 20 22 25 31 33)(14 15 16 24 27 28 29 30 32))'
 p_reasonable = '((0 1 2 3 4 5 7 9)(13 14 19 20 25 27 29 30 32))((6 10 12 16 18 21 24 26 31)(8 11 15 17 22 23 28 33))'
 
 parser = argparse.ArgumentParser(
@@ -88,7 +89,7 @@ tree = Tree(partition_str, grid)
 
 r_out = np.ones(tree.n_internal_nodes, dtype="int") * args.rank
 n_basisfunctions = np.ones(r_out.size, dtype="int")
-tree.initialize(model.reaction_system, r_out)
+tree.initialize(reaction_system, r_out)
 
 def eval_x(x: np.ndarray, grid: GridParms):
     result = 1.0 / grid.dx()
