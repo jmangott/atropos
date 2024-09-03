@@ -1,4 +1,4 @@
-RULE_SET(PANCREATICCANCER, 34, "HMGB1","TLR24","RAGE","MYD88","RAS","RAC1","IRAKs","RAF","MEK","PI3K","ERK","AP1","TAB1","PIP3","AKT","Myc","INK4a","IKK","CyclinD","PTEN","MDM2","A20","E2F","IkB","RB","P53","NFkB","ARF","P21","BAX","BclXL","CyclinE","Apoptosis","Proliferate")
+RULE_SET(PANCREATICCANCER, 34, "HMGB1","TLR24","RAGE","MYD88","RAS","RAC1","IRAKs","RAF","MEK","PI3K","ERK","AP1","TAB1","PIP3","AKT","Myc","INK4a","IKK","CyclD","PTEN","MDM2","A20","E2F","IkB","RB","P53","NFkB","ARF","P21","BAX","BclXL","CyclE","Apop","Prol")
 
 template<> bool PANCREATICCANCER::rule<0>(bitset<34> x) {
     return x[0];

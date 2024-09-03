@@ -1,4 +1,4 @@
-RULE_SET(APOPTOSIS, 41, "tnf","gf","TNFR1","TRADD","traf","RIP","cIAP","TNFR2","TRAF2","NIK","IKK","A20","MEKK1","JNKK","GFR","PI3K","PIP2","PIP3","Akt","Mdm2","FADD","Cas8","IkB","NFkB","jnk","Cas7","Cas12","Cas9","APC","cas3","Cas3prev","Cas6","BID","BclX","BAD","p53","Apaf1","PTEN","Mito","iap","DNAdam")
+RULE_SET(APOPTOSIS, 41, "TNF","GF","TNFR1","TRADD","TRAF","RIP","cIAP","TNFR2","TRAF2","NIK","IKK","A20","MEKK1","JNKK","GFR","PI3K","PIP2","PIP3","AKT","Mdm2","FADD","Cas8","IkB","NFkB","JNK","Cas7","Cas12","Cas9","APC","Cas3","Cas3p","Cas6","BID","BclX","BAD","P53","Apaf1","PTEN","Mito","IAP","DNAd")
 
 template<> bool APOPTOSIS::rule<0>(bitset<41> x) {
     int A = x[0];
