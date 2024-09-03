@@ -17,10 +17,10 @@ p_reasonable = '((0 2 3 4 5 6 7 8 12 20)(1 9 10 11 14 15 16 17 22 23))((13 18 19
 
 parser = argparse.ArgumentParser(
                     prog='set_bax',
-                    usage='python3 scripts/input_generation/set_boolean_pancreatic_cancer.py --parition_best --rank 5',
+                    usage='python3 scripts/input_generation/set_boolean_pancreatic_cancer.py --partition_best --rank 5',
                     description='This script sets the initial conditions for the Boolean apoptosis model.')
 
-parser.add_argument('-p_best', 
+parser.add_argument('-pb', 
                     '--partition_best', 
                     action='store_const', 
                     const=p_best,
@@ -29,7 +29,7 @@ parser.add_argument('-p_best',
                     dest='partition', 
                     )
 
-parser.add_argument('-p_worst',
+parser.add_argument('-pw',
                     '--partition_worst', 
                     action='store_const', 
                     const=p_worst,
@@ -38,7 +38,7 @@ parser.add_argument('-p_worst',
                     dest='partition', 
                     )
 
-parser.add_argument('-p_reasonable',
+parser.add_argument('-pr',
                     '--partition_reasonable', 
                     action='store_const', 
                     const=p_reasonable,
@@ -69,9 +69,9 @@ if args.partition == None:
           """
           error: one of the following arguments is required:
           -p/--partition`,
-          -p_best/--partition_best,
-          -p_worst/--partition_worst,
-          -p_reasonable/--partition_reasonable,
+          -pb/--partition_best,
+          -pw/--partition_worst,
+          -pr/--partition_reasonable,
           """)
     sys.exit(1)
 
