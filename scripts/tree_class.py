@@ -2,20 +2,21 @@
 Contains the `Tree` class, which stores the low-rank approximation of an initial probability distribution as a binary tree according to a prescribed partition.
 """
 import collections
+import colorsys
 import copy
 from datatree import DataTree
-import matplotlib.pyplot as plt
+import matplotlib.colors
 import networkx as nx
 import numpy as np
 import numpy.typing as npt
 import os
 import regex
-from scipy.special import xlogy
+import scipy.special
 import xarray as xr
 
 from scripts.grid_class import GridParms
 from scripts.id_class import Id
-from scripts.index_functions import incrVecIndex, vecIndexToCombIndex, vecIndexToState, tensorUnfold
+from scripts.index_functions import incrVecIndex, vecIndexToCombIndex, tensorUnfold
 from scripts.reaction_class import ReactionSystem
 
 class Node:
@@ -327,6 +328,7 @@ class Tree:
 
     def __getReactionGraph(self):
         combinations = []
+        weights = []
         reaction_dependencies = self.__getReactionDependencies()
 
         for (reactants, products) in reaction_dependencies.keys():
@@ -334,14 +336,11 @@ class Tree:
                 for product in products:
                     if reactant != product:
                         combinations.append((reactant, product))
+                        weights.append(len(reaction_dependencies[(reactants, products)]))
 
-        # combinations = [comb for reactant in reactants for comb in itertools.combinations(reactant, 2)]
-        counter = collections.Counter(combinations)
-        edges = counter.keys()
-        weights = counter.values()
+        edges = combinations
         edges_weights = [(e[0], e[1], {"weight": w}) for e, w in zip(edges, weights)]
 
-        # total_species = [e.grid.species for e in self.external_nodes]
         external_ids = self.external_nodes.keys()
         attributes = {self.species_names[species]: {"id": id} for id in external_ids for species in self.external_nodes[id].grid.species}
 
@@ -448,7 +447,7 @@ class Tree:
                 if sum_count_values != 0:
                     probabilities = count_values / sum_count_values
                     # NOTE: `xlogy` handles the special case `probability=0`
-                    S[key] -= np.sum(xlogy(probabilities, probabilities)) / np.log(2.0)
+                    S[key] -= np.sum(scipy.special.xlogy(probabilities, probabilities)) / np.log(2.0)
                 incrVecIndex(dep_vec_index0, n_dep0, n_dep0.size)
                 state0[dep0] = dep_vec_index0
             S[key] /= dx_dep0
@@ -466,39 +465,52 @@ def findIndex(array: list, values):
             pass
     return idx
 
-def plotReactionGraph(G: nx.Graph, seed=None):
+def plotReactionGraph(G: nx.Graph, fname: str, color_hex=None):
     """
     Helper function for plotting the `nx.Graph` member variable `G` of a `Tree` object.
     """
-    widths = np.fromiter(nx.get_edge_attributes(G, 'weight').values(), dtype=float)
-    pos = nx.spring_layout(G, seed=seed)
-    fig, ax = plt.subplots()
+    color_id = nx.get_node_attributes(G, "id")
 
-    id = nx.get_node_attributes(G, "id")
-    color_id = [int(id[id_key]) for id_key in id]
-    nx.draw_networkx(G, pos, with_labels=True, node_size=750, ax=ax, node_color=color_id, cmap="tab20")
-    nx.draw_networkx_edges(G, pos, width=np.log10(widths*10), alpha=0.6, ax=ax)
-    return fig, ax
+    if color_hex is None:
+        cmap = matplotlib.colormaps.get_cmap("tab20")
+        color = {node: matplotlib.colors.to_hex(cmap(int(id))) for node, id in color_id.items()}
 
+    else:
+        color_rgb = matplotlib.colors.hex2color(color_hex)
+        color_hls = colorsys.rgb_to_hls(*color_rgb)
+        color_hls_21 = color_hls[1]*1.5
+        community_to_color = {
+            0 : colorsys.hls_to_rgb(color_hls[0],
+                                    color_hls[1]*0.65,
+                                    color_hls[2]),
+            1 : (0.55, 0.55, 0.55),
+            2 : colorsys.hls_to_rgb(color_hls[0],
+                                    color_hls_21 if color_hls_21 < 1.0 else color_hls[1],
+                                    color_hls[2]),
+            3 : (0.85, 0.85, 0.85),
+        }
 
-if __name__ == "__main__":
-    import scripts.models.boolean_pancreatic_cancer as model
-    d = 34
-    n = 2 * np.ones(d, dtype=int)
-    binsize = np.ones(d, dtype=int)
-    liml = np.zeros(d)
-    grid = GridParms(n, binsize, liml)
+        community_to_fontcolor = {
+            0 : "white",
+            1 : "white",
+            2 : "black",
+            3 : "black",
+        }
 
-    partition_str = '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)(17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33)'
+        color = {node: matplotlib.colors.to_hex(community_to_color[int(id)]) for node, id in color_id.items()}
+        fontcolor = {node: matplotlib.colors.to_hex(community_to_fontcolor[int(id)]) for node, id in color_id.items()}
+    nx.set_node_attributes(G, color, name="fillcolor")
+    nx.set_node_attributes(G, fontcolor, name="fontcolor")
 
-    tree = Tree(partition_str, grid)
-    r_out = np.ones(tree.n_internal_nodes, dtype="int") * 5
+    A = nx.nx_agraph.to_agraph(G)
+    A.node_attr["style"] = "filled"
+    A.node_attr["fontname"] = "CMU Sans Serif"
+    A.node_attr["fontsize"] = 10.0
+    A.node_attr["shape"] = "circle"
+    A.node_attr["fixedsize"] = "true"
+    A.node_attr["penwidth"] = 0.0
+    A.edge_attr["penwidth"] = 2.0
+    A.edge_attr["color"] = "gray"
 
-    tree.initialize(model.reaction_system, r_out)
-    entropy = tree.calculateEntropy(tree.root)
-    # for i, s in enumerate(tree.species_names):
-    #     print(i, s)
-    print(entropy)
-
-    fig, ax = plotReactionGraph(tree.G, seed=42)
-    plt.show()
+    A.layout(prog="neato", args='-Gsplines=true -Goverlap=false -Gstart=5 -Gmodel="subset"')
+    A.draw(fname)
