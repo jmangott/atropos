@@ -1,7 +1,9 @@
 netCDF4
+networkx
 numba
 numpy==1.26.4
 matplotlib
+pygraphviz
 regex
 scipy
 xarray
