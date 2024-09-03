@@ -2,6 +2,7 @@
 import matplotlib as mpl
 mpl.use('pgf')
 import matplotlib.pyplot as plt
+import networkx as nx
 from numba import njit
 import numpy as np
 import glob
@@ -162,3 +163,24 @@ def calculateDistributionError(filename, ref_sliced_distribution, ref_marginal_d
         sliced_err[i] = np.linalg.norm(sliced[i][ssa_sol.n_min[i] : ssa_sol.n_min[i]+ssa_sol.n[i]] - ref_sliced_distribution[i][:tree.grid.n[i]]) # Frobenius norm
         marginal_err[i] = np.linalg.norm(marginal[i][ssa_sol.n_min[i] : ssa_sol.n_min[i]+ssa_sol.n[i]] - ref_marginal_distribution[i][:tree.grid.n[i]]) # Frobenius norm
     return sliced_err, marginal_err
+
+def printEntropyCuts(tree: Tree):
+    entropy = tree.calculateEntropy(tree.root)
+    entropy0 = tree.calculateEntropy(tree.root.child[0])
+    entropy1 = tree.calculateEntropy(tree.root.child[1])
+    total_entropy = entropy + entropy0 + entropy1
+
+    cuts = nx.cut_size(tree.G, 
+                   [tree.species_names[s] for s in tree.root.child[0].grid.species],
+                   [tree.species_names[s] for s in tree.root.child[1].grid.species])
+    G0 = nx.subgraph(tree.G, [tree.species_names[s] for s in tree.root.child[0].grid.species])
+    cuts0 = nx.cut_size(G0, 
+                        [tree.species_names[s] for s in tree.root.child[0].child[0].grid.species],
+                        [tree.species_names[s] for s in tree.root.child[0].child[1].grid.species])
+    G1 = nx.subgraph(tree.G, [tree.species_names[s] for s in tree.root.child[1].grid.species])
+    cuts1 = nx.cut_size(G1, 
+                        [tree.species_names[s] for s in tree.root.child[1].child[0].grid.species],
+                        [tree.species_names[s] for s in tree.root.child[1].child[1].grid.species])
+    total_cuts = cuts + cuts0 + cuts1
+
+    print("Total entropy: {}, total number of cuts: {}".format(total_entropy, total_cuts))
