@@ -35,16 +35,32 @@ kC2 = 0.0231
 kC3 = 0.01
 kC4 = 0.01
 
+### Full reaction generation:
+
+#model.add_reaction(0, S1, {S2: kA0 * kB0 / (kB0 + S2)})
+#model.add_reaction(0, S2, {S1: kB1 / (kB1 + S1), S5: kA1 + S5})
+#model.add_reaction(0, S3, {S2: kA2 * kB2 * S2 / (kB2 * S2 + 1.0)})
+#model.add_reaction(0, S4, {S3: kA3 * kB3 * S3 / (kB3 * S3 + 1.0)})
+#model.add_reaction(0, S5, {S3: kA4 * kB4 * S3 / (kB4 * S3 + 1.0)})
+#model.add_reaction(S1, 0, {S1: kC0 * S1})
+#model.add_reaction(S2, 0, {S2: kC1 * S2})
+#model.add_reaction(S3, 0, {S3: kC2 * S3})
+#model.add_reaction(S4, 0, {S4: kC3 * S4})
+#model.add_reaction(S5, 0, {S5: kC4 * S5})
+
+
+### Shorter reaction generation:
+
 model.add_reaction(0, S1, {S2: kA0 * kB0 / (kB0 + S2)})
 model.add_reaction(0, S2, {S1: kB1 / (kB1 + S1), S5: kA1 + S5})
 model.add_reaction(0, S3, {S2: kA2 * kB2 * S2 / (kB2 * S2 + 1.0)})
 model.add_reaction(0, S4, {S3: kA3 * kB3 * S3 / (kB3 * S3 + 1.0)})
 model.add_reaction(0, S5, {S3: kA4 * kB4 * S3 / (kB4 * S3 + 1.0)})
-model.add_reaction(S1, 0, {S1: kC0 * S1})
-model.add_reaction(S2, 0, {S2: kC1 * S2})
-model.add_reaction(S3, 0, {S3: kC2 * S3})
-model.add_reaction(S4, 0, {S4: kC3 * S4})
-model.add_reaction(S5, 0, {S5: kC4 * S5})
+model.add_reaction(S1, 0, kC0)
+model.add_reaction(S2, 0, kC1)
+model.add_reaction(S3, 0, kC2)
+model.add_reaction(S4, 0, kC3)
+model.add_reaction(S5, 0, kC4)
 
 model.generate_reaction_system()
 
