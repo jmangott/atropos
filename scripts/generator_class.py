@@ -61,7 +61,10 @@ class Model:
                         print("ERROR: Propensity non factorizable")
                         sys.exit()
 
-                    propensities[elements[0]] = factor * coefficient_n
+                    if elements[0] in propensities.keys():
+                        propensities[elements[0]] *= factor * coefficient_n
+                    else:
+                        propensities[elements[0]] = factor * coefficient_n
 
             if (num_factors_d != 0):
 
