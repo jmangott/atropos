@@ -1,4 +1,4 @@
-from scripts.generator_class import Model, Partitioning, run
+from scripts.generator_class import Model, Partitioning, run, species
 import numpy as np
 import sympy as sp
 
@@ -7,7 +7,7 @@ import sympy as sp
 """
 Define some symbols, to then try out with those symbols
 """
-NF, GR, O, H = sp.symbols("NF, GR, O, H")
+NF, GR, O, H = species("NF, GR, O, H")
 
 
 
@@ -55,4 +55,4 @@ partitioning.set_initial_condition({NF: 3*NF, GR: 2*GR, O: O, H: 3*H})
 """
 Try out run
 """
-run(partitioning, 'test_example', 10, 1e-3, 1, 1)
+run(partitioning, 'test_example', 1e-3, 1, method = "implicit_Euler")

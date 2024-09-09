@@ -1,11 +1,11 @@
-from scripts.generator_class import Model, Partitioning, run
+from scripts.generator_class import Model, Partitioning, run, species
 import numpy as np
 import sympy as sp
 
 """
 Define variables
 """
-S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10 = sp.symbols("S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10")
+S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10 = species("S0, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10")
 
 """
 Generate model
@@ -125,5 +125,5 @@ print(partitioning.tree)
 """
 write input file and run
 """
-run(partitioning, 'bax_Stefan', 10, 1e-3, 1, 1, "implicit_Euler")
+run(partitioning, 'bax_Stefan', 1e-3, 1, snapshot = 10, method = "implicit_Euler")
 

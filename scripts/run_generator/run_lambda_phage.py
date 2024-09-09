@@ -1,4 +1,4 @@
-from scripts.generator_class import Model, Partitioning, run
+from scripts.generator_class import Model, Partitioning, run, species
 import numpy as np
 import sympy as sp
 
@@ -11,7 +11,7 @@ from scripts.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
 """
 Define variables
 """
-S1, S2, S3, S4, S5 = sp.symbols("S1, S2, S3, S4, S5")
+S1, S2, S3, S4, S5 = species("S1, S2, S3, S4, S5")
 
 
 """
@@ -160,4 +160,4 @@ print(partitioning.tree)
 """
 write input file and run
 """
-run(partitioning, 'lambda_phage_Stefan', 10, 1e-3, 1, 1, "implicit_Euler")
+run(partitioning, 'lambda_phage_Stefan', 1e-3, 1, snapshot = 10, method = "implicit_Euler")
