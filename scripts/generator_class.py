@@ -8,6 +8,10 @@ import numpy as np
 import os
 import sys
 
+def species(symbol_string):
+
+    return sp.symbols(symbol_string)
+
 class Model:
 
     def __init__(self, _species):
@@ -145,18 +149,18 @@ class Partitioning:
             species_idx += len(vec_index)
     
 
-def run(partitioning, output, snapshot, tau, tfinal, substeps, method = "implicit_Euler"):
+def run(partitioning, output, tau, tfinal, snapshot = 2, substeps = 1, method = "RK4"):
     partitioning.tree.write()
     snap = int(np.floor((tfinal/tau)/snapshot))
     if method == "implicit_Euler":
         m = 'i'
     elif method == "explicit_Euler":
         m = 'e'
-    elif method == "Crank-Nicolson":
+    elif method == "Crank_Nicolson":
         m = 'c'
     elif method == "RK4":
         m = 'r'
     else:
-        print("Possible inputs for method: implicit_Euler, explicit_Euler, Crank-Nicolson, RK4")
+        print("Possible inputs for method: implicit_Euler, explicit_Euler, Crank_Nicolson, RK4")
     cmd = f'bin/hierarchical-cme -i input/input.nc -o {output} -s {snap} -t {tau} -f {tfinal} -n {substeps} -m {m}'
     os.system(cmd)
