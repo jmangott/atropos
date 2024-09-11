@@ -2,18 +2,11 @@
 # Set up the tests #
 ####################
 
-add_executable(test_index_functions test_index_functions.cpp ${SRC_FILES} ${ENSIGN_FILES})
-add_dependencies(test_index_functions Ensign)
-add_executable(test_matrix_functions test_matrix_functions.cpp ${SRC_FILES} ${ENSIGN_FILES})
-add_dependencies(test_matrix_functions Ensign)
-add_executable(test_orthogonalization test_orthogonalization.cpp ${SRC_FILES} ${ENSIGN_FILES})
-add_dependencies(test_orthogonalization Ensign)
-add_executable(test_tree_h1 test_tree_h1.cpp ${SRC_FILES} ${ENSIGN_FILES})
-add_dependencies(test_tree_h1 Ensign)
-add_executable(test_tree_h2 test_tree_h2.cpp ${SRC_FILES} ${ENSIGN_FILES})
-add_dependencies(test_tree_h2 Ensign)
-
-set_source_files_properties(${ENSIGN_FILES} PROPERTIES GENERATED TRUE)
+add_executable(test_index_functions test_index_functions.cpp)
+add_executable(test_matrix_functions test_matrix_functions.cpp)
+add_executable(test_orthogonalization test_orthogonalization.cpp)
+add_executable(test_tree_h1 test_tree_h1.cpp)
+add_executable(test_tree_h2 test_tree_h2.cpp)
 
 add_test(NAME index_functions COMMAND test_index_functions)
 add_test(NAME matrix_functions COMMAND test_matrix_functions)
@@ -27,11 +20,11 @@ target_include_directories(test_orthogonalization PRIVATE "${ENSIGN_BUILD_DIR}/e
 target_include_directories(test_tree_h1 PRIVATE "${ENSIGN_BUILD_DIR}/extern/Catch2/src/Catch2/single_include" ${HEADER_FILES})
 target_include_directories(test_tree_h2 PRIVATE "${ENSIGN_BUILD_DIR}/extern/Catch2/src/Catch2/single_include" ${HEADER_FILES})
 
-target_link_libraries(test_index_functions ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
-target_link_libraries(test_matrix_functions ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
-target_link_libraries(test_orthogonalization ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
-target_link_libraries(test_tree_h1 ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
-target_link_libraries(test_tree_h2 ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
+target_link_libraries(test_index_functions ${LIBNAME})
+target_link_libraries(test_matrix_functions ${LIBNAME})
+target_link_libraries(test_orthogonalization ${LIBNAME})
+target_link_libraries(test_tree_h1 ${LIBNAME})
+target_link_libraries(test_tree_h2 ${LIBNAME})
 
 if(${MKL_ENABLED})
     target_link_libraries(test_index_functions ${MKL_LIBRARIES})

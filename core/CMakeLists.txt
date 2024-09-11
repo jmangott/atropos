@@ -39,11 +39,12 @@ set(SRC ${CMAKE_SOURCE_DIR}/src)
 set(INC ${CMAKE_SOURCE_DIR}/include)
 set(BIN ${CMAKE_SOURCE_DIR}/bin)
 
-##############################
-# Define the exectuable name #
-##############################
+##########################################
+# Define the executable and library name #
+##########################################
 
 set(EXENAME hierarchical-cme)
+set(LIBNAME coreLib)
 
 ############################################
 # Find external packages and set libraries #
@@ -145,6 +146,14 @@ set(HEADER_FILES ${INC}
                  ${ENSIGN_SRC_DIR}/include
                  ${ENSIGN_BUILD_DIR}/extern/OpenBLAS/opt/OpenBLAS/include
                  ${ENSIGN_BUILD_DIR}/extern/fftw/include)
+
+#########################
+# Create static library #
+#########################
+
+add_library(${LIBNAME} STATIC ${SRC_FILES} ${ENSIGN_FILES})
+target_include_directories(${LIBNAME} PRIVATE ${HEADER_FILES})
+target_link_libraries(${LIBNAME} ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
 
 ###########################################
 # Add src, test and output subdirectories #
