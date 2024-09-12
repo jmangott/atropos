@@ -63,7 +63,7 @@ parser.add_argument('-r',
                     )
 args = parser.parse_args()
 
-if args.partition == None:
+if args.partition is None:
     print("usage:", parser.usage)
     print(parser.prog+":",
           """

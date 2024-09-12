@@ -72,7 +72,8 @@ class GridParms:
 
         if self.nu is not None: 
             nu = self.nu[permutation, :] 
-        else: nu = self.nu
+        else:
+            nu = self.nu
 
         return GridParms(n, binsize, liml, species, dep, nu)
 

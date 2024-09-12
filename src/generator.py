@@ -33,7 +33,7 @@ class Model:
 
         prop_dict = {}
         # Test if we only have coefficient as variable, if so, generate propensity in non factorised form
-        if type(propensities) == int or type(propensities) == float:
+        if type(propensities) is int or type(propensities) is float:
             for sym in self.species:
                 for i in range(reactants.coeff(sym)):
                     propensities *= (sym - i)

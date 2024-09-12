@@ -31,7 +31,7 @@ def convertRulesToReactions(filename: str):
     dependencies = {}
 
     rule_pattern = "template<> bool {}::rule<(\d+)>\(bitset<{}> x\) \{{([\S\s]*?)\}}".format(model_name, d)
-    dependency_pattern = "template<> vector<ind> {}::depends_on<(\d+)>\(\) \{{[\s]*?return \{{(.*?)\}};\s*\}}".format(model_name, d)
+    dependency_pattern = "template<> vector<ind> {}::depends_on<(\d+)>\(\) \{{[\s]*?return \{{(.*?)\}};\s*\}}".format(model_name)
 
     rule_matches = re.finditer(rule_pattern, f_string, re.MULTILINE)
     for _, match in enumerate(rule_matches, start=1):
@@ -65,8 +65,12 @@ def convertRulesToReactions(filename: str):
 
         handle = ctypes.CDLL(tmpdirname + "/rule_set_temp.so")
 
-    fun_x0 = lambda x: 1 - x
-    fun_x1 = lambda x: x
+    def fun_x0(x):
+        return 1 - x
+    
+    def fun_x1(x):
+        return x
+
     reactions = []
 
     for i in range(d):

@@ -34,22 +34,22 @@ class BaxTestCase(unittest.TestCase):
     def test_partition_str1(self):
         self.partition_str = "(1 11 2)((((3 6)(4 7))(5 8))(9 10))"
         with self.assertRaises(Exception):
-            bax_tree = Tree(self.partition_str, self.grid)
+            Tree(self.partition_str, self.grid)
 
     def test_partition_str2(self):
         self.partition_str = "(1 11 2)(((3 6)(4 7))(5 8))(9 10))"
         with self.assertRaises(Exception):
-            bax_tree = Tree(self.partition_str, self.grid)
+            Tree(self.partition_str, self.grid)
 
     def test_partition_str3(self):
         self.partition_str = "(0 1 2)((((3 6)(4 7))(3 8))(9 10))"
         with self.assertRaises(Exception):
-            bax_tree = Tree(self.partition_str, self.grid)
+            Tree(self.partition_str, self.grid)
 
     def test_partition_str4(self):
         self.partition_str = "(0 1)((((2 6)(5 7))(3 8))(9 10))"
         with self.assertRaises(Exception):
-            bax_tree = Tree(self.partition_str, self.grid)
+            Tree(self.partition_str, self.grid)
 
     def test_reaction_model(self):
         with self.assertRaises(Exception):

@@ -1,6 +1,5 @@
-from netCDF4 import Dataset
 import numpy as np
-from src.output_helper import *
+from src.output_helper import readTree
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl

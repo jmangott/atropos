@@ -44,7 +44,7 @@ parser.add_argument('-r',
                     )
 args = parser.parse_args()
 
-if args.partition == None:
+if args.partition is None:
     print("usage:", parser.usage)
     print(parser.prog+":", "error: the following arguments are required: -p/--partition` or -p[n]/--partition[n], n=0,...,"+str(len(partition)-1))
     sys.exit(1)
