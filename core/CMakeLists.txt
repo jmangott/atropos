@@ -24,7 +24,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ip -xHOST")
 
 else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall")
+    set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall")
     set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb3 -Wall -D_GLIBCXX_DEBUG -fno-omit-frame-pointer -ftrapv")
     # set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb3 -Wall -D_GLIBCXX_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak -fsanitize=undefined -ftrapv")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -mtune=native")
@@ -49,6 +49,9 @@ set(LIBNAME coreLib)
 ############################################
 # Find external packages and set libraries #
 ############################################
+
+# Add SOURCE_ROOT as a preprocessor directive
+add_compile_definitions("SOURCE_ROOT=${CMAKE_SOURCE_DIR}")
 
 # Options
 option("MKL_ENABLED" "Enable MKL" OFF)
@@ -110,7 +113,7 @@ else()
 endif()
 
 ###############################################################
-# Define a short hand for source, the Ensign and header files #
+# Define a short-hand for source, the Ensign and header files #
 ###############################################################
 
 set(ENSIGN_FILES ${ENSIGN_SRC_DIR}/src/lr/lr.cpp
@@ -152,7 +155,9 @@ set(HEADER_FILES ${INC}
 #########################
 
 add_library(${LIBNAME} STATIC ${SRC_FILES} ${ENSIGN_FILES})
-target_include_directories(${LIBNAME} PRIVATE ${HEADER_FILES})
+add_dependencies(${LIBNAME} Ensign)
+set_source_files_properties(${ENSIGN_FILES} PROPERTIES GENERATED TRUE)
+target_include_directories(${LIBNAME} PUBLIC ${HEADER_FILES})
 target_link_libraries(${LIBNAME} ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
 
 ###########################################
