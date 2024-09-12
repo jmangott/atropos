@@ -14,7 +14,15 @@
 
 int main(int argc, char** argv)
 {
-    std::string source_root = XSTRING(SOURCE_ROOT);
+    std::string source_root;
+
+#ifdef SOURCE_ROOT
+    source_root = XSTRING(SOURCE_ROOT);
+#else
+    std::cout << "Warning: SOURCE_ROOT not set, default directories of input and output are set to current working directory" << std::endl;
+    source_root = ".";
+#endif
+
     cxxopts::Options options("hierarchical-cme", "Tree tensor network integrator for the chemical master equation");
 
     options.add_options()
@@ -88,7 +96,7 @@ int main(int argc, char** argv)
     tree.InitializeAB_bar(blas);
     std::cout << "Norm: " << norm << std::endl;
 
-    // Check if folder in ../output/ exists, otherwise create folder
+    // Check if folder in SOURCE_ROOT/output/ exists, otherwise create folder
     std::string output_fname;
     output_fname = source_root + "/output/" + output;
     std::filesystem::create_directory(output_fname);
