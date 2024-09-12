@@ -1,6 +1,7 @@
 """
 Contains the `Tree` class, which stores the low-rank approximation of an initial probability distribution as a binary tree according to a prescribed partition.
 """
+
 import collections
 import colorsys
 import copy
@@ -19,14 +20,16 @@ from src.id import Id
 from src.index_functions import incrVecIndex, vecIndexToCombIndex, tensorUnfold
 from src.reaction import ReactionSystem
 
+
 class Node:
     def __init__(self, _id: Id, _grid: GridParms):
         self.child = [None] * 2
         self.id = _id
         self.grid = _grid
 
+
 class InternalNode(Node):
-    def __init__(self, _parent: 'InternalNode', _id: Id, _grid: GridParms):
+    def __init__(self, _parent: "InternalNode", _id: Id, _grid: GridParms):
         super().__init__(_id, _grid)
         self.parent = _parent
         self.Q = np.zeros((0, 0, 0))
@@ -36,6 +39,7 @@ class InternalNode(Node):
 
     def rankOut(self):
         return self.Q.shape[0]
+
 
 class ExternalNode(Node):
     def __init__(self, _parent: InternalNode, _id: Id, _grid: GridParms):
@@ -51,15 +55,15 @@ class ExternalNode(Node):
 """
 The `tree` class stores the initial condition for the hierarchical DLR approximation of the chemical master equation. Note that the input for the grid parameters (`_grid`) must follow the same ordering convention for the species as the reaction system (`_reaction_system`), when initializing the tree via the `initialize` method, but the partition string for dividing the reaction networks allows also permutation.
 """
+
+
 class Tree:
     # TODO: Move the `_grid` dependency to `initialize` method
-    def __init__(self,
-                 _partition_str: str,
-                 _grid: GridParms
-                ):
-
+    def __init__(self, _partition_str: str, _grid: GridParms):
         # Syntactic check (test whether `_partition_str` is a valid input string)
-        if not regex.fullmatch(r"\((?:\d+(?:\s\d)*|(?R))+\)\((?:\d+(?:\s\d)*|(?R))+\)", _partition_str):
+        if not regex.fullmatch(
+            r"\((?:\d+(?:\s\d)*|(?R))+\)\((?:\d+(?:\s\d)*|(?R))+\)", _partition_str
+        ):
             raise Exception("Not a valid `_partition_str`")
 
         p = self.__removeBrackets(_partition_str)
@@ -75,8 +79,7 @@ class Tree:
 
         # Test whether the dimension of `_partition_str` and `_grid.d` match
         if p.size != _grid.d():
-            raise Exception(
-                "Dimensions of `_partition_str` and `_grid.d` do not match")
+            raise Exception("Dimensions of `_partition_str` and `_grid.d` do not match")
 
         self.n_internal_nodes = 1  # 1 is for the root node
         self.n_external_nodes = 0
@@ -96,9 +99,9 @@ class Tree:
 
     @staticmethod
     def __parsingHelper(input_str):
-        if (input_str == "("):
+        if input_str == "(":
             sigma = 1
-        elif (input_str == ")"):
+        elif input_str == ")":
             sigma = -1
         else:
             sigma = 0
@@ -119,15 +122,23 @@ class Tree:
                 break
 
         partition_str0 = partition_str[1:i]
-        partition_str1 = partition_str[i+2:-1]
+        partition_str1 = partition_str[i + 2 : -1]
         p0_size = self.__removeBrackets(partition_str0).size
 
         grid0 = GridParms(
-            node.grid.n[:p0_size], node.grid.binsize[:p0_size], node.grid.liml[:p0_size], node.grid.species[:p0_size])
+            node.grid.n[:p0_size],
+            node.grid.binsize[:p0_size],
+            node.grid.liml[:p0_size],
+            node.grid.species[:p0_size],
+        )
         grid1 = GridParms(
-            node.grid.n[p0_size:], node.grid.binsize[p0_size:], node.grid.liml[p0_size:], node.grid.species[p0_size:])
-                
-        if (partition_str0[0] == "("):
+            node.grid.n[p0_size:],
+            node.grid.binsize[p0_size:],
+            node.grid.liml[p0_size:],
+            node.grid.species[p0_size:],
+        )
+
+        if partition_str0[0] == "(":
             new_id = node.id + 0
             node.child[0] = InternalNode(node, new_id, grid0)
             self.__build(node.child[0], partition_str0)
@@ -139,7 +150,7 @@ class Tree:
             self.n_external_nodes += 1
             self.external_nodes[new_id] = node.child[0]
 
-        if (partition_str1[0] == "("):
+        if partition_str1[0] == "(":
             new_id = node.id + 1
             node.child[1] = InternalNode(node, new_id, grid1)
             self.__build(node.child[1], partition_str1)
@@ -152,18 +163,24 @@ class Tree:
             self.external_nodes[new_id] = node.child[1]
 
         return
-    
+
     def __initialize(self, node: Node):
         p0_size = node.parent.child[0].grid.d()
 
         idx = node.parent.child.index(node)
         if idx == 0:
-            sl = slice(0,p0_size)
+            sl = slice(0, p0_size)
         elif idx == 1:
             sl = slice(p0_size, node.parent.grid.d())
 
         node.grid = GridParms(
-            node.parent.grid.n[sl], node.parent.grid.binsize[sl], node.parent.grid.liml[sl], node.parent.grid.species[sl], node.parent.grid.dep[sl, :], node.parent.grid.nu[sl, :])
+            node.parent.grid.n[sl],
+            node.parent.grid.binsize[sl],
+            node.parent.grid.liml[sl],
+            node.parent.grid.species[sl],
+            node.parent.grid.dep[sl, :],
+            node.parent.grid.nu[sl, :],
+        )
 
         if isinstance(node, InternalNode):
             next_r_out = next(self.__r_out_iter)
@@ -181,11 +198,13 @@ class Tree:
         # Test whether the dimension of `_r` is equal to n_internal_nodes
         if r_out.size != self.n_internal_nodes:
             raise Exception(
-                "`r_out.size` must be equal to the number of internal nodes")
-        
+                "`r_out.size` must be equal to the number of internal nodes"
+            )
+
         if self.grid.d() != reaction_system.d():
             raise Exception(
-                "`self.grid.d()` must be equal to the number of species in the reaction system")
+                "`self.grid.d()` must be equal to the number of species in the reaction system"
+            )
 
         self.reaction_system = reaction_system
         self.grid.initialize(reaction_system)
@@ -199,7 +218,18 @@ class Tree:
         self.G = self.__getReactionGraph()
 
     def __print(self, node: Node, os: str) -> str:
-        os = " ".join([os, str(type(node)), "id:", str(node.id), "n:", str(node.grid), "species:", str(node.grid.species)])
+        os = " ".join(
+            [
+                os,
+                str(type(node)),
+                "id:",
+                str(node.id),
+                "n:",
+                str(node.grid),
+                "species:",
+                str(node.grid.species),
+            ]
+        )
         if isinstance(node, ExternalNode):
             os = " ".join([os, "X.shape:", str(node.X.shape), "\n"])
         elif isinstance(node, InternalNode):
@@ -222,7 +252,7 @@ class Tree:
                 "liml": (["d"], node.grid.liml),
                 "species": (["d"], node.grid.species),
                 "dep": (["d", "n_reactions"], node.grid.dep),
-                "nu": (["d", "n_reactions"], node.grid.nu)
+                "nu": (["d", "n_reactions"], node.grid.nu),
             }
         )
         return ds
@@ -233,14 +263,12 @@ class Tree:
             ds["X"] = (["n_basisfunctions", "dx"], node.X.T)
             for mu, propensity in enumerate(node.propensity):
                 ds["propensity_{}".format(mu)] = (["dx_{}".format(mu)], propensity)
-            DataTree(name=str(node.id),
-                     parent=parent_dt, data=ds)
+            DataTree(name=str(node.id), parent=parent_dt, data=ds)
 
         elif isinstance(node, InternalNode):
             ds = self.__createDataset(node)
             ds["Q"] = (["n_basisfunctions", "r_out0", "r_out1"], node.Q.T)
-            dt = DataTree(name=str(node.id),
-                          parent=parent_dt, data=ds)
+            dt = DataTree(name=str(node.id), parent=parent_dt, data=ds)
             self.__write(node.child[0], dt)
             self.__write(node.child[1], dt)
 
@@ -262,32 +290,46 @@ class Tree:
         self.__write(self.root.child[1], dt)
         dt.to_netcdf(fname, engine="netcdf4")
 
-    def __calculateObservableHelper(self, node: Node, idx_n: int, slice_vec: npt.NDArray[np.int_]):
+    def __calculateObservableHelper(
+        self, node: Node, idx_n: int, slice_vec: npt.NDArray[np.int_]
+    ):
         if isinstance(node, ExternalNode):
             if idx_n in node.grid.species:
                 # Sliced distribution
-                partition_idx_n = np.where(idx_n==node.grid.species)[0][0]
-                sliced_distribution = np.zeros((node.grid.n[partition_idx_n], node.rankIn()), dtype="float64")
+                partition_idx_n = np.where(idx_n == node.grid.species)[0][0]
+                sliced_distribution = np.zeros(
+                    (node.grid.n[partition_idx_n], node.rankIn()), dtype="float64"
+                )
                 partition_slice_vec = slice_vec[node.grid.species]
                 for i in range(node.grid.n[partition_idx_n]):
                     partition_slice_vec[partition_idx_n] = i
-                    sliced_distribution[i, :] = node.X[vecIndexToCombIndex(partition_slice_vec, node.grid.n), :]
+                    sliced_distribution[i, :] = node.X[
+                        vecIndexToCombIndex(partition_slice_vec, node.grid.n), :
+                    ]
                 # Marginal distribution
                 vec_index = np.zeros(node.grid.d(), dtype=np.int64)
-                marginal_distribution = np.zeros((node.grid.n[partition_idx_n], node.rankIn()), dtype="float64")
+                marginal_distribution = np.zeros(
+                    (node.grid.n[partition_idx_n], node.rankIn()), dtype="float64"
+                )
                 for i in range(node.grid.dx()):
                     marginal_distribution[vec_index[partition_idx_n], :] += node.X[i, :]
                     incrVecIndex(vec_index, node.grid.n, node.grid.d())
             else:
                 partition_slice_vec = slice_vec[node.grid.species]
-                sliced_distribution = node.X[vecIndexToCombIndex(partition_slice_vec, node.grid.n), :]
+                sliced_distribution = node.X[
+                    vecIndexToCombIndex(partition_slice_vec, node.grid.n), :
+                ]
                 marginal_distribution = np.sum(node.X, axis=0)
         elif isinstance(node, InternalNode):
-            X0_sliced, X0_marginal = self.__calculateObservableHelper(node.child[0], idx_n, slice_vec)
-            X1_sliced, X1_marginal = self.__calculateObservableHelper(node.child[1], idx_n, slice_vec)
-            if (X0_sliced.ndim > 1):
+            X0_sliced, X0_marginal = self.__calculateObservableHelper(
+                node.child[0], idx_n, slice_vec
+            )
+            X1_sliced, X1_marginal = self.__calculateObservableHelper(
+                node.child[1], idx_n, slice_vec
+            )
+            if X0_sliced.ndim > 1:
                 rule = "ij,jkl,k->il"
-            elif (X1_sliced.ndim > 1):
+            elif X1_sliced.ndim > 1:
                 rule = "i,ijk,lj->lk"
             else:
                 rule = "i,ijk,j->k"
@@ -296,7 +338,9 @@ class Tree:
         return sliced_distribution, marginal_distribution
 
     def __calculateObservable(self, idx_n: int, slice_vec: npt.NDArray[np.int_]):
-        sliced_distribution, marginal_distribution = self.__calculateObservableHelper(self.root, idx_n, slice_vec)
+        sliced_distribution, marginal_distribution = self.__calculateObservableHelper(
+            self.root, idx_n, slice_vec
+        )
         return sliced_distribution[:, 0], marginal_distribution[:, 0]
 
     def calculateObservables(self, slice_vec: npt.NDArray[np.int_]):
@@ -309,7 +353,7 @@ class Tree:
             sliced_distributions[self.species_names[i]] = sliced
             marginal_distributions[self.species_names[i]] = marginal
         return sliced_distributions, marginal_distributions
-    
+
     def __calculateFullDistributionHelper(self, node: Node):
         if isinstance(node, ExternalNode):
             X = node.X
@@ -319,10 +363,10 @@ class Tree:
             X_tensor = np.einsum("lmk,il,jm->ijk", node.Q, X0, X1)
             X = tensorUnfold(X_tensor, 2).T
         return X
-    
+
     def calculateFullDistribution(self):
         """
-        This method only works when all species occur in ascending order in the partition string. The full probability distribution is computed, therefore this method should be used only for small system sizes. 
+        This method only works when all species occur in ascending order in the partition string. The full probability distribution is computed, therefore this method should be used only for small system sizes.
         """
         return self.__calculateFullDistributionHelper(self.root)[:, 0]
 
@@ -331,18 +375,24 @@ class Tree:
         weights = []
         reaction_dependencies = self.__getReactionDependencies()
 
-        for (reactants, products) in reaction_dependencies.keys():
+        for reactants, products in reaction_dependencies.keys():
             for reactant in reactants:
                 for product in products:
                     if reactant != product:
                         combinations.append((reactant, product))
-                        weights.append(len(reaction_dependencies[(reactants, products)]))
+                        weights.append(
+                            len(reaction_dependencies[(reactants, products)])
+                        )
 
         edges = combinations
         edges_weights = [(e[0], e[1], {"weight": w}) for e, w in zip(edges, weights)]
 
         external_ids = self.external_nodes.keys()
-        attributes = {self.species_names[species]: {"id": id} for id in external_ids for species in self.external_nodes[id].grid.species}
+        attributes = {
+            self.species_names[species]: {"id": id}
+            for id in external_ids
+            for species in self.external_nodes[id].grid.species
+        }
 
         G = nx.Graph(edges_weights)
         nx.set_node_attributes(G, attributes)
@@ -355,7 +405,11 @@ class Tree:
             dx_dep = np.prod(n_dep)
             propensity[mu] = np.ones(dx_dep)
             vec_index = np.zeros(n_dep.size)
-            reactants = [reactant for reactant in node.grid.species if reactant in reaction.propensity.keys()]
+            reactants = [
+                reactant
+                for reactant in node.grid.species
+                if reactant in reaction.propensity.keys()
+            ]
             for i in range(dx_dep):
                 for j, reactant in enumerate(reactants):
                     propensity[mu][i] *= reaction.propensity[reactant](vec_index[j])
@@ -374,7 +428,7 @@ class Tree:
         return reaction_dependencies
 
     # TODO: check if this function also works for general kinetic models
-    # TODO: for kinetic models the products may be more than one, 
+    # TODO: for kinetic models the products may be more than one,
     # but then the reactions have to be converted to a 'normal' form, where only a single product is present
     def calculateEntropy(self, node: InternalNode):
         reaction_dependencies = self.__getReactionDependencies()
@@ -388,15 +442,15 @@ class Tree:
 
             # mapping species_names <-> species_id for the products
             products = findIndex(self.species_names, key[1])
-            
+
             # TODO: rewrite this function that it is clearly visible that only a single product is allowed
-            prod_lies_in_partition_0 = (products[0] in node.child[0].grid.species)
+            prod_lies_in_partition_0 = products[0] in node.child[0].grid.species
             if prod_lies_in_partition_0:
                 grid0 = node.child[0].grid
                 grid1 = node.child[1].grid
                 propensity0 = self.__calculatePropensity(node.child[0])
                 propensity1 = self.__calculatePropensity(node.child[1])
-            else: # exchange the partitions
+            else:  # exchange the partitions
                 grid0 = node.child[1].grid
                 grid1 = node.child[0].grid
                 propensity0 = self.__calculatePropensity(node.child[1])
@@ -429,7 +483,7 @@ class Tree:
                     product_population_number0 = state0[products0]
                     product_population_number1 = state1[products1]
                     weight = 1.0
-                    for mu in val: # `val` are all reactions with the same input/output dependencies
+                    for mu in val:  # `val` are all reactions with the same input/output dependencies
                         nu0 = self.reaction_system.reactions[mu].nu[species0]
                         nu1 = self.reaction_system.reactions[mu].nu[species1]
                         propensity = propensity0[mu][i0] * propensity1[mu][i1]
@@ -438,7 +492,12 @@ class Tree:
                             product_population_number0 += nu0[products0]
                             product_population_number1 += nu1[products1]
 
-                    count[(tuple(product_population_number0), tuple(product_population_number1))] += weight 
+                    count[
+                        (
+                            tuple(product_population_number0),
+                            tuple(product_population_number1),
+                        )
+                    ] += weight
                     incrVecIndex(dep_vec_index1, n_dep1, n_dep1.size)
                     state1[dep1] = dep_vec_index1
 
@@ -447,7 +506,9 @@ class Tree:
                 if sum_count_values != 0:
                     probabilities = count_values / sum_count_values
                     # NOTE: `xlogy` handles the special case `probability=0`
-                    S[key] -= np.sum(scipy.special.xlogy(probabilities, probabilities)) / np.log(2.0)
+                    S[key] -= np.sum(
+                        scipy.special.xlogy(probabilities, probabilities)
+                    ) / np.log(2.0)
                 incrVecIndex(dep_vec_index0, n_dep0, n_dep0.size)
                 state0[dep0] = dep_vec_index0
             S[key] /= dx_dep0
@@ -455,6 +516,7 @@ class Tree:
         total_entropy = np.sum(np.array(list(S.values())))
 
         return total_entropy
+
 
 def findIndex(array: list, values):
     idx = []
@@ -465,6 +527,7 @@ def findIndex(array: list, values):
             pass
     return idx
 
+
 def plotReactionGraph(G: nx.Graph, fname: str, color_hex=None):
     """
     Helper function for plotting the `nx.Graph` member variable `G` of a `Tree` object.
@@ -473,32 +536,41 @@ def plotReactionGraph(G: nx.Graph, fname: str, color_hex=None):
 
     if color_hex is None:
         cmap = matplotlib.colormaps.get_cmap("tab20")
-        color = {node: matplotlib.colors.to_hex(cmap(int(id))) for node, id in color_id.items()}
+        color = {
+            node: matplotlib.colors.to_hex(cmap(int(id)))
+            for node, id in color_id.items()
+        }
 
     else:
         color_rgb = matplotlib.colors.hex2color(color_hex)
         color_hls = colorsys.rgb_to_hls(*color_rgb)
-        color_hls_21 = color_hls[1]*1.5
+        color_hls_21 = color_hls[1] * 1.5
         community_to_color = {
-            0 : colorsys.hls_to_rgb(color_hls[0],
-                                    color_hls[1]*0.65,
-                                    color_hls[2]),
-            1 : (0.55, 0.55, 0.55),
-            2 : colorsys.hls_to_rgb(color_hls[0],
-                                    color_hls_21 if color_hls_21 < 1.0 else color_hls[1],
-                                    color_hls[2]),
-            3 : (0.85, 0.85, 0.85),
+            0: colorsys.hls_to_rgb(color_hls[0], color_hls[1] * 0.65, color_hls[2]),
+            1: (0.55, 0.55, 0.55),
+            2: colorsys.hls_to_rgb(
+                color_hls[0],
+                color_hls_21 if color_hls_21 < 1.0 else color_hls[1],
+                color_hls[2],
+            ),
+            3: (0.85, 0.85, 0.85),
         }
 
         community_to_fontcolor = {
-            0 : "white",
-            1 : "white",
-            2 : "black",
-            3 : "black",
+            0: "white",
+            1: "white",
+            2: "black",
+            3: "black",
         }
 
-        color = {node: matplotlib.colors.to_hex(community_to_color[int(id)]) for node, id in color_id.items()}
-        fontcolor = {node: matplotlib.colors.to_hex(community_to_fontcolor[int(id)]) for node, id in color_id.items()}
+        color = {
+            node: matplotlib.colors.to_hex(community_to_color[int(id)])
+            for node, id in color_id.items()
+        }
+        fontcolor = {
+            node: matplotlib.colors.to_hex(community_to_fontcolor[int(id)])
+            for node, id in color_id.items()
+        }
     nx.set_node_attributes(G, color, name="fillcolor")
     nx.set_node_attributes(G, fontcolor, name="fontcolor")
 
@@ -512,5 +584,7 @@ def plotReactionGraph(G: nx.Graph, fname: str, color_hex=None):
     A.edge_attr["penwidth"] = 2.0
     A.edge_attr["color"] = "gray"
 
-    A.layout(prog="neato", args='-Gsplines=true -Goverlap=false -Gstart=5 -Gmodel="subset"')
+    A.layout(
+        prog="neato", args='-Gsplines=true -Goverlap=false -Gstart=5 -Gmodel="subset"'
+    )
     A.draw(fname)

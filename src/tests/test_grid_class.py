@@ -5,6 +5,7 @@ import numpy as np
 from examples.models.kinetic.lambda_phage import reaction_system as lp_model
 from src.grid import GridParms
 
+
 class GridTestCase(unittest.TestCase):
     def setUp(self):
         self.n = np.array([1, 2, 3, 4, 5])
@@ -15,7 +16,7 @@ class GridTestCase(unittest.TestCase):
         self.binsize = np.array([1, 1, 1, 1])
         with self.assertRaises(Exception):
             GridParms(self.n, self.binsize, self.liml)
- 
+
     def test_grid_n_zero(self):
         self.n = np.array([1, 2, 3, 0, 5])
         with self.assertRaises(Exception):
@@ -24,7 +25,7 @@ class GridTestCase(unittest.TestCase):
     def test_grid_initialize(self):
         grid = GridParms(self.n, self.binsize, self.liml)
         grid.initialize(lp_model)
-        
+
         dep = np.zeros((5, lp_model.size()), dtype="bool")
         dep[1, 0] = True
         dep[0, 1] = True
@@ -41,11 +42,12 @@ class GridTestCase(unittest.TestCase):
         nu = np.zeros((5, lp_model.size()))
         for i in range(5):
             nu[i, i] = 1
-            nu[i, i+5] =-1
+            nu[i, i + 5] = -1
 
         self.assertTrue(np.all(grid.dep == dep))
 
         self.assertTrue(np.all(grid.nu == nu))
+
 
 if __name__ == "__main__":
     unittest.main()

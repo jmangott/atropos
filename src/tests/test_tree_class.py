@@ -7,10 +7,11 @@ from src.tree import Tree
 from src.grid import GridParms
 from src.initial_condition import InitialCondition
 
+
 class BaxTestCase(unittest.TestCase):
     def setUp(self):
         d = 11
-        n = np.arange(1, d+1, dtype=int)
+        n = np.arange(1, d + 1, dtype=int)
         binsize = np.ones(d)
         liml = np.zeros(d)
 
@@ -59,39 +60,63 @@ class BaxTestCase(unittest.TestCase):
     def test_bax_tree_partition(self):
         bax_tree = Tree(self.partition_str, self.grid)
         bax_tree.initialize(bax_model, self.r_out)
-        
+
         self.assertEqual(bax_tree.root.grid.dx(), np.prod(self.grid.n))
 
         self.assertEqual(bax_tree.root.child[0].grid.dx(), np.prod(self.grid.n[:3]))
 
         self.assertEqual(bax_tree.root.child[1].grid.dx(), np.prod(self.grid.n[3:]))
 
-        self.assertEqual(bax_tree.root.child[1].child[0].grid.dx(), np.prod(self.grid.n[3:9]))
+        self.assertEqual(
+            bax_tree.root.child[1].child[0].grid.dx(), np.prod(self.grid.n[3:9])
+        )
 
-        self.assertEqual(bax_tree.root.child[1].child[1].grid.dx(), np.prod(self.grid.n[9:]))
+        self.assertEqual(
+            bax_tree.root.child[1].child[1].grid.dx(), np.prod(self.grid.n[9:])
+        )
 
-        self.assertEqual(bax_tree.root.child[1].child[0].child[0].grid.dx(), np.prod(self.grid.n[[3, 6, 4, 7]]))
-        self.assertEqual(bax_tree.root.child[1].child[0].child[1].grid.dx(), np.prod(self.grid.n[[5, 8]]))
+        self.assertEqual(
+            bax_tree.root.child[1].child[0].child[0].grid.dx(),
+            np.prod(self.grid.n[[3, 6, 4, 7]]),
+        )
+        self.assertEqual(
+            bax_tree.root.child[1].child[0].child[1].grid.dx(),
+            np.prod(self.grid.n[[5, 8]]),
+        )
 
-        self.assertEqual(bax_tree.root.child[1].child[0].child[0].child[0].grid.dx(), np.prod(self.grid.n[[3, 6]]))
+        self.assertEqual(
+            bax_tree.root.child[1].child[0].child[0].child[0].grid.dx(),
+            np.prod(self.grid.n[[3, 6]]),
+        )
 
-        self.assertEqual(bax_tree.root.child[1].child[0].child[0].child[1].grid.dx(), np.prod(self.grid.n[[4, 7]]))
-        
+        self.assertEqual(
+            bax_tree.root.child[1].child[0].child[0].child[1].grid.dx(),
+            np.prod(self.grid.n[[4, 7]]),
+        )
+
         self.assertEqual(bax_tree.root.child[0].child[0], None)
 
-        propensity = [np.array([1.])] * self.n_reactions
+        propensity = [np.array([1.0])] * self.n_reactions
 
         propensity[5] = bax_model.reactions[5].propensity[3](np.arange(self.grid.n[3]))
 
         propensity[6] = bax_model.reactions[6].propensity[3](np.arange(self.grid.n[3]))
 
-        propensity[10] = bax_model.reactions[10].propensity[3](np.arange(self.grid.n[3]))
+        propensity[10] = bax_model.reactions[10].propensity[3](
+            np.arange(self.grid.n[3])
+        )
 
-        propensity[11] = bax_model.reactions[11].propensity[6](np.arange(self.grid.n[6]))
+        propensity[11] = bax_model.reactions[11].propensity[6](
+            np.arange(self.grid.n[6])
+        )
 
-        propensity[12] = bax_model.reactions[12].propensity[6](np.arange(self.grid.n[6]))
+        propensity[12] = bax_model.reactions[12].propensity[6](
+            np.arange(self.grid.n[6])
+        )
 
-        for i, prop in enumerate(bax_tree.root.child[1].child[0].child[0].child[0].propensity):
+        for i, prop in enumerate(
+            bax_tree.root.child[1].child[0].child[0].child[0].propensity
+        ):
             self.assertTrue(np.all(prop == propensity[i]))
 
         self.dep = np.zeros((4, self.n_reactions), dtype="bool")
@@ -107,7 +132,10 @@ class BaxTestCase(unittest.TestCase):
         self.dep[3, 14] = True
         self.dep[3, 15] = True
 
-        self.assertTrue(np.all(bax_tree.root.child[1].child[0].child[0].grid.dep == self.dep))
+        self.assertTrue(
+            np.all(bax_tree.root.child[1].child[0].child[0].grid.dep == self.dep)
+        )
+
 
 class LambdaPhageTestCase(unittest.TestCase):
     def setUp(self):
@@ -130,11 +158,13 @@ class LambdaPhageTestCase(unittest.TestCase):
 
         self.assertTrue(np.all(lp_tree.root.child[0].child[0].grid.n == self.grid.n[4]))
 
-        self.assertTrue(np.all(lp_tree.root.child[0].child[1].grid.n == self.grid.n[[0, 1]]))
+        self.assertTrue(
+            np.all(lp_tree.root.child[0].child[1].grid.n == self.grid.n[[0, 1]])
+        )
 
         self.assertTrue(np.all(lp_tree.root.child[1].grid.n == self.grid.n[2:4]))
 
-        propensity00 = [np.array([1.])] * self.n_reactions
+        propensity00 = [np.array([1.0])] * self.n_reactions
 
         propensity00[1] = lp_model.reactions[1].propensity[4](np.arange(self.grid.n[4]))
 
@@ -143,7 +173,7 @@ class LambdaPhageTestCase(unittest.TestCase):
         for i, prop00 in enumerate(lp_tree.root.child[0].child[0].propensity):
             self.assertTrue(np.all(prop00 == propensity00[i]))
 
-        propensity01 = [np.array([1.])] * self.n_reactions
+        propensity01 = [np.array([1.0])] * self.n_reactions
 
         propensity01[0] = lp_model.reactions[0].propensity[1](np.arange(self.grid.n[1]))
 
@@ -157,17 +187,19 @@ class LambdaPhageTestCase(unittest.TestCase):
 
         for i, prop01 in enumerate(lp_tree.root.child[0].child[1].propensity):
             self.assertTrue(np.all(prop01 == propensity01[i]))
-        
+
     def test_slice_vec(self):
         lp_tree = Tree(self.partition_str, self.grid)
         with self.assertRaises(Exception):
             lp_tree.calculateObservables(np.ones(10))
 
-    # TODO: write a better test 
+    # TODO: write a better test
     def test_calculate_observables(self):
         lp_tree = Tree(self.partition_str, self.grid)
         lp_tree.initialize(lp_model, self.r_out)
-        initial_condition = InitialCondition(lp_tree, np.ones(self.r_out.size, dtype="int"))
+        initial_condition = InitialCondition(
+            lp_tree, np.ones(self.r_out.size, dtype="int")
+        )
         for node in initial_condition.external_nodes:
             node.X = np.ones((node.grid.dx(), 1))
 
@@ -179,13 +211,18 @@ class LambdaPhageTestCase(unittest.TestCase):
         sorted = np.argsort(lp_tree.species)
         n = lp_tree.root.grid.n[sorted]
 
-        sliced_distribution, marginal_distribution = lp_tree.calculateObservables(slice_vec)
+        sliced_distribution, marginal_distribution = lp_tree.calculateObservables(
+            slice_vec
+        )
         for n_el, species in zip(n, lp_tree.species_names):
             self.assertTrue(np.all(sliced_distribution[species] == np.ones(n_el)))
-            self.assertTrue(np.all(marginal_distribution[species] == np.ones(n_el) * norm / n_el))
-        
+            self.assertTrue(
+                np.all(marginal_distribution[species] == np.ones(n_el) * norm / n_el)
+            )
+
         with self.assertRaises(Exception):
             _, _ = lp_tree.calculateObservables(np.zeros(lp_tree.grid.d() + 1))
+
 
 if __name__ == "__main__":
     unittest.main()

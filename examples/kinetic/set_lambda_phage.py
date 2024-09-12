@@ -1,4 +1,5 @@
 """Script for setting the initial conditions for the lambda phage model."""
+
 import argparse
 import numpy as np
 import sys
@@ -11,37 +12,43 @@ from src.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
 
 import examples.models.kinetic.lambda_phage as model
 
-partition = ['(0 1)((2 3)(4))',
-             '((0 1)(2 3))(4)',
-             '((0 1)(2))(3 4)',
-             '(0 1)(2 3 4)']
+partition = ["(0 1)((2 3)(4))", "((0 1)(2 3))(4)", "((0 1)(2))(3 4)", "(0 1)(2 3 4)"]
 
 parser = argparse.ArgumentParser(
-                    prog='set_lambda_phage',
-                    usage='python3 examples/kinetic/set_lambda_phage.py --partition "'+partition[0]+'" --rank 5 5',
-                    description='This script sets the initial conditions for the lambda phage model.')
+    prog="set_lambda_phage",
+    usage='python3 examples/kinetic/set_lambda_phage.py --partition "'
+    + partition[0]
+    + '" --rank 5 5',
+    description="This script sets the initial conditions for the lambda phage model.",
+)
 
 for i, p in enumerate(partition):
-    parser.add_argument('-p'+str(i), 
-                        '--partition'+str(i), 
-                        action='store_const', 
-                        const=p,
-                        required=False, 
-                        help='Set the partition string to '+p,
-                        dest='partition', 
-                        )
-parser.add_argument('-r', 
-                    '--rank', 
-                    nargs='+', 
-                    type=int, 
-                    required=True, 
-                    help="Specify the ranks of the internal node",
-                    )
+    parser.add_argument(
+        "-p" + str(i),
+        "--partition" + str(i),
+        action="store_const",
+        const=p,
+        required=False,
+        help="Set the partition string to " + p,
+        dest="partition",
+    )
+parser.add_argument(
+    "-r",
+    "--rank",
+    nargs="+",
+    type=int,
+    required=True,
+    help="Specify the ranks of the internal node",
+)
 args = parser.parse_args()
 
 if args.partition is None:
     print("usage:", parser.usage)
-    print(parser.prog+":", "error: the following arguments are required: -p[n]/--partition[n], n=0,...,"+str(len(partition)-1))
+    print(
+        parser.prog + ":",
+        "error: the following arguments are required: -p[n]/--partition[n], n=0,...,"
+        + str(len(partition) - 1),
+    )
     sys.exit(1)
 
 partition_str = args.partition
@@ -59,33 +66,44 @@ grid = GridParms(n, binsize, liml)
 tree = Tree(partition_str, grid)
 tree.initialize(model.reaction_system, r_out)
 
+
 # Initial distribution
 def multinomial(x):
     abs_x = np.sum(x)
-    if (abs_x <= 3):
-        p0 = factorial(3) * (0.05 ** abs_x) * \
-            ((1.0 - 5 * 0.05) ** (3 - abs_x)) / (np.prod(factorial(x)) * factorial(3 - abs_x))
+    if abs_x <= 3:
+        p0 = (
+            factorial(3)
+            * (0.05**abs_x)
+            * ((1.0 - 5 * 0.05) ** (3 - abs_x))
+            / (np.prod(factorial(x)) * factorial(3 - abs_x))
+        )
     else:
         p0 = 0.0
     return p0
 
+
 # Helper function for factorizing a low-rank factor
 def factorizeLRFactor(x, node):
-    x_tensor = np.zeros((node.child[0].grid.dx(), node.child[1].grid.dx(), node.rankIn()))
+    x_tensor = np.zeros(
+        (node.child[0].grid.dx(), node.child[1].grid.dx(), node.rankIn())
+    )
     for i in range(node.rankIn()):
-        x_tensor[:, :, i] = x[:, i].reshape((node.child[0].grid.dx(), node.child[1].grid.dx()), order="F")
+        x_tensor[:, :, i] = x[:, i].reshape(
+            (node.child[0].grid.dx(), node.child[1].grid.dx()), order="F"
+        )
 
     x_mat = tensorUnfold(x_tensor, 0)
     u, _, _ = np.linalg.svd(x_mat, full_matrices=False)
-    x0 = u[:, :node.child[0].rankIn()]
+    x0 = u[:, : node.child[0].rankIn()]
 
     x_mat = tensorUnfold(x_tensor, 1)
     u, _, _ = np.linalg.svd(x_mat, full_matrices=False)
-    x1 = u[:, :node.child[1].rankIn()]
+    x1 = u[:, : node.child[1].rankIn()]
 
-    q = np.einsum('ik,jl,ijm', x0, x1, x_tensor)
+    q = np.einsum("ik,jl,ijm", x0, x1, x_tensor)
 
     return q, x0, x1
+
 
 p0 = np.zeros(grid.dx())
 vec_index = np.zeros(grid.d())
@@ -94,15 +112,17 @@ for i in range(grid.dx()):
     p0[i] = multinomial(state + (grid.binsize - 1.0) * 0.5)
     incrVecIndex(vec_index, grid.n, grid.d())
 
-p0_mat = p0.reshape((tree.root.child[0].grid.dx(), tree.root.child[1].grid.dx()), order="F")
+p0_mat = p0.reshape(
+    (tree.root.child[0].grid.dx(), tree.root.child[1].grid.dx()), order="F"
+)
 
 # SVD of p0
 u, s, vh = np.linalg.svd(p0_mat, full_matrices=False)
 
 # Use only the first `r` singular values
-x0 = u[:, :tree.root.rankOut()]
-q = np.diag(s[:tree.root.rankOut()])
-x1 = vh[:tree.root.rankOut(), :].T
+x0 = u[:, : tree.root.rankOut()]
+q = np.diag(s[: tree.root.rankOut()])
+x1 = vh[: tree.root.rankOut(), :].T
 
 # SVD of x0
 if partition_str is partition[0]:

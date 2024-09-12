@@ -19,15 +19,29 @@ kC4 = 0.01
 
 reactions = [None] * 10
 
-reactions[0] = Reaction({1: lambda x: kA0 * kB0 / (kB0 + x)}, np.array([1, 0, 0, 0, 0], dtype="int"))
+reactions[0] = Reaction(
+    {1: lambda x: kA0 * kB0 / (kB0 + x)}, np.array([1, 0, 0, 0, 0], dtype="int")
+)
 
-reactions[1] = Reaction({0: lambda x: kB1 / (kB1 + x), 4: lambda x: kA1 + x}, np.array([0, 1, 0, 0, 0], dtype="int"))
+reactions[1] = Reaction(
+    {0: lambda x: kB1 / (kB1 + x), 4: lambda x: kA1 + x},
+    np.array([0, 1, 0, 0, 0], dtype="int"),
+)
 
-reactions[2] = Reaction({1: lambda x: kA2 * kB2 * x / (kB2 * x + 1.0)}, np.array([0, 0, 1, 0, 0], dtype="int"))
+reactions[2] = Reaction(
+    {1: lambda x: kA2 * kB2 * x / (kB2 * x + 1.0)},
+    np.array([0, 0, 1, 0, 0], dtype="int"),
+)
 
-reactions[3] = Reaction({2: lambda x: kA3 * kB3 * x / (kB3 * x + 1.0)}, np.array([0, 0, 0, 1, 0], dtype="int"))
+reactions[3] = Reaction(
+    {2: lambda x: kA3 * kB3 * x / (kB3 * x + 1.0)},
+    np.array([0, 0, 0, 1, 0], dtype="int"),
+)
 
-reactions[4] = Reaction({2: lambda x: kA4 * kB4 * x / (kB4 * x + 1.0)}, np.array([0, 0, 0, 0, 1], dtype="int"))
+reactions[4] = Reaction(
+    {2: lambda x: kA4 * kB4 * x / (kB4 * x + 1.0)},
+    np.array([0, 0, 0, 0, 1], dtype="int"),
+)
 
 reactions[5] = Reaction({0: lambda x: kC0 * x}, np.array([-1, 0, 0, 0, 0], dtype="int"))
 

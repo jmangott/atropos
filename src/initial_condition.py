@@ -1,10 +1,12 @@
 """Contains the `InitialCondition` class for setting up initial conditions."""
+
 import numpy as np
 import numpy.typing as npt
 
 from src.tree import Tree, Node, ExternalNode, InternalNode
 
 # TODO: Q should have shape (n_basisfunctions, child(n_basisfunctions), child(n_basisfunctions))
+
 
 class InitialCondition:
     """
@@ -18,9 +20,10 @@ class InitialCondition:
     """
 
     def __setNodeData(self, node: Node, nb: int):
-        if (nb > node.rankIn()):
+        if nb > node.rankIn():
             raise Exception(
-                            "Number of basisfunctions must be smaller or equal to the incoming rank")
+                "Number of basisfunctions must be smaller or equal to the incoming rank"
+            )
 
         if isinstance(node, ExternalNode):
             node.X.resize((node.grid.dx(), nb), refcheck=False)
@@ -42,9 +45,10 @@ class InitialCondition:
             self.__getNodeData(node.child[1])
 
     def __init__(self, _tree: Tree, _n_basisfunctions: npt.NDArray[np.int_]):
-        if (_n_basisfunctions.size != _tree.n_internal_nodes):
+        if _n_basisfunctions.size != _tree.n_internal_nodes:
             raise Exception(
-                "`_n_basisfunctions.size` must be equal to the number of internal nodes")
+                "`_n_basisfunctions.size` must be equal to the number of internal nodes"
+            )
 
         self.n_basisfunctions_iter = iter(_n_basisfunctions)
         self.external_nodes = []

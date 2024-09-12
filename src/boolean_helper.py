@@ -1,4 +1,5 @@
 """Helper module for Boolean reaction models."""
+
 import bitarray
 import bitarray.util
 import ctypes
@@ -10,6 +11,7 @@ import tempfile
 import textwrap
 
 import src.reaction
+
 
 def convertRulesToReactions(filename: str):
     """
@@ -30,8 +32,14 @@ def convertRulesToReactions(filename: str):
     rules = {}
     dependencies = {}
 
-    rule_pattern = "template<> bool {}::rule<(\d+)>\(bitset<{}> x\) \{{([\S\s]*?)\}}".format(model_name, d)
-    dependency_pattern = "template<> vector<ind> {}::depends_on<(\d+)>\(\) \{{[\s]*?return \{{(.*?)\}};\s*\}}".format(model_name)
+    rule_pattern = (
+        "template<> bool {}::rule<(\d+)>\(bitset<{}> x\) \{{([\S\s]*?)\}}".format(
+            model_name, d
+        )
+    )
+    dependency_pattern = "template<> vector<ind> {}::depends_on<(\d+)>\(\) \{{[\s]*?return \{{(.*?)\}};\s*\}}".format(
+        model_name
+    )
 
     rule_matches = re.finditer(rule_pattern, f_string, re.MULTILINE)
     for _, match in enumerate(rule_matches, start=1):
@@ -41,13 +49,13 @@ def convertRulesToReactions(filename: str):
     dependency_matches = re.finditer(dependency_pattern, f_string, re.MULTILINE)
     for _, match in enumerate(dependency_matches, start=1):
         i = int(match.group(1))
-        dependency = [int(d) for d in match.group(2).split(',')]
+        dependency = [int(d) for d in match.group(2).split(",")]
         if i not in dependency:
             dependency.append(i)
         dependencies[i] = sorted(dependency)
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        with open(tmpdirname+"/rule_set_temp.cpp", mode="w") as f:
+        with open(tmpdirname + "/rule_set_temp.cpp", mode="w") as f:
             str_begin = '#include <bitset>\nextern "C"\n{'
             f.write(str_begin)
             for k, v in rules.items():
@@ -56,18 +64,22 @@ def convertRulesToReactions(filename: str):
             str_end = "}"
             f.write(str_end)
 
-        subprocess.run(["g++",
-                        "-fPIC",
-                        "-shared",
-                        "-o",
-                        tmpdirname + "/rule_set_temp.so",
-                        tmpdirname + "/rule_set_temp.cpp"])
+        subprocess.run(
+            [
+                "g++",
+                "-fPIC",
+                "-shared",
+                "-o",
+                tmpdirname + "/rule_set_temp.so",
+                tmpdirname + "/rule_set_temp.cpp",
+            ]
+        )
 
         handle = ctypes.CDLL(tmpdirname + "/rule_set_temp.so")
 
     def fun_x0(x):
         return 1 - x
-    
+
     def fun_x1(x):
         return x
 
@@ -83,9 +95,13 @@ def convertRulesToReactions(filename: str):
             for k, k_dep in enumerate(dependencies[i]):
                 x[k_dep] = x_dep[k]
             curr_rule = handle["rule_{}".format(i)]
-            curr_rule.argtypes = [ctypes.c_ulonglong] # avoid overflow for large systems
+            curr_rule.argtypes = [
+                ctypes.c_ulonglong
+            ]  # avoid overflow for large systems
             x_i_prime = curr_rule(bitarray.util.ba2int(x))
-            if x[i] != x_i_prime: # create a reaction only when output is different from input
+            if (
+                x[i] != x_i_prime
+            ):  # create a reaction only when output is different from input
                 nu = np.zeros(d)
                 nu[i] = 1 if x[i] == 0 else -1
                 propensity = {}
@@ -97,10 +113,13 @@ def convertRulesToReactions(filename: str):
 
     return reaction_system
 
+
 if __name__ == "__main__":
     import numpy as np
 
-    reaction_system = convertRulesToReactions("scripts/models/boolean_rulefiles/pancreatic_cancer.hpp")
+    reaction_system = convertRulesToReactions(
+        "scripts/models/boolean_rulefiles/pancreatic_cancer.hpp"
+    )
 
     for mu, reaction in enumerate(reaction_system.reactions):
         print("reaction {}, product {}".format(mu, int(np.nonzero(reaction.nu)[0])))

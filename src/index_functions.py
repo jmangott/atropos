@@ -1,6 +1,8 @@
 """Helper module for index calculations."""
+
 from numba import njit
 import numpy as np
+
 
 @njit
 def combIndexToVecIndex(comb_index: int, interval: np.ndarray) -> np.ndarray:
@@ -27,7 +29,9 @@ def vecIndexToCombIndex(vec_index: np.ndarray, interval: np.ndarray) -> int:
 
 
 @njit
-def vecIndexToState(vec_index: np.ndarray, liml: np.ndarray, binsize: np.ndarray) -> np.ndarray:
+def vecIndexToState(
+    vec_index: np.ndarray, liml: np.ndarray, binsize: np.ndarray
+) -> np.ndarray:
     """Calculates a state from a given vector index `vec_index`."""
     state = liml + binsize * vec_index
     return state
@@ -41,12 +45,13 @@ def incrVecIndex(vec_index: np.ndarray, interval: np.ndarray, dim: int) -> None:
     """
     for k in range(dim):
         vec_index[k] += 1
-        if (vec_index[k] < interval[k]):
+        if vec_index[k] < interval[k]:
             return
         vec_index[k] = 0
-    if (dim > 0):
+    if dim > 0:
         vec_index[dim - 1] += 1
     return
+
 
 def tensorUnfold(tensor, mode):
     """

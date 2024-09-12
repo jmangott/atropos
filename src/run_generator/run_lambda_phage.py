@@ -36,16 +36,16 @@ kC4 = 0.01
 
 ### Full reaction generation:
 
-#model.add_reaction(0, S1, {S2: kA0 * kB0 / (kB0 + S2)})
-#model.add_reaction(0, S2, {S1: kB1 / (kB1 + S1), S5: kA1 + S5})
-#model.add_reaction(0, S3, {S2: kA2 * kB2 * S2 / (kB2 * S2 + 1.0)})
-#model.add_reaction(0, S4, {S3: kA3 * kB3 * S3 / (kB3 * S3 + 1.0)})
-#model.add_reaction(0, S5, {S3: kA4 * kB4 * S3 / (kB4 * S3 + 1.0)})
-#model.add_reaction(S1, 0, {S1: kC0 * S1})
-#model.add_reaction(S2, 0, {S2: kC1 * S2})
-#model.add_reaction(S3, 0, {S3: kC2 * S3})
-#model.add_reaction(S4, 0, {S4: kC3 * S4})
-#model.add_reaction(S5, 0, {S5: kC4 * S5})
+# model.add_reaction(0, S1, {S2: kA0 * kB0 / (kB0 + S2)})
+# model.add_reaction(0, S2, {S1: kB1 / (kB1 + S1), S5: kA1 + S5})
+# model.add_reaction(0, S3, {S2: kA2 * kB2 * S2 / (kB2 * S2 + 1.0)})
+# model.add_reaction(0, S4, {S3: kA3 * kB3 * S3 / (kB3 * S3 + 1.0)})
+# model.add_reaction(0, S5, {S3: kA4 * kB4 * S3 / (kB4 * S3 + 1.0)})
+# model.add_reaction(S1, 0, {S1: kC0 * S1})
+# model.add_reaction(S2, 0, {S2: kC1 * S2})
+# model.add_reaction(S3, 0, {S3: kC2 * S3})
+# model.add_reaction(S4, 0, {S4: kC3 * S4})
+# model.add_reaction(S5, 0, {S5: kC4 * S5})
 
 
 ### Shorter reaction generation:
@@ -64,12 +64,11 @@ model.add_reaction(S5, 0, kC4)
 model.generate_reaction_system()
 
 
-
 """
 Generate tree and initial condition
 """
-r = np.array([5,4])
-p0 = '(S1 S2)((S3 S4)(S5))'
+r = np.array([5, 4])
+p0 = "(S1 S2)((S3 S4)(S5))"
 partitioning = Partitioning(p0, r, model)
 
 n = np.array([16, 41, 11, 11, 11])
@@ -81,54 +80,71 @@ partitioning.add_grid_params(n, binsize, liml)
 partitioning.generate_tree()
 
 
-
 # Initial distribution
 def multinomial(x):
     abs_x = np.sum(x)
-    if (abs_x <= 3):
-        p0 = factorial(3) * (0.05 ** abs_x) * \
-            ((1.0 - 5 * 0.05) ** (3 - abs_x)) / (np.prod(factorial(x)) * factorial(3 - abs_x))
+    if abs_x <= 3:
+        p0 = (
+            factorial(3)
+            * (0.05**abs_x)
+            * ((1.0 - 5 * 0.05) ** (3 - abs_x))
+            / (np.prod(factorial(x)) * factorial(3 - abs_x))
+        )
     else:
         p0 = 0.0
     return p0
 
+
 # Helper function for factorizing a low-rank factor
 def factorizeLRFactor(x, node):
-    x_tensor = np.zeros((node.child[0].grid.dx(), node.child[1].grid.dx(), node.rankIn()))
+    x_tensor = np.zeros(
+        (node.child[0].grid.dx(), node.child[1].grid.dx(), node.rankIn())
+    )
     for i in range(node.rankIn()):
-        x_tensor[:, :, i] = x[:, i].reshape((node.child[0].grid.dx(), node.child[1].grid.dx()), order="F")
+        x_tensor[:, :, i] = x[:, i].reshape(
+            (node.child[0].grid.dx(), node.child[1].grid.dx()), order="F"
+        )
 
     x_mat = tensorUnfold(x_tensor, 0)
     u, _, _ = np.linalg.svd(x_mat, full_matrices=False)
-    x0 = u[:, :node.child[0].rankIn()]
+    x0 = u[:, : node.child[0].rankIn()]
 
     x_mat = tensorUnfold(x_tensor, 1)
     u, _, _ = np.linalg.svd(x_mat, full_matrices=False)
-    x1 = u[:, :node.child[1].rankIn()]
+    x1 = u[:, : node.child[1].rankIn()]
 
-    q = np.einsum('ik,jl,ijm', x0, x1, x_tensor)
+    q = np.einsum("ik,jl,ijm", x0, x1, x_tensor)
 
     return q, x0, x1
+
 
 p0 = np.zeros(partitioning.grid.dx())
 vec_index = np.zeros(partitioning.grid.d())
 for i in range(partitioning.grid.dx()):
-    state = vecIndexToState(vec_index, partitioning.grid.liml, partitioning.grid.binsize)
+    state = vecIndexToState(
+        vec_index, partitioning.grid.liml, partitioning.grid.binsize
+    )
     p0[i] = multinomial(state + (partitioning.grid.binsize - 1.0) * 0.5)
     incrVecIndex(vec_index, partitioning.grid.n, partitioning.grid.d())
 
-p0_mat = p0.reshape((partitioning.tree.root.child[0].grid.dx(), partitioning.tree.root.child[1].grid.dx()), order="F")
+p0_mat = p0.reshape(
+    (
+        partitioning.tree.root.child[0].grid.dx(),
+        partitioning.tree.root.child[1].grid.dx(),
+    ),
+    order="F",
+)
 
 # SVD of p0
 u, s, vh = np.linalg.svd(p0_mat, full_matrices=False)
 
 # Use only the first `r` singular values
-x0 = u[:, :partitioning.tree.root.rankOut()]
-q = np.diag(s[:partitioning.tree.root.rankOut()])
-x1 = vh[:partitioning.tree.root.rankOut(), :].T
+x0 = u[:, : partitioning.tree.root.rankOut()]
+q = np.diag(s[: partitioning.tree.root.rankOut()])
+x1 = vh[: partitioning.tree.root.rankOut(), :].T
 
 # SVD of x0
-q1, x10, x11 = factorizeLRFactor(x1, partitioning.tree.root.child[1])       # This because p0
+q1, x10, x11 = factorizeLRFactor(x1, partitioning.tree.root.child[1])  # This because p0
 
 # Number of basisfunctions
 n_basisfunctions = r
@@ -151,12 +167,10 @@ norm = x0_sum @ q @ x1_sum.T
 print("norm:", norm)
 
 
-
 print(partitioning.tree)
-
 
 
 """
 write input file and run
 """
-run(partitioning, 'lambda_phage_Stefan', 1e-3, 1, snapshot = 10, method = "implicit_Euler")
+run(partitioning, "lambda_phage_Stefan", 1e-3, 1, snapshot=10, method="implicit_Euler")
