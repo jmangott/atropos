@@ -41,7 +41,7 @@ def vecIndexToState(
 def incrVecIndex(vec_index: np.ndarray, interval: np.ndarray, dim: int) -> None:
     """
     Increases a given vector index `vec_index`
-    (i.e. for a given `vec_index`, calculate `res = vecIndexToCombIndex(vec_index) + 1` 
+    (i.e. for a given `vec_index`, calculate `res = vecIndexToCombIndex(vec_index) + 1`
     and subsequently `combIndexToVecIndex(res)`).
     """
     for k in range(dim):

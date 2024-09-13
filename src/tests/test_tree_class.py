@@ -222,8 +222,9 @@ class LambdaPhageTestCase(unittest.TestCase):
             )
 
         with self.assertRaises(ValueError):
-            _, _ = lp_tree.calculateObservables(np.zeros(lp_tree.grid.d() + 1, 
-                                                         dtype="int"))
+            _, _ = lp_tree.calculateObservables(
+                np.zeros(lp_tree.grid.d() + 1, dtype="int")
+            )
 
 
 if __name__ == "__main__":

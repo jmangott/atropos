@@ -16,9 +16,9 @@ import src.reaction
 
 def convertRulesToReactions(filename: str):
     """
-    Converts a rule file of the Boolean CME integrator of 
+    Converts a rule file of the Boolean CME integrator of
     https://bitbucket.org/mprugger/low_rank_cme to a `ReactionSystem` instance.
-    NOTE: This method is only capable of converting systems 
+    NOTE: This method is only capable of converting systems
     with a maximum of 64 species.
     """
     with open(filename) as f:
@@ -35,10 +35,13 @@ def convertRulesToReactions(filename: str):
     rules = {}
     dependencies = {}
 
-    rule_pattern = f"template<> bool {model_name}::rule<(\d+)>\(bitset<{d}> x\) "\
-        "\{([\S\s]*?)\}"
-    dependency_pattern = f"template<> vector<ind> {model_name}::depends_on<(\d+)>\(\) "\
+    rule_pattern = (
+        f"template<> bool {model_name}::rule<(\d+)>\(bitset<{d}> x\) " "\{([\S\s]*?)\}"
+    )
+    dependency_pattern = (
+        f"template<> vector<ind> {model_name}::depends_on<(\d+)>\(\) "
         "\{[\s]*?return \{(.*?)\};\s*\}"
+    )
 
     rule_matches = re.finditer(rule_pattern, f_string, re.MULTILINE)
     for _, match in enumerate(rule_matches, start=1):

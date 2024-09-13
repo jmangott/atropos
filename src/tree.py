@@ -1,6 +1,6 @@
 """
-Contains the `Tree` class, which stores the low-rank approximation 
-of an initial probability distribution as a binary tree according 
+Contains the `Tree` class, which stores the low-rank approximation
+of an initial probability distribution as a binary tree according
 to a prescribed partition.
 """
 
@@ -56,17 +56,17 @@ class ExternalNode(Node):
         return self.X.shape[-1]
 
 
-
 class Tree:
     """
     The `tree` class stores the initial condition for the
     hierarchical DLR approximation of the chemical master equation.
-    
-    Note that the input for the grid parameters (`_grid`) must follow the same ordering 
-    convention for the species as the reaction system (`_reaction_system`), when 
+
+    Note that the input for the grid parameters (`_grid`) must follow the same ordering
+    convention for the species as the reaction system (`_reaction_system`), when
     initializing the tree via the `initialize` method, but the partition string for
     dividing the reaction networks allows also permutation.
     """
+
     # TODO: Move the `_grid` dependency to `initialize` method
     def __init__(self, _partition_str: str, _grid: GridParms):
         # Syntactic check (test whether `_partition_str` is a valid input string)
@@ -89,7 +89,8 @@ class Tree:
         # Test whether the dimension of `_partition_str` and `_grid.d` match
         if p.size != _grid.d():
             raise ValueError(
-                "Dimensions of `_partition_str` and `_grid.d` do not match")
+                "Dimensions of `_partition_str` and `_grid.d` do not match"
+            )
 
         self.n_internal_nodes = 1  # 1 is for the root node
         self.n_external_nodes = 0
@@ -214,8 +215,8 @@ class Tree:
 
         if self.grid.d() != reaction_system.d():
             raise ValueError(
-                "`self.grid.d()` must be equal to the number of species "\
-                    "in the reaction system"
+                "`self.grid.d()` must be equal to the number of species "
+                "in the reaction system"
             )
 
         self.reaction_system = reaction_system
@@ -360,7 +361,7 @@ class Tree:
     def calculateObservables(self, slice_vec: npt.NDArray[np.int_]):
         if not np.issubdtype(slice_vec.dtype, np.integer):
             raise TypeError("`slice_vec` must be an integer np.array")
-        
+
         if slice_vec.size != self.grid.d():
             raise ValueError("`slice_vec.size` must be equal to `self.grid.d()`")
         sliced_distributions = {}
@@ -383,8 +384,8 @@ class Tree:
 
     def calculateFullDistribution(self):
         """
-        This method only works when all species occur in ascending order 
-        in the partition string. The full probability distribution is computed, 
+        This method only works when all species occur in ascending order
+        in the partition string. The full probability distribution is computed,
         therefore this method should be used only for small system sizes.
         """
         return self.__calculateFullDistributionHelper(self.root)[:, 0]
@@ -404,8 +405,9 @@ class Tree:
                         )
 
         edges = combinations
-        edges_weights = [(e[0], e[1], {"weight": w}) 
-                         for e, w in zip(edges, weights, strict=False)]
+        edges_weights = [
+            (e[0], e[1], {"weight": w}) for e, w in zip(edges, weights, strict=False)
+        ]
 
         external_ids = self.external_nodes.keys()
         attributes = {
@@ -438,7 +440,7 @@ class Tree:
 
     def __getReactionDependencies(self):
         """
-        This method computes the input/output dependencies of the reaction network 
+        This method computes the input/output dependencies of the reaction network
         as a dictionary.
         """
         reaction_dependencies = collections.defaultdict(list)
@@ -450,7 +452,7 @@ class Tree:
 
     # TODO: check if this function also works for general kinetic models
     # TODO: for kinetic models the products may be more than one,
-    # but then the reactions have to be converted to a 'normal' form, 
+    # but then the reactions have to be converted to a 'normal' form,
     # where only a single product is present
     def calculateEntropy(self, node: InternalNode):
         reaction_dependencies = self.__getReactionDependencies()
@@ -459,14 +461,14 @@ class Tree:
         for key, val in reaction_dependencies.items():
             S[key] = 0
 
-            # take the first reaction 
+            # take the first reaction
             # (all other reactions have the same `grid.dep` values)
             mu_0 = reaction_dependencies[key][0]
 
             # mapping species_names <-> species_id for the products
             products = findIndex(self.species_names, key[1])
 
-            # TODO: rewrite this function that it is clearly visible 
+            # TODO: rewrite this function that it is clearly visible
             # that only a single product is allowed
             prod_lies_in_partition_0 = products[0] in node.child[0].grid.species
             if prod_lies_in_partition_0:
@@ -507,7 +509,7 @@ class Tree:
                     product_population_number0 = state0[products0]
                     product_population_number1 = state1[products1]
                     weight = 1.0
-                    for mu in val:  
+                    for mu in val:
                         # `val` are all reactions with the same I/O dependencies
                         nu0 = self.reaction_system.reactions[mu].nu[species0]
                         nu1 = self.reaction_system.reactions[mu].nu[species1]

@@ -5,13 +5,13 @@ import numpy.typing as npt
 
 from src.tree import ExternalNode, InternalNode, Node, Tree
 
-# TODO: Q should have shape 
+# TODO: Q should have shape
 # (n_basisfunctions, child(n_basisfunctions), child(n_basisfunctions))
 
 
 class InitialCondition:
     """
-    Provides the Q tensors and the low-rank factors as an array according to the 
+    Provides the Q tensors and the low-rank factors as an array according to the
     following (recursive) ordering convention (OC):
 
         1. left node (or root node)
@@ -19,7 +19,7 @@ class InitialCondition:
         3. right node
 
     These arrays can be conveniently set to obey the initial conditions.
-    For setting up the low-rank factors, the external nodes are also accessible 
+    For setting up the low-rank factors, the external nodes are also accessible
     via the array `external_nodes`.
     """
 

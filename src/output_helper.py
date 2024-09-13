@@ -140,10 +140,7 @@ class TimeSeries:
     def calculateMoments(self):
         n_moments = 2
         moments = [
-            {
-                name: np.zeros(self.__number_of_files)
-                for name in self.getSpeciesNames()
-            }
+            {name: np.zeros(self.__number_of_files) for name in self.getSpeciesNames()}
             for _ in range(n_moments)
         ]
 
@@ -220,6 +217,4 @@ def printEntropyCuts(tree: Tree):
     )
     total_cuts = cuts + cuts0 + cuts1
 
-    print(
-        f"Total entropy: {total_entropy}, total number of cuts: {total_cuts}"
-    )
+    print(f"Total entropy: {total_entropy}, total number of cuts: {total_cuts}")

@@ -33,7 +33,7 @@ class Model:
             nu_vec[i] = eq_sp.coeff(sym)
 
         prop_dict = {}
-        # Test if we only have coefficient as variable, 
+        # Test if we only have coefficient as variable,
         # if so, generate propensity in non factorised form
         if type(propensities) is int or type(propensities) is float:
             for sym in self.species:
@@ -163,9 +163,12 @@ def run(partitioning, output, tau, tfinal, snapshot=2, substeps=1, method="RK4")
     elif method == "RK4":
         m = "r"
     else:
-        print("Possible inputs for method: "\
-              "implicit_Euler, explicit_Euler, Crank_Nicolson, RK4"
+        print(
+            "Possible inputs for method: "
+            "implicit_Euler, explicit_Euler, Crank_Nicolson, RK4"
         )
-    cmd = ("core/bin/hierarchical-cme "
-           f"-o {output} -s {snap} -t {tau} -f {tfinal} -n {substeps} -m {m}")
+    cmd = (
+        "core/bin/hierarchical-cme "
+        f"-o {output} -s {snap} -t {tau} -f {tfinal} -n {substeps} -m {m}"
+    )
     os.system(cmd)
