@@ -13,25 +13,23 @@
 
 #include "coeff_class.hpp"
 #include "grid_class.hpp"
-#include "netcdf_check.hpp"
 #include "matrix.hpp"
+#include "netcdf_check.hpp"
 #include "timer_class.hpp"
 
 #ifdef __OPENMP__
-#pragma omp declare reduction(+: multi_array<double, 2>: omp_out += omp_in) \
+#pragma omp declare reduction(+ : multi_array<double, 2> : omp_out += omp_in)          \
     initializer(omp_priv = decltype(omp_orig)(omp_orig))
 #endif
 
 #ifdef __OPENMP__
-#pragma omp declare reduction(+: multi_array<double, 4>: omp_out += omp_in) \
+#pragma omp declare reduction(+ : multi_array<double, 4> : omp_out += omp_in)          \
     initializer(omp_priv = decltype(omp_orig)(omp_orig))
 #endif
 
 // General classes for the hierarchical DLR approximation
 // TODO: introduce a template parameter `N` for arbitrary many outgoing legs
-template<class T>
-struct node
-{
+template <class T> struct node {
     const std::string id;
 
     node* const parent;
@@ -42,12 +40,10 @@ struct node
 
     node() = default;
 
-    node(const std::string _id, node * const _parent, std::array<node*, 2> _child, const Index _r_in, const Index _n_basisfunctions) 
-    : id(_id)
-    , parent(_parent)
-    , child(_child)
-    , n_basisfunctions(_n_basisfunctions)
-    , S({_r_in, _r_in})
+    node(const std::string _id, node* const _parent, std::array<node*, 2> _child,
+         const Index _r_in, const Index _n_basisfunctions)
+        : id(_id), parent(_parent), child(_child), n_basisfunctions(_n_basisfunctions),
+          S({_r_in, _r_in})
     {
         assert(n_basisfunctions <= _r_in);
     }
@@ -58,33 +54,24 @@ struct node
     virtual bool IsExternal() const = 0;
     virtual void Initialize(int ncid) = 0;
 
-    Index RankIn() const
-    {
-        return S.shape()[0];
-    }
+    Index RankIn() const { return S.shape()[0]; }
 };
 
-template<class T>
-struct internal_node : virtual node<T>
-{
+template <class T> struct internal_node : virtual node<T> {
     multi_array<T, 3> Q;
     multi_array<T, 3> G;
 
-    internal_node(const std::string _id, internal_node * const _parent, const Index _r_in, const std::array<Index, 2> _r_out, const Index _n_basisfunctions)
-    : node<T>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
-    , Q({_r_out[0], _r_out[1], _r_in})
-    , G({_r_out[0], _r_out[1], _r_in})
-    {}
-    
-    bool IsInternal() const override
+    internal_node(const std::string _id, internal_node* const _parent,
+                  const Index _r_in, const std::array<Index, 2> _r_out,
+                  const Index _n_basisfunctions)
+        : node<T>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions),
+          Q({_r_out[0], _r_out[1], _r_in}), G({_r_out[0], _r_out[1], _r_in})
     {
-        return true;
     }
 
-    bool IsExternal() const override
-    {
-        return false;
-    }
+    bool IsInternal() const override { return true; }
+
+    bool IsExternal() const override { return false; }
 
     std::array<Index, 2> RankOut() const
     {
@@ -95,135 +82,132 @@ struct internal_node : virtual node<T>
 
     void Write(int ncid, int id_r_in, std::array<int, 2> id_r_out) const;
 
-    multi_array<T, 2> Orthogonalize(const T weight, const blas_ops &blas);
+    multi_array<T, 2> Orthogonalize(const T weight, const blas_ops& blas);
 };
 
-template<class T>
-struct external_node : virtual node<T>
-{
+template <class T> struct external_node : virtual node<T> {
     multi_array<T, 2> X;
 
-    external_node(const std::string _id, internal_node<T> * const _parent, const Index _dx, const Index _r_in, const Index _n_basisfunctions) 
-    : node<T>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
-    , X({_dx, _r_in})
-    {}
-    
-    bool IsInternal() const override
+    external_node(const std::string _id, internal_node<T>* const _parent,
+                  const Index _dx, const Index _r_in, const Index _n_basisfunctions)
+        : node<T>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions),
+          X({_dx, _r_in})
     {
-        return false;
     }
 
-    bool IsExternal() const override
-    {
-        return true;
-    }
+    bool IsInternal() const override { return false; }
 
-    Index ProblemSize() const
-    {
-        return X.shape()[0];
-    }
+    bool IsExternal() const override { return true; }
+
+    Index ProblemSize() const { return X.shape()[0]; }
 
     void Initialize(int ncid) override;
 
     void Write(int ncid, int id_r_in, int id_dx) const;
 
-    multi_array<T, 2> Orthogonalize(const T weight, const blas_ops &blas);
+    multi_array<T, 2> Orthogonalize(const T weight, const blas_ops& blas);
 };
 
-struct cme_node : virtual node<double>
-{
+struct cme_node : virtual node<double> {
     std::array<cme_node*, 2> child;
     const grid_parms grid;
     cme_coeff coefficients;
 
-    cme_node(const std::string _id, cme_node * const _parent, const grid_parms _grid, const Index _r_in, const Index _n_basisfunctions)
-    : node<double>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
-    , child({nullptr, nullptr})
-    , grid(_grid)
-    , coefficients(_grid.n_reactions, _r_in)
-    {}
-    void CalculateAB_bar(const blas_ops &blas);
+    cme_node(const std::string _id, cme_node* const _parent, const grid_parms _grid,
+             const Index _r_in, const Index _n_basisfunctions)
+        : node<double>(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions),
+          child({nullptr, nullptr}), grid(_grid), coefficients(_grid.n_reactions, _r_in)
+    {
+    }
+    void CalculateAB_bar(const blas_ops& blas);
 };
 
-struct cme_internal_node : cme_node, internal_node<double>
-{
-    cme_internal_node(const std::string _id, cme_internal_node * const _parent, const grid_parms _grid, const Index _r_in, const std::array<Index, 2> _r_out, const Index _n_basisfunctions) 
-    : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
-    , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
-    , internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
-    {}
+struct cme_internal_node : cme_node, internal_node<double> {
+    cme_internal_node(const std::string _id, cme_internal_node* const _parent,
+                      const grid_parms _grid, const Index _r_in,
+                      const std::array<Index, 2> _r_out, const Index _n_basisfunctions)
+        : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions),
+          cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions),
+          internal_node<double>(_id, _parent, _r_in, _r_out, _n_basisfunctions)
+    {
+    }
     void Initialize(int ncid) override;
 
-    template <Index id>
-    void CalculateAB(const blas_ops &blas);
+    template <Index id> void CalculateAB(const blas_ops& blas);
 };
 
-struct cme_external_node : cme_node, external_node<double>
-{
+struct cme_external_node : cme_node, external_node<double> {
     std::vector<std::vector<double>> propensity;
 
-    cme_external_node(const std::string _id, cme_internal_node * const _parent, const grid_parms _grid, const Index _r_in, const Index _n_basisfunctions)
-    : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions)
-    , cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions)
-    , external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions)
-    , propensity(_grid.n_reactions)
-    {}
+    cme_external_node(const std::string _id, cme_internal_node* const _parent,
+                      const grid_parms _grid, const Index _r_in,
+                      const Index _n_basisfunctions)
+        : node(_id, _parent, {nullptr, nullptr}, _r_in, _n_basisfunctions),
+          cme_node(_id, _parent, _grid, _r_in, _n_basisfunctions),
+          external_node<double>(_id, _parent, _grid.dx, _r_in, _n_basisfunctions),
+          propensity(_grid.n_reactions)
+    {
+    }
     void Initialize(int ncid) override;
 };
 
-multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas);
+multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
+                                     const cme_external_node* const node,
+                                     const blas_ops& blas);
 
-multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node, const blas_ops &blas);
+multi_array<double, 2> CalculateSDot(const multi_array<double, 2>& S,
+                                     const cme_node* const node, const blas_ops& blas);
 
-multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node, const blas_ops &blas);
+multi_array<double, 2> CalculateQDot(const multi_array<double, 2>& Qmat,
+                                     const cme_internal_node* const node,
+                                     const blas_ops& blas);
 
-struct cme_lr_tree
-{
-    cme_internal_node * root;
+struct cme_lr_tree {
+    cme_internal_node* root;
     std::string partition_str;
     std::vector<std::string> species_names;
 
-    friend std::ostream &operator<<(std::ostream &os, cme_lr_tree const& tree)
+    friend std::ostream& operator<<(std::ostream& os, cme_lr_tree const& tree)
     {
         tree.PrintHelper(os, tree.root);
         return os;
     }
 
-    private:
-        void PrintHelper(std::ostream &os, cme_node const * const node) const;
-        void OrthogonalizeHelper(cme_internal_node * const node, const blas_ops &blas) const;
-        void InitializeAB_barHelper(cme_node * const node, const blas_ops &blas) const;
-        std::vector<double> NormalizeHelper(cme_node const * const node) const;
+  private:
+    void PrintHelper(std::ostream& os, cme_node const* const node) const;
+    void OrthogonalizeHelper(cme_internal_node* const node, const blas_ops& blas) const;
+    void InitializeAB_barHelper(cme_node* const node, const blas_ops& blas) const;
+    std::vector<double> NormalizeHelper(cme_node const* const node) const;
 
-    public:
-        void Read(const std::string fn);
-        void Write(const std::string, const double t, const double tau, const double dm) const;
-        void Orthogonalize(const blas_ops &blas) const;
-        void InitializeAB_bar(const blas_ops &blas) const;
-        double Normalize() const;
+  public:
+    void Read(const std::string fn);
+    void Write(const std::string, const double t, const double tau,
+               const double dm) const;
+    void Orthogonalize(const blas_ops& blas) const;
+    void InitializeAB_bar(const blas_ops& blas) const;
+    double Normalize() const;
 };
 
-namespace WriteHelpers
-{
-    void WritePartitionStr(int ncid, const std::string partition_str);
-    void WriteSpeciesNames(int ncid, const std::vector<std::string> species_names);
-    void WriteGridParms(int ncid, const grid_parms grid);
-    void WriteNode(int ncid, cme_node const * const node);
-}
+namespace WriteHelpers {
+void WritePartitionStr(int ncid, const std::string partition_str);
+void WriteSpeciesNames(int ncid, const std::vector<std::string> species_names);
+void WriteGridParms(int ncid, const grid_parms grid);
+void WriteNode(int ncid, cme_node const* const node);
+} // namespace WriteHelpers
 
-namespace ReadHelpers
-{
-    std::string ReadPartitionStr(int ncid);
-    std::vector<std::string> ReadSpeciesNames(int ncid);
-    grid_parms ReadGridParms(int ncid);
-    std::array<Index, 2> ReadRankOut(int ncid);
-    Index ReadNBasisfunctions(int ncid);
-    std::vector<std::vector<double>> ReadPropensity(int ncid, const Index n_reactions);
-    cme_node *ReadNode(int ncid, const std::string id, cme_internal_node * const parent_node, const Index r_in);
-}
+namespace ReadHelpers {
+std::string ReadPartitionStr(int ncid);
+std::vector<std::string> ReadSpeciesNames(int ncid);
+grid_parms ReadGridParms(int ncid);
+std::array<Index, 2> ReadRankOut(int ncid);
+Index ReadNBasisfunctions(int ncid);
+std::vector<std::vector<double>> ReadPropensity(int ncid, const Index n_reactions);
+cme_node* ReadNode(int ncid, const std::string id, cme_internal_node* const parent_node,
+                   const Index r_in);
+} // namespace ReadHelpers
 
 template <class T>
-multi_array<T, 2> internal_node<T>::Orthogonalize(const T weight, const blas_ops &blas)
+multi_array<T, 2> internal_node<T>::Orthogonalize(const T weight, const blas_ops& blas)
 {
     multi_array<T, 2> Qmat({prod(RankOut()), node<T>::RankIn()});
     multi_array<T, 2> Q_R({node<T>::RankIn(), node<T>::RankIn()});
@@ -235,7 +219,7 @@ multi_array<T, 2> internal_node<T>::Orthogonalize(const T weight, const blas_ops
 };
 
 template <class T>
-multi_array<T, 2> external_node<T>::Orthogonalize(const T weight, const blas_ops &blas)
+multi_array<T, 2> external_node<T>::Orthogonalize(const T weight, const blas_ops& blas)
 {
     multi_array<T, 2> X_R({node<T>::RankIn(), node<T>::RankIn()});
     X_R = Matrix::Orthogonalize(X, node<T>::n_basisfunctions, weight, blas);
@@ -243,8 +227,7 @@ multi_array<T, 2> external_node<T>::Orthogonalize(const T weight, const blas_ops
     return X_R;
 };
 
-template <Index id>
-void cme_internal_node::CalculateAB(const blas_ops &blas)
+template <Index id> void cme_internal_node::CalculateAB(const blas_ops& blas)
 {
     const Index id_c = (id == 0) ? 1 : 0;
     Index rank_out = RankOut()[id];
@@ -271,8 +254,7 @@ void cme_internal_node::CalculateAB(const blas_ops &blas)
 #ifdef __OPENMP__
 #pragma omp for
 #endif
-        for (Index mu = 0; mu < grid.n_reactions; ++mu)
-        {
+        for (Index mu = 0; mu < grid.n_reactions; ++mu) {
             blas.matmul(GA_mat_temp, child[id_c]->coefficients.A_bar[mu], GA_mat);
             Matrix::Tensorize<id_c>(GA_mat, GA);
             Matrix::Matricize<id>(GA, GA_tilde);

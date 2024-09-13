@@ -16,26 +16,27 @@
 
 #include "matrix_free.hpp"
 #include "timer_class.hpp"
-//TODO: use a function pointer instead of std::function for performance
-struct integration_method
-{
+// TODO: use a function pointer instead of std::function for performance
+struct integration_method {
     integration_method() = default;
     virtual ~integration_method() = default;
-    virtual void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const = 0;
+    virtual void integrate(
+        multi_array<double, 2>& arr,
+        const std::function<multi_array<double, 2>(const multi_array<double, 2>&)>& rhs,
+        const double tau) const = 0;
     virtual std::string get_name() const = 0;
 };
 
-struct explicit_euler : integration_method
-{
-    explicit_euler(const unsigned int _substeps)
-    : substeps(_substeps)
-    {};
+struct explicit_euler : integration_method {
+    explicit_euler(const unsigned int _substeps) : substeps(_substeps) {};
 
-    void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const override
+    void integrate(
+        multi_array<double, 2>& arr,
+        const std::function<multi_array<double, 2>(const multi_array<double, 2>&)>& rhs,
+        const double tau) const override
     {
         double tau_substep = tau / substeps;
-        for (auto i = 0U; i < substeps; ++i)
-        {
+        for (auto i = 0U; i < substeps; ++i) {
             arr += rhs(arr) * tau_substep;
         }
     }
@@ -48,13 +49,13 @@ struct explicit_euler : integration_method
     const unsigned int substeps;
 };
 
-struct rk4 : integration_method
-{
-    rk4(const unsigned int _substeps)
-    : substeps(_substeps)
-    {};
+struct rk4 : integration_method {
+    rk4(const unsigned int _substeps) : substeps(_substeps) {};
 
-    void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const override
+    void integrate(
+        multi_array<double, 2>& arr,
+        const std::function<multi_array<double, 2>(const multi_array<double, 2>&)>& rhs,
+        const double tau) const override
     {
         multi_array<double, 2> k1(arr.shape());
         multi_array<double, 2> k2(arr.shape());
@@ -62,8 +63,7 @@ struct rk4 : integration_method
         multi_array<double, 2> k4(arr.shape());
 
         double tau_substep = tau / substeps;
-        for (auto i = 0U; i < substeps; ++i)
-        {
+        for (auto i = 0U; i < substeps; ++i) {
             k1 = rhs(arr);
             k2 = rhs(arr + k1 * (0.5 * tau_substep));
             k3 = rhs(arr + k2 * (0.5 * tau_substep));
@@ -81,13 +81,13 @@ struct rk4 : integration_method
     const unsigned int substeps;
 };
 
-struct implicit_euler : integration_method
-{
-    implicit_euler(const unsigned int _substeps)
-    : substeps(_substeps)
-    {};
+struct implicit_euler : integration_method {
+    implicit_euler(const unsigned int _substeps) : substeps(_substeps) {};
 
-    void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const override
+    void integrate(
+        multi_array<double, 2>& arr,
+        const std::function<multi_array<double, 2>(const multi_array<double, 2>&)>& rhs,
+        const double tau) const override
     {
         Eigen::GMRES<matrix_free, Eigen::IdentityPreconditioner> gmres;
         Eigen::VectorXd x, b;
@@ -97,8 +97,7 @@ struct implicit_euler : integration_method
         matrix_free A(arr.shape(), rhs, tau_substep);
         gmres.compute(A);
 
-        for (auto i = 0U; i < substeps; ++i)
-        {
+        for (auto i = 0U; i < substeps; ++i) {
             x = gmres.solve(b);
             b = x;
         }
@@ -114,13 +113,13 @@ struct implicit_euler : integration_method
     const unsigned int substeps;
 };
 
-struct crank_nicolson : integration_method
-{
-    crank_nicolson(const unsigned int _substeps)
-    : substeps(_substeps)
-    {};
+struct crank_nicolson : integration_method {
+    crank_nicolson(const unsigned int _substeps) : substeps(_substeps) {};
 
-    void integrate(multi_array<double, 2> &arr, const std::function<multi_array<double, 2>(const multi_array<double, 2> &)> &rhs, const double tau) const override
+    void integrate(
+        multi_array<double, 2>& arr,
+        const std::function<multi_array<double, 2>(const multi_array<double, 2>&)>& rhs,
+        const double tau) const override
     {
         double tau_half = 0.5 * tau;
 
@@ -132,18 +131,16 @@ struct crank_nicolson : integration_method
         matrix_free A(arr.shape(), rhs, tau_substep);
         gmres.compute(A);
 
-        for (auto i = 0U; i < substeps; ++i)
-        {
+        for (auto i = 0U; i < substeps; ++i) {
             b_arr = arr;
             b_arr += rhs(arr) * tau_half;
 
             b = Eigen::Map<Eigen::VectorXd>(b_arr.data(), prod(b_arr.shape()));
 
             x = gmres.solve(b);
-            
+
             Eigen::Map<Eigen::VectorXd>(arr.data(), x.size()) = x;
         }
-
     }
 
     std::string get_name() const override

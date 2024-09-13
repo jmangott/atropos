@@ -2,8 +2,7 @@
 
 // TODO: Add cast functions `to_internal_node`, `to_external_node`
 
-template<>
-void internal_node<double>::Initialize(int ncid)
+template <> void internal_node<double>::Initialize(int ncid)
 {
     // read Q
     int id_Q;
@@ -18,10 +17,8 @@ void cme_internal_node::Initialize(int ncid)
     internal_node::Initialize(ncid);
 
     // initialize A and B for the root
-    if (parent == nullptr)
-    {
-        for (Index mu = 0; mu < grid.n_reactions; ++mu)
-        {
+    if (parent == nullptr) {
+        for (Index mu = 0; mu < grid.n_reactions; ++mu) {
             coefficients.A[mu](0, 0) = 1.0;
             coefficients.B[mu](0, 0) = 1.0;
             coefficients.A_bar[mu](0, 0) = 1.0;
@@ -31,8 +28,7 @@ void cme_internal_node::Initialize(int ncid)
     return;
 }
 
-template<>
-void external_node<double>::Initialize(int ncid)
+template <> void external_node<double>::Initialize(int ncid)
 {
     // read X
     int id_X;
@@ -51,8 +47,9 @@ void cme_external_node::Initialize(int ncid)
     return;
 }
 
-template<>
-void internal_node<double>::Write(int ncid, int id_r_in, std::array<int, 2> id_r_out) const
+template <>
+void internal_node<double>::Write(int ncid, int id_r_in,
+                                  std::array<int, 2> id_r_out) const
 {
     int varid_Q;
     // NOTE: netCDF stores arrays in row-major order (but Ensign column-major order)
@@ -61,8 +58,7 @@ void internal_node<double>::Write(int ncid, int id_r_in, std::array<int, 2> id_r
     NETCDF_CHECK(nc_put_var_double(ncid, varid_Q, Q.data()));
 }
 
-template<>
-void external_node<double>::Write(int ncid, int id_r_in, int id_dx) const
+template <> void external_node<double>::Write(int ncid, int id_r_in, int id_dx) const
 {
     int varid_X;
     // NOTE: netCDF stores arrays in row-major order (but Ensign column-major order)
@@ -93,12 +89,14 @@ void cme_lr_tree::Read(const std::string fn)
     return;
 }
 
-void cme_lr_tree::Write(const std::string fn, const double t, const double tau, const double dm) const
+void cme_lr_tree::Write(const std::string fn, const double t, const double tau,
+                        const double dm) const
 {
     int ncid;
 
     NETCDF_CHECK(nc_create(fn.c_str(), NC_CLOBBER | NC_NETCDF4, &ncid));
-    // `WriteNode` sets netCDF dim `d`, therefore it must be called before `WriteSpeciesNames`
+    // `WriteNode` sets netCDF dim `d`, therefore it must be called before
+    // `WriteSpeciesNames`
     WriteHelpers::WriteNode(ncid, root);
     WriteHelpers::WritePartitionStr(ncid, partition_str);
     WriteHelpers::WriteSpeciesNames(ncid, species_names);
@@ -111,27 +109,31 @@ void cme_lr_tree::Write(const std::string fn, const double t, const double tau, 
     NETCDF_CHECK(nc_def_var(ncid, "dm", NC_DOUBLE, 0, 0, &varid_dm));
     NETCDF_CHECK(nc_put_var_double(ncid, varid_dm, &dm));
 
-
     NETCDF_CHECK(nc_close(ncid));
 }
 
 void WriteHelpers::WritePartitionStr(int ncid, const std::string partition_str)
 {
     size_t len = partition_str.size() + 1;
-    NETCDF_CHECK(nc_put_att_text(ncid, NC_GLOBAL, "partition_str", len, partition_str.data()));
+    NETCDF_CHECK(
+        nc_put_att_text(ncid, NC_GLOBAL, "partition_str", len, partition_str.data()));
 }
 
-void WriteHelpers::WriteSpeciesNames(int ncid, const std::vector<std::string> species_names)
+void WriteHelpers::WriteSpeciesNames(int ncid,
+                                     const std::vector<std::string> species_names)
 {
     int id_d;
     NETCDF_CHECK(nc_inq_dimid(ncid, "d", &id_d));
 
     std::vector<const char*> species_names_char(species_names.size());
-    std::transform(species_names.begin(), species_names.end(), species_names_char.begin(), std::mem_fun_ref(&std::string::c_str));
+    std::transform(species_names.begin(), species_names.end(),
+                   species_names_char.begin(), std::mem_fun_ref(&std::string::c_str));
 
     int varid_species_names;
-    NETCDF_CHECK(nc_def_var(ncid, "species_names", NC_STRING, 1, &id_d, &varid_species_names));
-    NETCDF_CHECK(nc_put_var_string(ncid, varid_species_names, species_names_char.data()));
+    NETCDF_CHECK(
+        nc_def_var(ncid, "species_names", NC_STRING, 1, &id_d, &varid_species_names));
+    NETCDF_CHECK(
+        nc_put_var_string(ncid, varid_species_names, species_names_char.data()));
 }
 
 void WriteHelpers::WriteGridParms(int ncid, const grid_parms grid)
@@ -155,28 +157,28 @@ void WriteHelpers::WriteGridParms(int ncid, const grid_parms grid)
     NETCDF_CHECK(nc_put_var_int(ncid, varid_species, grid.species.data()));
 }
 
-void WriteHelpers::WriteNode(int ncid, cme_node const * const node)
+void WriteHelpers::WriteNode(int ncid, cme_node const* const node)
 {
     int id_r_in;
     NETCDF_CHECK(nc_def_dim(ncid, "r_in", node->RankIn(), &id_r_in));
     WriteHelpers::WriteGridParms(ncid, node->grid);
 
-    if (node->IsExternal())
-    {
-        cme_external_node* this_node = (cme_external_node*) node;
+    if (node->IsExternal()) {
+        cme_external_node* this_node = (cme_external_node*)node;
 
         int id_dx;
         NETCDF_CHECK(nc_inq_dimid(ncid, "dx", &id_dx));
         this_node->Write(ncid, id_r_in, id_dx);
     }
-    else
-    {
-        cme_internal_node *this_node = (cme_internal_node*) node;
+    else {
+        cme_internal_node* this_node = (cme_internal_node*)node;
 
         // Write r_out
         std::array<int, 2> id_r_out;
-        NETCDF_CHECK(nc_def_dim(ncid, "r_out_0", this_node->RankOut()[0], &id_r_out[0]));
-        NETCDF_CHECK(nc_def_dim(ncid, "r_out_1", this_node->RankOut()[1], &id_r_out[1]));
+        NETCDF_CHECK(
+            nc_def_dim(ncid, "r_out_0", this_node->RankOut()[0], &id_r_out[0]));
+        NETCDF_CHECK(
+            nc_def_dim(ncid, "r_out_1", this_node->RankOut()[1], &id_r_out[1]));
 
         this_node->Write(ncid, id_r_in, id_r_out);
 
@@ -190,76 +192,80 @@ void WriteHelpers::WriteNode(int ncid, cme_node const * const node)
 
 using Species = const std::vector<int>;
 
-std::ostream &operator<<(std::ostream &os, Species &species)
+std::ostream& operator<<(std::ostream& os, Species& species)
 {
     os << '[';
-    std::copy(std::begin(species), std::end(species), std::ostream_iterator<int>(os, ", "));
+    std::copy(std::begin(species), std::end(species),
+              std::ostream_iterator<int>(os, ", "));
     os << "\b\b]"; // use two backspace characters '\b' to overwrite final ", "
     return os;
 }
 
 // TODO: write virtual print functions and use them in this function
-void cme_lr_tree::PrintHelper(std::ostream &os, cme_node const * const node) const
+void cme_lr_tree::PrintHelper(std::ostream& os, cme_node const* const node) const
 {
-    if (node->IsExternal())
-    {
-        os << "external_node, id: " << node->id << ", species: " << node->grid.species << ", X.shape(): (" << ((cme_external_node*) node)->X.shape()[0] << "," << ((cme_external_node*) node)->X.shape()[1] << ")\n";
+    if (node->IsExternal()) {
+        os << "external_node, id: " << node->id << ", species: " << node->grid.species
+           << ", X.shape(): (" << ((cme_external_node*)node)->X.shape()[0] << ","
+           << ((cme_external_node*)node)->X.shape()[1] << ")\n";
     }
-    else
-    {
+    else {
         cme_lr_tree::PrintHelper(os, node->child[0]);
         cme_lr_tree::PrintHelper(os, node->child[1]);
-        os << "internal_node, id: " << node->id << ", species: " << node->grid.species << ", rank_out: (" << ((cme_internal_node *)node)->RankOut()[0] << "," << ((cme_internal_node *)node)->RankOut()[1] << ")\n";
+        os << "internal_node, id: " << node->id << ", species: " << node->grid.species
+           << ", rank_out: (" << ((cme_internal_node*)node)->RankOut()[0] << ","
+           << ((cme_internal_node*)node)->RankOut()[1] << ")\n";
     }
 }
 
-void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node, const blas_ops &blas) const
+void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
+                                      const blas_ops& blas) const
 {
-    std::function<double(double *, double *)> ip0;
-    std::function<double(double *, double *)> ip1;
+    std::function<double(double*, double*)> ip0;
+    std::function<double(double*, double*)> ip1;
     multi_array<double, 2> R0({node->RankOut()[0], node->RankOut()[0]});
     multi_array<double, 2> R1({node->RankOut()[1], node->RankOut()[1]});
-    if (node->child[0]->IsExternal() and node->child[1]->IsExternal())
-    {
-        cme_external_node* node_left = (cme_external_node*) node->child[0];
-        cme_external_node* node_right = (cme_external_node*) node->child[1];
+    if (node->child[0]->IsExternal() and node->child[1]->IsExternal()) {
+        cme_external_node* node_left = (cme_external_node*)node->child[0];
+        cme_external_node* node_right = (cme_external_node*)node->child[1];
 
-        // ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
-        // ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
+        // ip0 = inner_product_from_const_weight(node_left->grid.h_mult,
+        // node_left->grid.dx); ip1 =
+        // inner_product_from_const_weight(node_right->grid.h_mult,
+        // node_right->grid.dx);
 
         R0 = node_left->Orthogonalize(node_left->grid.h_mult, blas);
         R1 = node_right->Orthogonalize(node_right->grid.h_mult, blas);
     }
-    else if (node->child[0]->IsExternal() and node->child[1]->IsInternal())
-    {
-        cme_external_node *node_left = (cme_external_node *)node->child[0];
-        cme_internal_node *node_right = (cme_internal_node *)node->child[1];
+    else if (node->child[0]->IsExternal() and node->child[1]->IsInternal()) {
+        cme_external_node* node_left = (cme_external_node*)node->child[0];
+        cme_internal_node* node_right = (cme_internal_node*)node->child[1];
 
         OrthogonalizeHelper(node_right, blas);
 
-        // ip0 = inner_product_from_const_weight(node_left->grid.h_mult, node_left->grid.dx);
-        // ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
+        // ip0 = inner_product_from_const_weight(node_left->grid.h_mult,
+        // node_left->grid.dx); ip1 = inner_product_from_const_weight(1.0,
+        // prod(node_right->RankOut()));
 
         R0 = node_left->Orthogonalize(node_left->grid.h_mult, blas);
         R1 = node_right->Orthogonalize(1.0, blas);
     }
-    else if (node->child[0]->IsInternal() and node->child[1]->IsExternal())
-    {
-        cme_internal_node *node_left = (cme_internal_node *)node->child[0];
-        cme_external_node *node_right = (cme_external_node *)node->child[1];
+    else if (node->child[0]->IsInternal() and node->child[1]->IsExternal()) {
+        cme_internal_node* node_left = (cme_internal_node*)node->child[0];
+        cme_external_node* node_right = (cme_external_node*)node->child[1];
 
         OrthogonalizeHelper(node_left, blas);
 
         // ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
-        // ip1 = inner_product_from_const_weight(node_right->grid.h_mult, node_right->grid.dx);
+        // ip1 = inner_product_from_const_weight(node_right->grid.h_mult,
+        // node_right->grid.dx);
 
         R0 = node_left->Orthogonalize(1.0, blas);
         R1 = node_right->Orthogonalize(node_right->grid.h_mult, blas);
     }
-    else
-    {
-        cme_internal_node *node_left = (cme_internal_node *)node->child[0];
-        cme_internal_node *node_right = (cme_internal_node *)node->child[1];
+    else {
+        cme_internal_node* node_left = (cme_internal_node*)node->child[0];
+        cme_internal_node* node_right = (cme_internal_node*)node->child[1];
 
         OrthogonalizeHelper(node_left, blas);
         OrthogonalizeHelper(node_right, blas);
@@ -271,18 +277,14 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node, const blas
         R1 = node_right->Orthogonalize(1.0, blas);
     }
 
-    for (int j = node->child[0]->n_basisfunctions; j < node->RankOut()[0]; ++j)
-    {
-        for (int i = 0; i < node->RankOut()[0]; ++i)
-        {
+    for (int j = node->child[0]->n_basisfunctions; j < node->RankOut()[0]; ++j) {
+        for (int i = 0; i < node->RankOut()[0]; ++i) {
             R0(i, j) = 0.0;
         }
     }
 
-    for (int j = node->child[1]->n_basisfunctions; j < node->RankOut()[1]; ++j)
-    {
-        for (int i = 0; i < node->RankOut()[1]; ++i)
-        {
+    for (int j = node->child[1]->n_basisfunctions; j < node->RankOut()[1]; ++j) {
+        for (int i = 0; i < node->RankOut()[1]; ++i) {
             R1(i, j) = 0.0;
         }
     }
@@ -290,21 +292,16 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node * const node, const blas
     multi_array<double, 2> tmp1(node->RankOut());
     multi_array<double, 2> tmp2(node->RankOut());
 
-    for (Index k = 0; k < node->RankIn(); ++k)
-    {
-        for (Index j = 0; j < node->RankOut()[1]; ++j)
-        {
-            for (Index i = 0; i < node->RankOut()[0]; ++i)
-            {
+    for (Index k = 0; k < node->RankIn(); ++k) {
+        for (Index j = 0; j < node->RankOut()[1]; ++j) {
+            for (Index i = 0; i < node->RankOut()[0]; ++i) {
                 tmp1(i, j) = node->Q(i, j, k);
             }
         }
         blas.matmul(R0, tmp1, tmp2);
         blas.matmul_transb(tmp2, R1, tmp1);
-        for (Index j = 0; j < node->RankOut()[1]; ++j)
-        {
-            for (Index i = 0; i < node->RankOut()[0]; ++i)
-            {
+        for (Index j = 0; j < node->RankOut()[1]; ++j) {
+            for (Index i = 0; i < node->RankOut()[0]; ++i) {
                 node->Q(i, j, k) = tmp1(i, j);
             }
         }
@@ -316,10 +313,10 @@ void cme_lr_tree::Orthogonalize(const blas_ops& blas) const
     OrthogonalizeHelper(root, blas);
 };
 
-void cme_lr_tree::InitializeAB_barHelper(cme_node* const node, const blas_ops& blas) const
+void cme_lr_tree::InitializeAB_barHelper(cme_node* const node,
+                                         const blas_ops& blas) const
 {
-    if (node->IsInternal())
-    {
+    if (node->IsInternal()) {
         InitializeAB_barHelper(node->child[0], blas);
         InitializeAB_barHelper(node->child[1], blas);
     }
@@ -331,33 +328,27 @@ void cme_lr_tree::InitializeAB_bar(const blas_ops& blas) const
     InitializeAB_barHelper(root, blas);
 }
 
-std::vector<double> cme_lr_tree::NormalizeHelper(cme_node const * const node) const
+std::vector<double> cme_lr_tree::NormalizeHelper(cme_node const* const node) const
 {
     std::vector<double> x_sum(node->RankIn(), 0.0);
-    if (node->IsExternal())
-    {
-        cme_external_node* this_node = (cme_external_node*) node;
-        for (Index i = 0; i < this_node->RankIn(); ++i)
-        {
-            for (Index x = 0; x < this_node->ProblemSize(); ++x)
-            {
+    if (node->IsExternal()) {
+        cme_external_node* this_node = (cme_external_node*)node;
+        for (Index i = 0; i < this_node->RankIn(); ++i) {
+            for (Index x = 0; x < this_node->ProblemSize(); ++x) {
                 x_sum[i] += this_node->X(x, i) * this_node->grid.h_mult;
             }
         }
     }
-    else
-    {
-        cme_internal_node* this_node = (cme_internal_node*) node;
-        std::vector<double> x0_sum(this_node->RankOut()[0]), x1_sum(this_node->RankOut()[1]);
+    else {
+        cme_internal_node* this_node = (cme_internal_node*)node;
+        std::vector<double> x0_sum(this_node->RankOut()[0]),
+            x1_sum(this_node->RankOut()[1]);
         x0_sum = NormalizeHelper(this_node->child[0]);
         x1_sum = NormalizeHelper(this_node->child[1]);
 
-        for (Index i = 0; i < this_node->RankIn(); ++i)
-        {
-            for (Index i0 = 0; i0 < this_node->RankOut()[0]; ++i0)
-            {
-                for (Index i1 = 0; i1 < this_node->RankOut()[1]; ++i1)
-                {
+        for (Index i = 0; i < this_node->RankIn(); ++i) {
+            for (Index i0 = 0; i0 < this_node->RankOut()[0]; ++i0) {
+                for (Index i1 = 0; i1 < this_node->RankOut()[1]; ++i1) {
                     x_sum[i] += this_node->Q(i0, i1, i) * x0_sum[i0] * x1_sum[i1];
                 }
             }
@@ -368,7 +359,7 @@ std::vector<double> cme_lr_tree::NormalizeHelper(cme_node const * const node) co
 
 double cme_lr_tree::Normalize() const
 {
-    std::vector<double> norm(1); 
+    std::vector<double> norm(1);
     norm = NormalizeHelper(root);
     root->Q /= norm[0];
     return norm[0];
@@ -380,7 +371,8 @@ std::string ReadHelpers::ReadPartitionStr(int ncid)
     NETCDF_CHECK(nc_inq_attlen(ncid, NC_GLOBAL, "partition_str", &partition_str_len));
 
     std::string partition_str(partition_str_len, '\0');
-    NETCDF_CHECK(nc_get_att_text(ncid, NC_GLOBAL, "partition_str", partition_str.data()));
+    NETCDF_CHECK(
+        nc_get_att_text(ncid, NC_GLOBAL, "partition_str", partition_str.data()));
 
     return partition_str;
 }
@@ -395,8 +387,8 @@ std::vector<std::string> ReadHelpers::ReadSpeciesNames(int ncid)
     char tmp[NC_MAX_NAME + 1];
     NETCDF_CHECK(nc_inq_dim(ncid, id_d, tmp, &d_t));
 
-    size_t start[] = { 0 };
-    size_t count[] = { d_t };
+    size_t start[] = {0};
+    size_t count[] = {d_t};
 
     // read variable
     int id_species_names;
@@ -405,8 +397,10 @@ std::vector<std::string> ReadHelpers::ReadSpeciesNames(int ncid)
 
     std::vector<char*> species_names_char(d_t);
 
-    NETCDF_CHECK(nc_get_vara_string(ncid, id_species_names, start, count, species_names_char.data()));
-    std::vector<std::string> species_names(std::begin(species_names_char), std::end(species_names_char));
+    NETCDF_CHECK(nc_get_vara_string(ncid, id_species_names, start, count,
+                                    species_names_char.data()));
+    std::vector<std::string> species_names(std::begin(species_names_char),
+                                           std::end(species_names_char));
 
     return species_names;
 }
@@ -466,7 +460,7 @@ std::array<Index, 2> ReadHelpers::ReadRankOut(int ncid)
     NETCDF_CHECK(nc_inq_dim(ncid, id_r0, tmp, &r0_t));
     NETCDF_CHECK(nc_inq_dim(ncid, id_r1, tmp, &r1_t));
 
-    std::array<Index, 2> r_out = {(Index) r0_t, (Index) r1_t};
+    std::array<Index, 2> r_out = {(Index)r0_t, (Index)r1_t};
     return r_out;
 }
 
@@ -483,15 +477,16 @@ Index ReadHelpers::ReadNBasisfunctions(int ncid)
     return (Index)n_basisfunctions_t;
 }
 
-std::vector<std::vector<double>> ReadHelpers::ReadPropensity(int ncid, const Index n_reactions)
+std::vector<std::vector<double>> ReadHelpers::ReadPropensity(int ncid,
+                                                             const Index n_reactions)
 {
     std::vector<std::vector<double>> result(n_reactions);
 
-    for (Index mu = 0; mu < n_reactions; ++mu)
-    {
+    for (Index mu = 0; mu < n_reactions; ++mu) {
         // read dimension dx_{mu}
         int id_dx_dep;
-        NETCDF_CHECK(nc_inq_dimid(ncid, ("dx_" + std::to_string(mu)).c_str(), &id_dx_dep));
+        NETCDF_CHECK(
+            nc_inq_dimid(ncid, ("dx_" + std::to_string(mu)).c_str(), &id_dx_dep));
 
         size_t dx_dep_t;
         char tmp[NC_MAX_NAME + 1];
@@ -502,75 +497,85 @@ std::vector<std::vector<double>> ReadHelpers::ReadPropensity(int ncid, const Ind
         // read propensity
         int id_propensity;
 
-        NETCDF_CHECK(nc_inq_varid(ncid, ("propensity_" + std::to_string(mu)).c_str(), &id_propensity));
+        NETCDF_CHECK(nc_inq_varid(ncid, ("propensity_" + std::to_string(mu)).c_str(),
+                                  &id_propensity));
         NETCDF_CHECK(nc_get_var_double(ncid, id_propensity, result[mu].data()));
     }
 
     return result;
 }
 
-cme_node* ReadHelpers::ReadNode(int ncid, const std::string id, cme_internal_node * const parent_node, const Index r_in)
+cme_node* ReadHelpers::ReadNode(int ncid, const std::string id,
+                                cme_internal_node* const parent_node, const Index r_in)
 {
     int retval0, retval1;
     int grp_ncid0, grp_ncid1;
     grid_parms grid = ReadGridParms(ncid);
     Index n_basisfunctions = ReadNBasisfunctions(ncid);
-    cme_node *child_node;
+    cme_node* child_node;
 
     retval0 = nc_inq_ncid(ncid, (id + "0").c_str(), &grp_ncid0);
     retval1 = nc_inq_ncid(ncid, (id + "1").c_str(), &grp_ncid1);
 
-    if (retval0 or retval1) // NOTE: if retval0 is 1, then retval1 has also to be 1, due to the binary tree structure of the netCDF file
+    if (retval0 or retval1) // NOTE: if retval0 is 1, then retval1 has also to be 1, due
+                            // to the binary tree structure of the netCDF file
     {
-        child_node = new cme_external_node(id, parent_node, grid, r_in, n_basisfunctions);
+        child_node =
+            new cme_external_node(id, parent_node, grid, r_in, n_basisfunctions);
         child_node->Initialize(ncid);
     }
-    else
-    {
+    else {
         std::array<Index, 2> r_out = ReadRankOut(ncid);
-        child_node = new cme_internal_node(id, parent_node, grid, r_in, r_out, n_basisfunctions);
+        child_node =
+            new cme_internal_node(id, parent_node, grid, r_in, r_out, n_basisfunctions);
         child_node->Initialize(ncid);
-        child_node->child[0] = ReadNode(grp_ncid0, id + "0", (cme_internal_node *)child_node, ((cme_internal_node *) child_node)->RankOut()[0]);
-        child_node->child[1] = ReadNode(grp_ncid1, id + "1", (cme_internal_node *)child_node, ((cme_internal_node *)child_node)->RankOut()[1]);
+        child_node->child[0] =
+            ReadNode(grp_ncid0, id + "0", (cme_internal_node*)child_node,
+                     ((cme_internal_node*)child_node)->RankOut()[0]);
+        child_node->child[1] =
+            ReadNode(grp_ncid1, id + "1", (cme_internal_node*)child_node,
+                     ((cme_internal_node*)child_node)->RankOut()[1]);
     }
     return child_node;
 }
 
-void cme_node::CalculateAB_bar(const blas_ops &blas)
+void cme_node::CalculateAB_bar(const blas_ops& blas)
 {
-    if (IsExternal())
-    {
+    if (IsExternal()) {
 #ifdef __OPENMP__
 #pragma omp parallel
 #endif
         {
-            cme_external_node *this_node = (cme_external_node *) this;
+            cme_external_node* this_node = (cme_external_node*)this;
             multi_array<double, 2> X_shift({this_node->grid.dx, this_node->RankIn()});
             multi_array<double, 1> weight({this_node->grid.dx});
 
 #ifdef __OPENMP__
 #pragma omp for
 #endif
-            for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
-            {
+            for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu) {
                 Matrix::ShiftRows<-1>(X_shift, this_node->X, this_node->grid, mu);
                 std::vector<Index> vec_index(this_node->grid.d, 0);
 
-                for (Index alpha = 0; alpha < this_node->grid.dx; ++alpha)
-                {
-                    Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]), std::begin(this_node->grid.idx_dep[mu]), std::end(this_node->grid.idx_dep[mu]));
+                for (Index alpha = 0; alpha < this_node->grid.dx; ++alpha) {
+                    Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(
+                        std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]),
+                        std::begin(this_node->grid.idx_dep[mu]),
+                        std::end(this_node->grid.idx_dep[mu]));
 
-                    weight(alpha) = this_node->propensity[mu][alpha_dep] * this_node->grid.h_mult;
-                    IndexFunction::IncrVecIndex(std::begin(this_node->grid.n), std::begin(vec_index), std::end(vec_index));
+                    weight(alpha) =
+                        this_node->propensity[mu][alpha_dep] * this_node->grid.h_mult;
+                    IndexFunction::IncrVecIndex(std::begin(this_node->grid.n),
+                                                std::begin(vec_index),
+                                                std::end(vec_index));
                 }
                 coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
                 coeff(this_node->X, this_node->X, weight, coefficients.B_bar[mu], blas);
             }
         }
     }
-    else
-    {
-        cme_internal_node *this_node = (cme_internal_node *) this;
+    else {
+        cme_internal_node* this_node = (cme_internal_node*)this;
         std::array<Index, 2> rank_out = this_node->RankOut();
 
 #ifdef __OPENMP__
@@ -580,8 +585,10 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
             multi_array<double, 2> QA0_tilde({prod(rank_out), this_node->RankIn()});
             multi_array<double, 2> QA1_tilde({prod(rank_out), this_node->RankIn()});
 
-            multi_array<double, 2> Q0_mat({this_node->RankIn() * rank_out[1], rank_out[0]});
-            multi_array<double, 2> Q1_mat({this_node->RankIn() * rank_out[0], rank_out[1]});
+            multi_array<double, 2> Q0_mat(
+                {this_node->RankIn() * rank_out[1], rank_out[0]});
+            multi_array<double, 2> Q1_mat(
+                {this_node->RankIn() * rank_out[0], rank_out[1]});
             multi_array<double, 2> QA0_mat(Q0_mat.shape());
             multi_array<double, 2> QA1_mat(Q1_mat.shape());
 
@@ -594,20 +601,23 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
 #ifdef __OPENMP__
 #pragma omp for
 #endif
-            for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu)
-            {
-                blas.matmul(Q0_mat, this_node->child[0]->coefficients.A_bar[mu], QA0_mat);
+            for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu) {
+                blas.matmul(Q0_mat, this_node->child[0]->coefficients.A_bar[mu],
+                            QA0_mat);
                 Matrix::Tensorize<0>(QA0_mat, QA0);
                 Matrix::Matricize<2>(QA0, QA0_tilde);
-                blas.matmul_transb(Q1_mat, this_node->child[1]->coefficients.A_bar[mu], QA1_mat);
+                blas.matmul_transb(Q1_mat, this_node->child[1]->coefficients.A_bar[mu],
+                                   QA1_mat);
                 Matrix::Tensorize<1>(QA1_mat, QA1);
                 Matrix::Matricize<2>(QA1, QA1_tilde);
                 blas.matmul_transa(QA0_tilde, QA1_tilde, coefficients.A_bar[mu]);
 
-                blas.matmul(Q0_mat, this_node->child[0]->coefficients.B_bar[mu], QA0_mat);
+                blas.matmul(Q0_mat, this_node->child[0]->coefficients.B_bar[mu],
+                            QA0_mat);
                 Matrix::Tensorize<0>(QA0_mat, QA0);
                 Matrix::Matricize<2>(QA0, QA0_tilde);
-                blas.matmul_transb(Q1_mat, this_node->child[1]->coefficients.B_bar[mu], QA1_mat);
+                blas.matmul_transb(Q1_mat, this_node->child[1]->coefficients.B_bar[mu],
+                                   QA1_mat);
                 Matrix::Tensorize<1>(QA1_mat, QA1);
                 Matrix::Matricize<2>(QA1, QA1_tilde);
                 blas.matmul_transa(QA0_tilde, QA1_tilde, coefficients.B_bar[mu]);
@@ -616,14 +626,16 @@ void cme_node::CalculateAB_bar(const blas_ops &blas)
     }
 }
 
-multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_external_node* const node, const blas_ops &blas)
+multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
+                                     const cme_external_node* const node,
+                                     const blas_ops& blas)
 {
     get_time::start("CalculateKDot");
     multi_array<double, 2> K_dot(K.shape());
     set_zero(K_dot);
 
 #ifdef __OPENMP__
-#pragma omp parallel reduction(+: K_dot)
+#pragma omp parallel reduction(+ : K_dot)
 #endif
     {
         multi_array<double, 2> K_dot_thread(K.shape());
@@ -638,21 +650,19 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
 #ifdef __OPENMP__
 #pragma omp for
 #endif
-        for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
-        {
+        for (Index mu = 0; mu < node->grid.n_reactions; ++mu) {
             blas.matmul_transb(K, node->coefficients.A[mu], KA);
             blas.matmul_transb(K, node->coefficients.B[mu], KB);
 
             std::vector<Index> vec_index(node->grid.d, 0);
 
-            for (Index i = 0; i < node->grid.dx; ++i)
-            {
+            for (Index i = 0; i < node->grid.dx; ++i) {
                 Index alpha = IndexFunction::VecIndexToDepCombIndex(
-                    std::begin(vec_index),
-                    std::begin(node->grid.n_dep[mu]),
+                    std::begin(vec_index), std::begin(node->grid.n_dep[mu]),
                     std::begin(node->grid.idx_dep[mu]),
                     std::end(node->grid.idx_dep[mu]));
-                IndexFunction::IncrVecIndex(std::begin(node->grid.n), std::begin(vec_index), std::end(vec_index));
+                IndexFunction::IncrVecIndex(std::begin(node->grid.n),
+                                            std::begin(vec_index), std::end(vec_index));
 
                 weight(i) = node->propensity[mu][alpha];
             }
@@ -676,7 +686,8 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2> &K, const cme_
     return K_dot;
 }
 
-multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_node *const node, const blas_ops &blas)
+multi_array<double, 2> CalculateSDot(const multi_array<double, 2>& S,
+                                     const cme_node* const node, const blas_ops& blas)
 {
     multi_array<double, 2> S_dot(S.shape());
     set_zero(S_dot);
@@ -694,8 +705,7 @@ multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_
 #ifdef __OPENMP__
 #pragma omp for
 #endif
-        for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
-        {
+        for (Index mu = 0; mu < node->grid.n_reactions; ++mu) {
             blas.matmul(node->coefficients.A_bar[mu], S, AS);
             blas.matmul_transb(AS, node->coefficients.A[mu], ASa);
             blas.matmul(node->coefficients.B_bar[mu], S, BS);
@@ -709,7 +719,9 @@ multi_array<double, 2> CalculateSDot(const multi_array<double, 2> &S, const cme_
     return S_dot;
 }
 
-multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const cme_internal_node* const node, const blas_ops &blas)
+multi_array<double, 2> CalculateQDot(const multi_array<double, 2>& Qmat,
+                                     const cme_internal_node* const node,
+                                     const blas_ops& blas)
 {
     multi_array<double, 2> Q_dot(Qmat.shape());
     set_zero(Q_dot);
@@ -718,26 +730,30 @@ multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const c
 #pragma omp parallel reduction(+ : Q_dot)
 #endif
     {
-        multi_array<double, 3> Q_ten({node->RankOut()[0], node->RankOut()[1], node->RankIn()});
+        multi_array<double, 3> Q_ten(
+            {node->RankOut()[0], node->RankOut()[1], node->RankIn()});
         multi_array<double, 2> Q_dot_thread(Q_dot);
 
         multi_array<double, 2> Qa(Q_dot);
-        multi_array<double, 2> Qa_mat({node->RankOut()[1] * node->RankIn(), node->RankOut()[0]});
+        multi_array<double, 2> Qa_mat(
+            {node->RankOut()[1] * node->RankIn(), node->RankOut()[0]});
         multi_array<double, 2> QaA0(Qa_mat.shape());
-        multi_array<double, 2> QaA0_mat({node->RankOut()[0] * node->RankIn(), node->RankOut()[1]});
+        multi_array<double, 2> QaA0_mat(
+            {node->RankOut()[0] * node->RankIn(), node->RankOut()[1]});
         multi_array<double, 2> QaA0A1(QaA0_mat.shape());
 
         multi_array<double, 2> Qb(Q_dot);
-        multi_array<double, 2> Qb_mat({node->RankOut()[1] * node->RankIn(), node->RankOut()[0]});
+        multi_array<double, 2> Qb_mat(
+            {node->RankOut()[1] * node->RankIn(), node->RankOut()[0]});
         multi_array<double, 2> QbB0(Qb_mat.shape());
-        multi_array<double, 2> QbB0_mat({node->RankOut()[0] * node->RankIn(), node->RankOut()[1]});
+        multi_array<double, 2> QbB0_mat(
+            {node->RankOut()[0] * node->RankIn(), node->RankOut()[1]});
         multi_array<double, 2> QbB0B1(QbB0_mat.shape());
 
 #ifdef __OPENMP__
 #pragma omp for
 #endif
-        for (Index mu = 0; mu < node->grid.n_reactions; ++mu)
-        {
+        for (Index mu = 0; mu < node->grid.n_reactions; ++mu) {
             blas.matmul_transb(Qmat, node->coefficients.A[mu], Qa);
             get_time::start("Mat/Ten");
             Matrix::Tensorize<2>(Qa, Q_ten);
@@ -748,7 +764,8 @@ multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const c
             Matrix::Tensorize<0>(QaA0, Q_ten);
             Matrix::Matricize<1>(Q_ten, QaA0_mat);
             get_time::stop("Mat/Ten");
-            blas.matmul_transb(QaA0_mat, node->child[1]->coefficients.A_bar[mu], QaA0A1);
+            blas.matmul_transb(QaA0_mat, node->child[1]->coefficients.A_bar[mu],
+                               QaA0A1);
             get_time::start("Mat/Ten");
             Matrix::Tensorize<1>(QaA0A1, Q_ten);
             Matrix::Matricize<2>(Q_ten, Qa);
@@ -764,7 +781,8 @@ multi_array<double, 2> CalculateQDot(const multi_array<double, 2> &Qmat, const c
             Matrix::Tensorize<0>(QbB0, Q_ten);
             Matrix::Matricize<1>(Q_ten, QbB0_mat);
             get_time::stop("Mat/Ten");
-            blas.matmul_transb(QbB0_mat, node->child[1]->coefficients.B_bar[mu], QbB0B1);
+            blas.matmul_transb(QbB0_mat, node->child[1]->coefficients.B_bar[mu],
+                               QbB0B1);
             get_time::start("Mat/Ten");
             Matrix::Tensorize<1>(QbB0B1, Q_ten);
             Matrix::Matricize<2>(Q_ten, Qb);

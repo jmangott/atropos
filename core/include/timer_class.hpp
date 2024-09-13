@@ -1,8 +1,8 @@
 #ifndef TIMER_CLASS_HPP
 #define TIMER_CLASS_HPP
 
-#include <cmath>
 #include <chrono>
+#include <cmath>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -21,8 +21,7 @@
 /// started and stopped repeatedly. The total time as well as the average time
 /// between two events can be queried using the total() and average() methods,
 /// respectively.
-struct ntime
-{
+struct ntime {
     std::chrono::time_point<std::chrono::high_resolution_clock> t_start;
     bool running;
     double elapsed;
@@ -55,14 +54,12 @@ struct ntime
     /// The stop method returns the elapsed time since the last call of start().
     double stop()
     {
-        if (running == false)
-        {
+        if (running == false) {
             std::cout << "WARNING: ntime::stop() has been called without calling "
-                 << "ntime::start() first." << std::endl;
+                      << "ntime::start() first." << std::endl;
             return 0.0;
         }
-        else
-        {
+        else {
             std::chrono::time_point<std::chrono::high_resolution_clock> t_end;
             t_end = std::chrono::high_resolution_clock::now();
             auto duration = t_end - t_start;
@@ -77,55 +74,43 @@ struct ntime
         }
     }
 
-    double total()
-    {
-        return elapsed;
-    }
+    double total() { return elapsed; }
 
-    double average()
-    {
-        return elapsed / double(counter);
-    }
+    double average() { return elapsed / double(counter); }
 
     double deviation()
     {
-        if (counter == 1)
-        {
+        if (counter == 1) {
             return 0.0;
         }
-        else
-        {
+        else {
             return sqrt(elapsed_sq / double(counter) - average() * average());
         }
     }
 
-    unsigned count()
-    {
-        return counter;
-    }
+    unsigned count() { return counter; }
 };
 
-namespace get_time
-{
-    extern std::map<std::string, ntime> timers;
+namespace get_time {
+extern std::map<std::string, ntime> timers;
 
-    bool is_master();
-    
-    void reset();
+bool is_master();
 
-    void print();
+void reset();
 
-    std::string sorted_output();
+void print();
 
-    void start(std::string name);
+std::string sorted_output();
 
-    void stop(std::string name);
+void start(std::string name);
 
-    double total(std::string name);
+void stop(std::string name);
 
-    double average(std::string name);
+double total(std::string name);
 
-    double deviation(std::string name);
-}
+double average(std::string name);
+
+double deviation(std::string name);
+} // namespace get_time
 
 #endif

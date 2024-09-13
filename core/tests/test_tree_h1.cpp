@@ -89,8 +89,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     std::vector<std::vector<double>> propensity0(grid.n_reactions);
     std::vector<std::vector<double>> propensity1(grid.n_reactions);
 
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
-    {
+    for (Index mu = 0; mu < grid.n_reactions; ++mu) {
         propensity0[mu].resize(grid.dx_dep[mu]);
         propensity1[mu].resize(grid.dx_dep[mu]);
     }
@@ -125,9 +124,11 @@ TEST_CASE("tree_h1", "[tree_h1]")
     X1 *= std::exp(-0.25);
 
     // Construct cme_lr_tree
-    cme_internal_node *root = new cme_internal_node("", nullptr, grid, 1, {r, r}, 1);
-    cme_external_node *node0 = new cme_external_node("0", root, grid0, r, n_basisfunctions);
-    cme_external_node *node1 = new cme_external_node("1", root, grid1, r, n_basisfunctions);
+    cme_internal_node* root = new cme_internal_node("", nullptr, grid, 1, {r, r}, 1);
+    cme_external_node* node0 =
+        new cme_external_node("0", root, grid0, r, n_basisfunctions);
+    cme_external_node* node1 =
+        new cme_external_node("1", root, grid1, r, n_basisfunctions);
 
     root->Q = Q;
     node0->X = X0;
@@ -136,8 +137,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node0->propensity = propensity0;
     node1->propensity = propensity1;
 
-    for (Index mu = 0; mu < grid.n_reactions; ++mu)
-    {
+    for (Index mu = 0; mu < grid.n_reactions; ++mu) {
         root->coefficients.A[mu](0, 0) = 1.0;
         root->coefficients.B[mu](0, 0) = 1.0;
     }
@@ -151,14 +151,10 @@ TEST_CASE("tree_h1", "[tree_h1]")
     multi_array<double, 2> p({val_n0, val_n1}), p_ortho({val_n0, val_n1});
     std::fill(std::begin(p), std::end(p), 0.0);
 
-    for (Index i = 0; i < r; ++i)
-    {
-        for (Index j = 0; j < r; ++j)
-        {
-            for (Index x0 = 0; x0 < val_n0; ++x0)
-            {
-                for (Index x1 = 0; x1 < val_n1; ++x1)
-                {
+    for (Index i = 0; i < r; ++i) {
+        for (Index j = 0; j < r; ++j) {
+            for (Index x0 = 0; x0 < val_n0; ++x0) {
+                for (Index x1 = 0; x1 < val_n1; ++x1) {
                     p(x0, x1) += Q(i, j, 0) * X0(x0, i) * X1(x1, j);
                 }
             }
@@ -170,15 +166,14 @@ TEST_CASE("tree_h1", "[tree_h1]")
     tree.Orthogonalize(blas);
     tree.InitializeAB_bar(blas);
 
-    for (Index i = 0; i < r; ++i)
-    {
-        for (Index j = 0; j < r; ++j)
-        {
-            for (Index x0 = 0; x0 < val_n0; ++x0)
-            {
-                for (Index x1 = 0; x1 < val_n1; ++x1)
-                {
-                    p_ortho(x0, x1) += tree.root->Q(i, j, 0) * ((cme_external_node *)tree.root->child[0])->X(x0, i) * ((cme_external_node *)tree.root->child[1])->X(x1, j);
+    for (Index i = 0; i < r; ++i) {
+        for (Index j = 0; j < r; ++j) {
+            for (Index x0 = 0; x0 < val_n0; ++x0) {
+                for (Index x1 = 0; x1 < val_n1; ++x1) {
+                    p_ortho(x0, x1) +=
+                        tree.root->Q(i, j, 0) *
+                        ((cme_external_node*)tree.root->child[0])->X(x0, i) *
+                        ((cme_external_node*)tree.root->child[1])->X(x1, j);
                 }
             }
         }
@@ -193,17 +188,17 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     set_zero(X0);
     set_zero(X1);
-    
+
     X0(0, 0) = 1.0;
     X0(1, 0) = 1.0;
     X0(0, 1) = 1.0;
-    X0(1, 1) =-1.0;
+    X0(1, 1) = -1.0;
     X0 /= sqrt(2.0);
 
     X1(0, 0) = 1.0;
     X1(1, 0) = 1.0;
     X1(0, 1) = 1.0;
-    X1(1, 1) =-1.0;
+    X1(1, 1) = -1.0;
     X1 /= sqrt(2.0);
 
     root->Q = Q;
@@ -213,14 +208,10 @@ TEST_CASE("tree_h1", "[tree_h1]")
     // Check if this yields the same probability distribution
     std::fill(std::begin(p), std::end(p), 0.0);
 
-    for (Index i = 0; i < r; ++i)
-    {
-        for (Index j = 0; j < r; ++j)
-        {
-            for (Index x0 = 0; x0 < val_n0; ++x0)
-            {
-                for (Index x1 = 0; x1 < val_n1; ++x1)
-                {
+    for (Index i = 0; i < r; ++i) {
+        for (Index j = 0; j < r; ++j) {
+            for (Index x0 = 0; x0 < val_n0; ++x0) {
+                for (Index x1 = 0; x1 < val_n1; ++x1) {
                     p(x0, x1) += Q(i, j, 0) * X0(x0, i) * X1(x1, j);
                 }
             }
@@ -253,8 +244,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     std::vector<multi_array<double, 2>> B1_bar_comparison(node1->grid.n_reactions);
 
     // Calculate A1_comparison
-    for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
-    {
+    for (Index mu = 0; mu < root->grid.n_reactions; ++mu) {
         A0_comparison[mu].resize({node0->RankIn(), node0->RankIn()});
         B0_comparison[mu].resize({node0->RankIn(), node0->RankIn()});
         A1_bar_comparison[mu].resize({node1->RankIn(), node1->RankIn()});
@@ -270,9 +260,9 @@ TEST_CASE("tree_h1", "[tree_h1]")
     A1_bar_comparison[0](1, 1) = 1.0;
 
     A1_bar_comparison[1](0, 0) = 0.5;
-    A1_bar_comparison[1](0, 1) =-0.5;
+    A1_bar_comparison[1](0, 1) = -0.5;
     A1_bar_comparison[1](1, 0) = 0.5;
-    A1_bar_comparison[1](1, 1) =-0.5;
+    A1_bar_comparison[1](1, 1) = -0.5;
 
     A1_bar_comparison[2](0, 0) = 0.75;
     A1_bar_comparison[2](0, 1) = 0.25;
@@ -281,8 +271,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     A1_bar_comparison[3](0, 0) = 0.5;
     A1_bar_comparison[3](0, 1) = 0.5;
-    A1_bar_comparison[3](1, 0) =-0.5;
-    A1_bar_comparison[3](1, 1) =-0.5;
+    A1_bar_comparison[3](1, 0) = -0.5;
+    A1_bar_comparison[3](1, 1) = -0.5;
 
     B1_bar_comparison[0](0, 0) = 1.0;
     B1_bar_comparison[0](1, 1) = 1.0;
@@ -290,7 +280,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     B1_bar_comparison[3](1, 1) = 1.0;
 
     B1_bar_comparison[1](0, 0) = 0.5;
-    B1_bar_comparison[1](0, 1) =-0.5;
+    B1_bar_comparison[1](0, 1) = -0.5;
     B1_bar_comparison[1](1, 0) = B1_bar_comparison[1](0, 1);
     B1_bar_comparison[1](1, 1) = 0.5;
 
@@ -299,26 +289,24 @@ TEST_CASE("tree_h1", "[tree_h1]")
     B1_bar_comparison[2](1, 0) = B1_bar_comparison[2](0, 1);
     B1_bar_comparison[2](1, 1) = 0.75;
 
-    for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
-    {
-        for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
-        {
-            for (Index j0 = 0; j0 < root->RankOut()[0]; ++j0)
-            {
-                for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1)
-                {
-                    for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
-                    {
-                        A0_comparison[mu](i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * A1_bar_comparison[mu](i1, j1);
-                        B0_comparison[mu](i0, j0) += root->G(i0, i1, 0) * root->G(j0, j1, 0) * B1_bar_comparison[mu](i1, j1);
+    for (Index mu = 0; mu < root->grid.n_reactions; ++mu) {
+        for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0) {
+            for (Index j0 = 0; j0 < root->RankOut()[0]; ++j0) {
+                for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1) {
+                    for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1) {
+                        A0_comparison[mu](i0, j0) += root->G(i0, i1, 0) *
+                                                     root->G(j0, j1, 0) *
+                                                     A1_bar_comparison[mu](i1, j1);
+                        B0_comparison[mu](i0, j0) += root->G(i0, i1, 0) *
+                                                     root->G(j0, j1, 0) *
+                                                     B1_bar_comparison[mu](i1, j1);
                     }
                 }
             }
         }
     }
 
-    for (Index mu = 0; mu < root->grid.n_reactions; ++mu)
-    {
+    for (Index mu = 0; mu < root->grid.n_reactions; ++mu) {
         REQUIRE(bool(node0->coefficients.A[mu] == A0_comparison[mu]));
         REQUIRE(bool(node0->coefficients.B[mu] == B0_comparison[mu]));
     }
@@ -327,9 +315,9 @@ TEST_CASE("tree_h1", "[tree_h1]")
     multi_array<double, 2> K0_dot_comparison(node0->X.shape());
     double norm_2e = std::sqrt(2.0) * std::exp(-0.5);
 
-    K0_dot_comparison(0, 0) =-0.25 * norm_2e;
+    K0_dot_comparison(0, 0) = -0.25 * norm_2e;
     K0_dot_comparison(0, 1) = 0.25 * norm_2e;
-    K0_dot_comparison(1, 0) =-1.25 * norm_2e;
+    K0_dot_comparison(1, 0) = -1.25 * norm_2e;
     K0_dot_comparison(1, 1) = 0.75 * norm_2e;
 
     multi_array<double, 2> K0(node0->X.shape());
@@ -348,10 +336,10 @@ TEST_CASE("tree_h1", "[tree_h1]")
     node0->X = X0;
     node0->S = S0;
 
-    S0_dot_comparison(0, 0) =-1.5 * std::exp(-0.5);
+    S0_dot_comparison(0, 0) = -1.5 * std::exp(-0.5);
     S0_dot_comparison(0, 1) = std::exp(-0.5);
     S0_dot_comparison(1, 0) = std::exp(-0.5);
-    S0_dot_comparison(1, 1) =-0.5 * std::exp(-0.5);
+    S0_dot_comparison(1, 1) = -0.5 * std::exp(-0.5);
 
     S0_dot = CalculateSDot(node0->S, node0, blas);
 
@@ -360,7 +348,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
     // Test the relation S1_dot(i1, j1) = Q_dot(i0, i1, i) * G(i0, j1, i)
     multi_array<double, 2> S1_dot({tree.root->RankOut()[1], tree.root->RankOut()[1]});
     multi_array<double, 3> Q_dot(root->Q.shape());
-    multi_array<double, 2> Qmat1({root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
+    multi_array<double, 2> Qmat1(
+        {root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
     multi_array<double, 2> Qmat2({prod(root->RankOut()), root->RankIn()});
     multi_array<double, 2> Qmat2_dot(Qmat2.shape());
     multi_array<double, 2> Gmat1(Qmat1.shape());
@@ -385,14 +374,10 @@ TEST_CASE("tree_h1", "[tree_h1]")
     multi_array<double, 2> Q_dotG(S1_dot.shape());
     set_zero(Q_dotG);
 
-    for (Index i = 0; i < root->RankIn(); ++i)
-    {
-        for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0)
-        {
-            for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1)
-            {
-                for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1)
-                {
+    for (Index i = 0; i < root->RankIn(); ++i) {
+        for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0) {
+            for (Index i1 = 0; i1 < root->RankOut()[1]; ++i1) {
+                for (Index j1 = 0; j1 < root->RankOut()[1]; ++j1) {
                     Q_dotG(i1, j1) += Q_dot(i0, i1, i) * root->G(i0, j1, i);
                 }
             }

@@ -12,22 +12,19 @@
 #include "matrix.hpp"
 #include "tree_class.hpp"
 
-class generator
-{
-    private:
-        Index i = 0;
+class generator {
+  private:
+    Index i = 0;
 
-    public:
-        inline Index operator()()
-        {
-            return ++i;
-        };
+  public:
+    inline Index operator()() { return ++i; };
 };
 
 TEST_CASE("Matricize_Tensorize", "[Matricize_Tensorize]")
 {
     Index d0 = 5, d1 = 7, d2 = 9;
-    multi_array<Index, 3> ten({d0, d1, d2}), ten2({d0, d1, d2}), ten1({d0, d1, d2}), ten0({d0, d1, d2});
+    multi_array<Index, 3> ten({d0, d1, d2}), ten2({d0, d1, d2}), ten1({d0, d1, d2}),
+        ten0({d0, d1, d2});
     multi_array<Index, 2> mat2({d0 * d1, d2}), mat2_ref({d0 * d1, d2});
     multi_array<Index, 2> mat1({d2 * d0, d1}), mat1_ref({d2 * d0, d1});
     multi_array<Index, 2> mat0({d1 * d2, d0}), mat0_ref({d1 * d2, d0});
@@ -39,36 +36,27 @@ TEST_CASE("Matricize_Tensorize", "[Matricize_Tensorize]")
     Matrix::Matricize<0>(ten, mat0);
 
     generator generator2{};
-    for (Index k = 0; k < d2; ++k)
-    {
-        for (Index j = 0; j < d1; ++j)
-        {
-            for (Index i = 0; i < d0; ++i)
-            {
+    for (Index k = 0; k < d2; ++k) {
+        for (Index j = 0; j < d1; ++j) {
+            for (Index i = 0; i < d0; ++i) {
                 mat2_ref(i + j * d0, k) = generator2();
             }
         }
     }
-    
+
     generator generator1{};
-    for (Index k = 0; k < d2; ++k)
-    {
-        for (Index j = 0; j < d1; ++j)
-        {
-            for (Index i = 0; i < d0; ++i)
-            {
+    for (Index k = 0; k < d2; ++k) {
+        for (Index j = 0; j < d1; ++j) {
+            for (Index i = 0; i < d0; ++i) {
                 mat1_ref(i + k * d0, j) = generator1();
             }
         }
     }
 
     generator generator0{};
-    for (Index k = 0; k < d2; ++k)
-    {
-        for (Index j = 0; j < d1; ++j)
-        {
-            for (Index i = 0; i < d0; ++i)
-            {
+    for (Index k = 0; k < d2; ++k) {
+        for (Index j = 0; j < d1; ++j) {
+            for (Index i = 0; i < d0; ++i) {
                 mat0_ref(j + k * d1, i) = generator0();
             }
         }
@@ -94,9 +82,12 @@ TEST_CASE("RemoveElement", "[RemoveElement]")
 
     std::generate(std::begin(start_vec), std::end(start_vec), generator{});
 
-    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec1), 0);
-    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec2), 5);
-    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec3), 9);
+    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec1),
+                          0);
+    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec2),
+                          5);
+    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec3),
+                          9);
 
     vec1_ref = {2, 3, 4, 5, 6, 7, 8, 9, 10};
     vec2_ref = {1, 2, 3, 4, 5, 7, 8, 9, 10};
@@ -105,7 +96,6 @@ TEST_CASE("RemoveElement", "[RemoveElement]")
     REQUIRE(bool(vec1 == vec1_ref));
     REQUIRE(bool(vec2 == vec2_ref));
     REQUIRE(bool(vec3 == vec3_ref));
-
 }
 
 TEST_CASE("Orthogonalize", "[Orthogonalize]")
@@ -116,7 +106,7 @@ TEST_CASE("Orthogonalize", "[Orthogonalize]")
     set_zero(mat);
     set_zero(mat_ref);
     mat(0, 0) = 1.0;
-    std::function<double (double*, double*)> ip;
+    std::function<double(double*, double*)> ip;
     blas_ops blas;
 
     multi_array<double, 2> Q(mat), R({r, r});
@@ -190,10 +180,9 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     comparison_array.resize({n_rows, 2});
 
     set_zero(input_array);
-    for (Index i = 0; i < n_rows; ++i)
-    {
-        input_array(i, 0) = (double) i + 1;
-        input_array(i, 1) = (double) i + 2;
+    for (Index i = 0; i < n_rows; ++i) {
+        input_array(i, 0) = (double)i + 1;
+        input_array(i, 1) = (double)i + 2;
     }
 
     set_zero(comparison_array);

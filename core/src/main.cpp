@@ -19,26 +19,32 @@ int main(int argc, char** argv)
 #ifdef SOURCE_ROOT
     source_root = XSTRING(SOURCE_ROOT);
 #else
-    std::cout << "Warning: SOURCE_ROOT not set, default directories of input and output are set to current working directory" << std::endl;
+    std::cout << "Warning: SOURCE_ROOT not set, default directories of input and "
+                 "output are set to current working directory"
+              << std::endl;
     source_root = ".";
 #endif
 
-    cxxopts::Options options("hierarchical-cme", "Tree tensor network integrator for the chemical master equation");
+    cxxopts::Options options(
+        "hierarchical-cme",
+        "Tree tensor network integrator for the chemical master equation");
 
-    options.add_options()
-        ("i,input", "Name of the input .nc file", cxxopts::value<std::string>()->default_value(source_root + "/input/input.nc"))
-        ("o,output", "Name of the output folder", cxxopts::value<std::string>())
-        ("s,snapshot", "Number of steps between two snapshots", cxxopts::value<int>())
-        ("t,tau", "Time step size", cxxopts::value<double>())
-        ("f,tfinal", "Final integration time", cxxopts::value<double>())
-        ("n,substeps", "Number of integration substeps", cxxopts::value<unsigned int>()->default_value("1"))
-        ("m,method", "Integration method (`e` (explicit Euler), `r` (explicit RK4), `i` (implicit Euler), `c` (Crank-Nicolson))", cxxopts::value<char>()->default_value("i"))
-        ("h,help", "Print usage")
-        ;
+    options.add_options()(
+        "i,input", "Name of the input .nc file",
+        cxxopts::value<std::string>()->default_value(source_root + "/input/input.nc"))(
+        "o,output", "Name of the output folder", cxxopts::value<std::string>())(
+        "s,snapshot", "Number of steps between two snapshots",
+        cxxopts::value<int>())("t,tau", "Time step size", cxxopts::value<double>())(
+        "f,tfinal", "Final integration time",
+        cxxopts::value<double>())("n,substeps", "Number of integration substeps",
+                                  cxxopts::value<unsigned int>()->default_value("1"))(
+        "m,method",
+        "Integration method (`e` (explicit Euler), `r` (explicit RK4), `i` (implicit "
+        "Euler), `c` (Crank-Nicolson))",
+        cxxopts::value<char>()->default_value("i"))("h,help", "Print usage");
 
     auto result = options.parse(argc, argv);
-    if (result.count("help"))
-    {
+    if (result.count("help")) {
         std::cout << options.help() << std::endl;
         std::exit(EXIT_SUCCESS);
     }
@@ -52,8 +58,7 @@ int main(int argc, char** argv)
     char method = result["method"].as<char>();
 
     std::map<std::string, integration_method*> integration_methods;
-    switch (method)
-    {
+    switch (method) {
     case 'e':
         integration_methods["K"] = new explicit_euler(substeps);
         integration_methods["Q"] = new explicit_euler(substeps);
@@ -67,7 +72,8 @@ int main(int argc, char** argv)
     case 'i':
         integration_methods["K"] = new implicit_euler(substeps);
         integration_methods["Q"] = new explicit_euler(substeps);
-        integration_methods["S"] = new explicit_euler(substeps);  // S is integrated backwards in time
+        integration_methods["S"] =
+            new explicit_euler(substeps); // S is integrated backwards in time
         break;
     case 'c':
         integration_methods["K"] = new crank_nicolson(substeps);
@@ -75,7 +81,9 @@ int main(int argc, char** argv)
         integration_methods["S"] = new crank_nicolson(substeps);
         break;
     default:
-        std::cout << "Error: Command line option `m` must be either `e`, `r`, `i` or `c`!" << std::endl;
+        std::cout
+            << "Error: Command line option `m` must be either `e`, `r`, `i` or `c`!"
+            << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -108,8 +116,7 @@ int main(int argc, char** argv)
 
     auto t_start(std::chrono::high_resolution_clock::now());
     get_time::start("main");
-    for (Index ts = 0; ts < kNsteps; ++ts)
-    {
+    for (Index ts = 0; ts < kNsteps; ++ts) {
         if (tfinal - t < tau)
             tau = tfinal - t;
 
@@ -117,14 +124,14 @@ int main(int argc, char** argv)
         norm = tree.Normalize();
 
         dm = norm - 1.0;
-        if (std::abs(dm) > std::abs(dm_max)) dm_max = dm;
+        if (std::abs(dm) > std::abs(dm_max))
+            dm_max = dm;
         t += tau;
 
         PrintProgressBar(ts, kNsteps, t_start, norm);
 
         // Write snapshot
-        if ((ts + 1) % snapshot == 0 || (ts + 1) == kNsteps)
-        {
+        if ((ts + 1) % snapshot == 0 || (ts + 1) == kNsteps) {
             fname = output_fname + "/output_t" + std::to_string(ts + 1) + ".nc";
             tree.Write(fname, t, tau, dm);
         }

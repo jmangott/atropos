@@ -25,16 +25,17 @@ auto ChronoBurst(std::chrono::duration<Rep, std::ratio<num, denom>> d)
 }
 
 // Print progress bar
-void PrintProgressBar(const Index ts, const Index kNsteps, const std::chrono::system_clock::time_point t_start, const double norm);
+void PrintProgressBar(const Index ts, const Index kNsteps,
+                      const std::chrono::system_clock::time_point t_start,
+                      const double norm);
 
-struct diagnostics
-{
-    diagnostics(const integrator_base &_integrator, const std::chrono::nanoseconds _t_elapsed, const double _tau, const double _dm_max)
-    : integrator(_integrator)
-    , t_elapsed(_t_elapsed)
-    , tau(_tau)
-    , dm_max(_dm_max)
-    {}
+struct diagnostics {
+    diagnostics(const integrator_base& _integrator,
+                const std::chrono::nanoseconds _t_elapsed, const double _tau,
+                const double _dm_max)
+        : integrator(_integrator), t_elapsed(_t_elapsed), tau(_tau), dm_max(_dm_max)
+    {
+    }
 
     const integrator_base integrator;
     const std::chrono::nanoseconds t_elapsed;
@@ -43,6 +44,6 @@ struct diagnostics
 };
 
 // Print diagnostic information
-std::ostream& operator<<(std::ostream &os, const diagnostics &dgn);
+std::ostream& operator<<(std::ostream& os, const diagnostics& dgn);
 
 #endif
