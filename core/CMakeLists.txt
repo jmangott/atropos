@@ -160,10 +160,11 @@ set_source_files_properties(${ENSIGN_FILES} PROPERTIES GENERATED TRUE)
 target_include_directories(${LIBNAME} PUBLIC ${HEADER_FILES})
 target_link_libraries(${LIBNAME} ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
 
-###########################################
-# Add src, test and output subdirectories #
-###########################################
+########################################
+# Add src, test and I/O subdirectories #
+########################################
 
 add_subdirectory(${SRC} ${BIN})
 add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/input)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
