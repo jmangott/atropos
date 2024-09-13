@@ -17,9 +17,10 @@ repos:
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.4
     hooks:
-    # Run the linter.
+    # run the linter
     -   id: ruff
-    # Run the formatter.
+        args: [ --fix ]
+    # run the formatter
     -   id: ruff-format
 -   repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v18.1.8
