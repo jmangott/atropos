@@ -1,11 +1,12 @@
-import numpy as np
 import unittest
+
+import numpy as np
 
 from examples.models.kinetic.bax import reaction_system as bax_model
 from examples.models.kinetic.lambda_phage import reaction_system as lp_model
-from src.tree import Tree
 from src.grid import GridParms
 from src.initial_condition import InitialCondition
+from src.tree import Tree
 
 
 class BaxTestCase(unittest.TestCase):
@@ -22,38 +23,38 @@ class BaxTestCase(unittest.TestCase):
 
     def test_r_out1(self):
         self.r_out = np.array([4, 5, 6])
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             bax_tree = Tree(self.partition_str, self.grid)
             bax_tree.initialize(bax_model, self.r_out)
 
     def test_r_out2(self):
         self.r_out = np.array([4, 5, 6, 7, 8])
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             bax_tree = Tree(self.partition_str, self.grid)
             bax_tree.initialize(bax_model, self.r_out)
 
     def test_partition_str1(self):
         self.partition_str = "(1 11 2)((((3 6)(4 7))(5 8))(9 10))"
-        with self.assertRaises(Exception):
+        with self.assertRaises(SyntaxError):
             Tree(self.partition_str, self.grid)
 
     def test_partition_str2(self):
         self.partition_str = "(1 11 2)(((3 6)(4 7))(5 8))(9 10))"
-        with self.assertRaises(Exception):
+        with self.assertRaises(SyntaxError):
             Tree(self.partition_str, self.grid)
 
     def test_partition_str3(self):
         self.partition_str = "(0 1 2)((((3 6)(4 7))(3 8))(9 10))"
-        with self.assertRaises(Exception):
+        with self.assertRaises(SyntaxError):
             Tree(self.partition_str, self.grid)
 
     def test_partition_str4(self):
         self.partition_str = "(0 1)((((2 6)(5 7))(3 8))(9 10))"
-        with self.assertRaises(Exception):
+        with self.assertRaises(SyntaxError):
             Tree(self.partition_str, self.grid)
 
     def test_reaction_model(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             bax_tree = Tree(self.partition_str, self.grid)
             bax_tree.initialize(lp_model, self.r_out)
 
@@ -190,8 +191,8 @@ class LambdaPhageTestCase(unittest.TestCase):
 
     def test_slice_vec(self):
         lp_tree = Tree(self.partition_str, self.grid)
-        with self.assertRaises(Exception):
-            lp_tree.calculateObservables(np.ones(10))
+        with self.assertRaises(TypeError):
+            lp_tree.calculateObservables(np.ones(self.grid.d(), dtype="float"))
 
     # TODO: write a better test
     def test_calculate_observables(self):
@@ -214,14 +215,15 @@ class LambdaPhageTestCase(unittest.TestCase):
         sliced_distribution, marginal_distribution = lp_tree.calculateObservables(
             slice_vec
         )
-        for n_el, species in zip(n, lp_tree.species_names):
+        for n_el, species in zip(n, lp_tree.species_names, strict=False):
             self.assertTrue(np.all(sliced_distribution[species] == np.ones(n_el)))
             self.assertTrue(
                 np.all(marginal_distribution[species] == np.ones(n_el) * norm / n_el)
             )
 
-        with self.assertRaises(Exception):
-            _, _ = lp_tree.calculateObservables(np.zeros(lp_tree.grid.d() + 1))
+        with self.assertRaises(ValueError):
+            _, _ = lp_tree.calculateObservables(np.zeros(lp_tree.grid.d() + 1, 
+                                                         dtype="int"))
 
 
 if __name__ == "__main__":

@@ -1,21 +1,23 @@
 """Script for setting the initial conditions for the cascade model."""
 
 import argparse
-import numpy as np
 import sys
 
-from src.grid import GridParms
-from src.initial_condition import InitialCondition
-from src.tree import Tree
-from src.index_functions import incrVecIndex
+import numpy as np
 
 import examples.models.kinetic.cascade as model
+from src.grid import GridParms
+from src.index_functions import incrVecIndex
+from src.initial_condition import InitialCondition
+from src.tree import Tree
 
 partition = [
     "((((0 1)(2 3))(4 5))((6 7)(8 9)))(((10 11)(12 13))((14 15)((16 17)(18 19))))",
     "(0 1)((2 3)((4 5)((6 7)((8 9)((10 11)((12 13)((14 15)((16 17)(18 19)))))))))",
-    "(((((0)(1))((2)(3)))((4)(5)))(((6)(7))((8)(9))))((((10)(11))((12)(13)))(((14)(15))(((16)(17))((18)(19)))))",
-    "((0)(1))(((2)(3))(((4)(5))(((6)(7))(((8)(9))(((10)(11))(((12)(13))(((14)(15))(((16)(17))((18)(19))))))))))",
+    ("(((((0)(1))((2)(3)))((4)(5)))(((6)(7))((8)(9))))"
+     "((((10)(11))((12)(13)))(((14)(15))(((16)(17))((18)(19)))))"),
+    ("((0)(1))(((2)(3))(((4)(5))(((6)(7))(((8)(9))"
+     "(((10)(11))(((12)(13))(((14)(15))(((16)(17))((18)(19))))))))))"),
 ]
 
 parser = argparse.ArgumentParser(
@@ -97,16 +99,6 @@ _, marginal_distribution = tree.calculateObservables(
     np.zeros(tree.root.grid.d(), dtype="int")
 )
 norm = np.sum(marginal_distribution[tree.species_names[0]])
-
-# import matplotlib.pyplot as plt
-# plt.plot(np.arange(tree.grid.n[0]), marginal_distribution[0], label="$x_0$")
-# plt.plot(np.arange(tree.grid.n[1]), marginal_distribution[1], label="$x_1$")
-# plt.plot(np.arange(tree.grid.n[2]), marginal_distribution[2], label="$x_2$")
-# plt.plot(np.arange(tree.grid.n[3]), marginal_distribution[3], label="$x_3$")
-# plt.plot(np.arange(tree.grid.n[4]), marginal_distribution[4], label="$x_4$")
-# plt.plot(np.arange(tree.grid.n[5]), marginal_distribution[5], label="$x_5$")
-# plt.legend()
-# plt.show()
 
 print("norm:", norm)
 tree.root.Q[0, 0, 0] /= norm

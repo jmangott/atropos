@@ -1,4 +1,5 @@
 import numpy as np
+
 from src.reaction import Reaction, ReactionSystem
 
 d = 20
@@ -25,6 +26,6 @@ for i in range(d):
     nu_a[i] = -1
     reactions[i + d] = Reaction({i: lambda x: km * x}, nu_a)
 
-species_names = ["S{}".format(i) for i in range(d)]
+species_names = [f"S{i}" for i in range(d)]
 
 reaction_system = ReactionSystem(reactions, species_names)

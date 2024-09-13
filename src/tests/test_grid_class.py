@@ -14,12 +14,12 @@ class GridTestCase(unittest.TestCase):
 
     def test_grid_binsize(self):
         self.binsize = np.array([1, 1, 1, 1])
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             GridParms(self.n, self.binsize, self.liml)
 
     def test_grid_n_zero(self):
         self.n = np.array([1, 2, 3, 0, 5])
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             GridParms(self.n, self.binsize, self.liml)
 
     def test_grid_initialize(self):

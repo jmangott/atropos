@@ -1,4 +1,7 @@
-"""Contains the `GridParms` class for storing grid parameters for a partition of the reaction network."""
+"""
+Contains the `GridParms` class for storing grid parameters 
+for a partition of the reaction network.
+"""
 
 import numpy as np
 import numpy.typing as npt
@@ -17,10 +20,10 @@ class GridParms:
         _nu: npt.NDArray[np.int_] = None,
     ):
         if np.any(np.not_equal([_binsize.size, _liml.size], _n.size)):
-            raise Exception("Input arrays must be of equal length")
+            raise ValueError("Input arrays must be of equal length")
 
         if np.any(_n == 0):
-            raise Exception("Grid size `n` must be larger than 0")
+            raise ValueError("Grid size `n` must be larger than 0")
 
         self.n = _n
         self.binsize = _binsize
@@ -60,7 +63,7 @@ class GridParms:
         self.nu = np.zeros((self.d(), reaction_system.size()), dtype="int")
 
         for mu, reaction in enumerate(reaction_system.reactions):
-            for i in reaction.propensity.keys():
+            for i in reaction.propensity:
                 self.dep[i, mu] = True
             self.nu[:, mu] = reaction.nu
 
@@ -74,15 +77,8 @@ class GridParms:
         else:
             species = self.species
 
-        if self.dep is not None:
-            dep = self.dep[permutation, :]
-        else:
-            dep = self.dep
-
-        if self.nu is not None:
-            nu = self.nu[permutation, :]
-        else:
-            nu = self.nu
+        dep = self.dep[permutation, :] if self.dep is not None else self.dep
+        nu = self.nu[permutation, :] if self.nu is not None else self.nu
 
         return GridParms(n, binsize, liml, species, dep, nu)
 

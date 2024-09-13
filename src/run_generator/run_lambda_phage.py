@@ -1,8 +1,8 @@
-from src.generator import Model, Partitioning, run, species
 import numpy as np
-
 from scipy.special import factorial
-from src.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
+
+from src.generator import Model, Partitioning, run, species
+from src.index_functions import incrVecIndex, tensorUnfold, vecIndexToState
 
 # Partitition p0, rank 5 4
 # Snapshot 100, tau 1e-3, final_time 1, rest default

@@ -1,17 +1,18 @@
 """Helper module for postprocessing the DLR results."""
 
-import networkx as nx
-import numpy as np
 import glob
 import os
+
+import networkx as nx
+import numpy as np
 import xarray as xr
 
 if not os.path.exists("plots"):
     os.makedirs("plots")
 
-from src.index_functions import vecIndexToState
 from src.grid import GridParms
-from src.tree import Tree, Node, ExternalNode, InternalNode
+from src.index_functions import vecIndexToState
+from src.tree import ExternalNode, InternalNode, Node, Tree
 
 
 def groupPath(id) -> str:
@@ -77,7 +78,7 @@ def convertToSeconds(time_string):
     factor = [3600.0, 60.0, 1.0, 0.001]
     unit = ["h", "mins", "s", "ms"]
     seconds = 0.0
-    for ts, f, u in zip(time_string, factor, unit):
+    for ts, f, u in zip(time_string, factor, unit, strict=False):
         seconds += float(ts[: -len(u)]) * f
     return seconds
 
@@ -140,7 +141,7 @@ class TimeSeries:
         n_moments = 2
         moments = [
             {
-                name: np.zeros((self.__number_of_files))
+                name: np.zeros(self.__number_of_files)
                 for name in self.getSpeciesNames()
             }
             for _ in range(n_moments)
@@ -220,5 +221,5 @@ def printEntropyCuts(tree: Tree):
     total_cuts = cuts + cuts0 + cuts1
 
     print(
-        "Total entropy: {}, total number of cuts: {}".format(total_entropy, total_cuts)
+        f"Total entropy: {total_entropy}, total number of cuts: {total_cuts}"
     )

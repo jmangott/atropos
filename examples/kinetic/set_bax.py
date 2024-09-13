@@ -1,15 +1,15 @@
 """Script for setting the initial conditions for the BAX pore assembly model."""
 
 import argparse
-import numpy as np
 import sys
 
-from src.grid import GridParms
-from src.initial_condition import InitialCondition
-from src.tree import Tree
-from src.index_functions import incrVecIndex
+import numpy as np
 
 import examples.models.kinetic.bax as model
+from src.grid import GridParms
+from src.index_functions import incrVecIndex
+from src.initial_condition import InitialCondition
+from src.tree import Tree
 
 partition = [
     "(0 1 2)(((3 4 6 7)(5 8))(9 10))",
@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(
     usage='python3 examples/kinetic/set_bax.py --partition "'
     + partition[0]
     + '" --rank 5 4 3',
-    description="This script sets the initial conditions for the BAX pore assembly model.",
+    description="This script sets initial conditions for the BAX pore assembly model.",
 )
 
 for i, p in enumerate(partition):
@@ -57,7 +57,8 @@ if args.partition is None:
     print("usage:", parser.usage)
     print(
         parser.prog + ":",
-        "error: the following arguments are required: -p/--partition` or -p[n]/--partition[n], n=0,...,"
+        ("error: the following arguments are required: "
+         "-p/--partition` or -p[n]/--partition[n], n=0,...,")
         + str(len(partition) - 1),
     )
     sys.exit(1)

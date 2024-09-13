@@ -1,14 +1,14 @@
 """Script for setting the initial conditions for the toggle switch model."""
 
 import argparse
+
 import numpy as np
 
+import examples.models.kinetic.toggle_switch as model
 from src.grid import GridParms
+from src.index_functions import incrVecIndex
 from src.initial_condition import InitialCondition
 from src.tree import Tree
-from src.index_functions import incrVecIndex
-
-import examples.models.kinetic.toggle_switch as model
 
 parser = argparse.ArgumentParser(
     prog="set_toggle_switch",

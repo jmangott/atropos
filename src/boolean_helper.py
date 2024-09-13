@@ -1,22 +1,25 @@
 """Helper module for Boolean reaction models."""
 
-import bitarray
-import bitarray.util
 import ctypes
 import inspect
-import numpy as np
-import regex as re
 import subprocess
 import tempfile
 import textwrap
+
+import bitarray
+import bitarray.util
+import numpy as np
+import regex as re
 
 import src.reaction
 
 
 def convertRulesToReactions(filename: str):
     """
-    Converts a rule file of the Boolean CME integrator of https://bitbucket.org/mprugger/low_rank_cme to a instance of the `ReactionSystem` class.
-    NOTE: This method is only capable of converting systems with a maximum of 64 species.
+    Converts a rule file of the Boolean CME integrator of 
+    https://bitbucket.org/mprugger/low_rank_cme to a `ReactionSystem` instance.
+    NOTE: This method is only capable of converting systems 
+    with a maximum of 64 species.
     """
     with open(filename) as f:
         line0 = f.readline()
@@ -32,14 +35,10 @@ def convertRulesToReactions(filename: str):
     rules = {}
     dependencies = {}
 
-    rule_pattern = (
-        "template<> bool {}::rule<(\d+)>\(bitset<{}> x\) \{{([\S\s]*?)\}}".format(
-            model_name, d
-        )
-    )
-    dependency_pattern = "template<> vector<ind> {}::depends_on<(\d+)>\(\) \{{[\s]*?return \{{(.*?)\}};\s*\}}".format(
-        model_name
-    )
+    rule_pattern = f"template<> bool {model_name}::rule<(\d+)>\(bitset<{d}> x\) "\
+        "\{([\S\s]*?)\}"
+    dependency_pattern = f"template<> vector<ind> {model_name}::depends_on<(\d+)>\(\) "\
+        "\{[\s]*?return \{(.*?)\};\s*\}"
 
     rule_matches = re.finditer(rule_pattern, f_string, re.MULTILINE)
     for _, match in enumerate(rule_matches, start=1):
@@ -94,7 +93,7 @@ def convertRulesToReactions(filename: str):
             x_dep = bitarray.util.int2ba(j, length=d_dep, endian="little")
             for k, k_dep in enumerate(dependencies[i]):
                 x[k_dep] = x_dep[k]
-            curr_rule = handle["rule_{}".format(i)]
+            curr_rule = handle[f"rule_{i}"]
             curr_rule.argtypes = [
                 ctypes.c_ulonglong
             ]  # avoid overflow for large systems
@@ -118,13 +117,14 @@ if __name__ == "__main__":
     import numpy as np
 
     reaction_system = convertRulesToReactions(
-        "scripts/models/boolean_rulefiles/pancreatic_cancer.hpp"
+        "examples/models/boolean/pancreatic_cancer.hpp"
     )
 
+    func_pattern = re.compile(r"return (.+)\\n")
     for mu, reaction in enumerate(reaction_system.reactions):
-        print("reaction {}, product {}".format(mu, int(np.nonzero(reaction.nu)[0])))
+        print(f"reaction {mu}, product {int(np.nonzero(reaction.nu)[0])}")
         for k, v in reaction.propensity.items():
-            funcString = str(inspect.getsourcelines(v)[0])
-            funcString = funcString.strip("['\\n']").split(" = ")[1]
-            print(k, funcString)
+            func_string = str(inspect.getsourcelines(v)[0])
+            func = re.findall(func_pattern, func_string)
+            print(k, func)
         print(reaction.nu, "\n")

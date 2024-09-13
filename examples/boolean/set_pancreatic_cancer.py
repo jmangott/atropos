@@ -1,27 +1,31 @@
 """Script for setting the initial conditions for the Boolean pancreatic cancer model."""
 
 import argparse
-import numpy as np
 import sys
+
+import numpy as np
 
 import src.boolean_helper
 from src.grid import GridParms
+from src.index_functions import incrVecIndex
 from src.initial_condition import InitialCondition
 from src.tree import Tree
-from src.index_functions import incrVecIndex
 
 reaction_system = src.boolean_helper.convertRulesToReactions(
     "examples/models/boolean/pancreatic_cancer.hpp"
 )
 
-p_best = "((0 1 2 3 4 5 6 9 12)(7 8 10 11 17 21 23 26))((13 14 19 20 22 27 28 31 33)(15 16 18 24 25 29 30 32))"
-p_worst = "((0 1 2 4 8 11 17 26)(3 5 6 7 9 10 12 21 23))((13 18 19 20 22 25 31 33)(14 15 16 24 27 28 29 30 32))"
-p_reasonable = "((0 1 2 3 4 5 7 9)(13 14 19 20 25 27 29 30 32))((6 10 12 16 18 21 24 26 31)(8 11 15 17 22 23 28 33))"
+p_best = ("((0 1 2 3 4 5 6 9 12)(7 8 10 11 17 21 23 26))"
+          "((13 14 19 20 22 27 28 31 33)(15 16 18 24 25 29 30 32))")
+p_worst = ("((0 1 2 4 8 11 17 26)(3 5 6 7 9 10 12 21 23))"
+           "((13 18 19 20 22 25 31 33)(14 15 16 24 27 28 29 30 32))")
+p_reasonable = ("((0 1 2 3 4 5 7 9)(13 14 19 20 25 27 29 30 32))"
+                "((6 10 12 16 18 21 24 26 31)(8 11 15 17 22 23 28 33))")
 
 parser = argparse.ArgumentParser(
     prog="set_pancreatic",
     usage="python3 examples/boolean/set_pancreatic_cancer.py --partition_best --rank 5",
-    description="This script sets the initial conditions for the Boolean pancreatic cancer model.",
+    description="This script sets initial conditions for the pancreatic cancer model.",
 )
 
 parser.add_argument(
@@ -40,7 +44,7 @@ parser.add_argument(
     action="store_const",
     const=p_worst,
     required=False,
-    help="Set the partition string to the worst partition in terms of entropy",
+    help="Set the partition string to the worst partition w.r.t. entropy",
     dest="partition",
 )
 
@@ -50,7 +54,7 @@ parser.add_argument(
     action="store_const",
     const=p_reasonable,
     required=False,
-    help="Set the partition string to the best partition in terms of Kerninghan-Lin counts",
+    help="Set the partition string to the best partition w.r.t. Kerninghan-Lin counts",
     dest="partition",
 )
 

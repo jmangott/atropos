@@ -1,27 +1,31 @@
 """Script for setting the initial conditions for the Boolean apoptosis model."""
 
 import argparse
-import numpy as np
 import sys
+
+import numpy as np
 
 import src.boolean_helper
 from src.grid import GridParms
+from src.index_functions import incrVecIndex
 from src.initial_condition import InitialCondition
 from src.tree import Tree
-from src.index_functions import incrVecIndex
 
 reaction_system = src.boolean_helper.convertRulesToReactions(
     "examples/models/boolean/apoptosis.hpp"
 )
 
-p_best = "((0 2 3 4 5 6 7 8 9 12 20)(21 25 26 27 28 29 30 31 39 40))((1 10 11 14 15 22 23 32 33 38)(13 16 17 18 19 24 34 35 36 37))"
-p_worst = "((0 1 4 7 11 12 14 16 23 33 34)(2 3 5 8 13 19 20 24 32 35))((6 9 15 17 21 22 25 26 31 37)(10 18 27 28 29 30 36 38 39 40))"
-p_reasonable = "((0 2 3 4 5 6 7 8 12 20)(1 9 10 11 14 15 16 17 22 23))((13 18 19 24 32 33 34 35 36 37 38)(21 25 26 27 28 29 30 31 39 40))"
+p_best = ("((0 2 3 4 5 6 7 8 9 12 20)(21 25 26 27 28 29 30 31 39 40))"
+          "((1 10 11 14 15 22 23 32 33 38)(13 16 17 18 19 24 34 35 36 37))")
+p_worst = ("((0 1 4 7 11 12 14 16 23 33 34)(2 3 5 8 13 19 20 24 32 35))"
+           "((6 9 15 17 21 22 25 26 31 37)(10 18 27 28 29 30 36 38 39 40))")
+p_reasonable = ("((0 2 3 4 5 6 7 8 12 20)(1 9 10 11 14 15 16 17 22 23))"
+                "((13 18 19 24 32 33 34 35 36 37 38)(21 25 26 27 28 29 30 31 39 40))")
 
 parser = argparse.ArgumentParser(
     prog="set_apoptosis",
     usage="python3 examples/boolean/set_apoptosis.py --partition_best --rank 5",
-    description="This script sets the initial conditions for the Boolean apoptosis model.",
+    description="This script sets initial conditions for the apoptosis model.",
 )
 
 parser.add_argument(
@@ -40,7 +44,7 @@ parser.add_argument(
     action="store_const",
     const=p_worst,
     required=False,
-    help="Set the partition string to the worst partition in terms of entropy",
+    help="Set the partition string to the worst partition w.r.t. entropy",
     dest="partition",
 )
 
@@ -50,7 +54,7 @@ parser.add_argument(
     action="store_const",
     const=p_reasonable,
     required=False,
-    help="Set the partition string to the best partition in terms of Kerninghan-Lin counts",
+    help="Set the partition string to the best partition w.r.t. Kerninghan-Lin counts",
     dest="partition",
 )
 

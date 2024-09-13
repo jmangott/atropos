@@ -1,8 +1,8 @@
-import numpy as np
-from src.output_helper import readTree
-
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+
+from src.output_helper import readTree
 
 mpl.use("TkAgg")
 
@@ -16,8 +16,10 @@ Generate plots to compare lambda_phage (see if my code is correct)
 Compare lambda phage example
 """
 
-lambda_phage_stefan = "/home/stefan/Chemical_master_equation/kinetic-cme/output/lambda_phage_Stefan/output_t800.nc"
-lambda_phage_julian = "/home/stefan/Chemical_master_equation/kinetic-cme/output/lambda_phage_Julian/output_t800.nc"
+lambda_phage_stefan = ("/home/stefan/Chemical_master_equation/kinetic-cme/output/"
+                       "lambda_phage_Stefan/output_t800.nc")
+lambda_phage_julian = ("/home/stefan/Chemical_master_equation/kinetic-cme/output/"
+                       "lambda_phage_Julian/output_t800.nc")
 
 lambda_phage_stefan_tree = readTree(lambda_phage_stefan)
 _, sum_lambda_phage_stefan = lambda_phage_stefan_tree.calculateObservables(

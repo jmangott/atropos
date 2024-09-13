@@ -1,12 +1,14 @@
-from src.reaction import Reaction, ReactionSystem
-from src.grid import GridParms
-from src.tree import Tree
-from src.initial_condition import InitialCondition
-from src.index_functions import incrVecIndex
-import sympy as sp
-import numpy as np
 import os
 import sys
+
+import numpy as np
+import sympy as sp
+
+from src.grid import GridParms
+from src.index_functions import incrVecIndex
+from src.initial_condition import InitialCondition
+from src.reaction import Reaction, ReactionSystem
+from src.tree import Tree
 
 
 def species(symbol_string):
@@ -31,7 +33,8 @@ class Model:
             nu_vec[i] = eq_sp.coeff(sym)
 
         prop_dict = {}
-        # Test if we only have coefficient as variable, if so, generate propensity in non factorised form
+        # Test if we only have coefficient as variable, 
+        # if so, generate propensity in non factorised form
         if type(propensities) is int or type(propensities) is float:
             for sym in self.species:
                 for i in range(reactants.coeff(sym)):
@@ -63,7 +66,7 @@ class Model:
                         print("ERROR: Propensity non factorizable")
                         sys.exit()
 
-                    if elements[0] in propensities.keys():
+                    if elements[0] in propensities:
                         propensities[elements[0]] *= factor * coefficient_n
                     else:
                         propensities[elements[0]] = factor * coefficient_n
@@ -79,7 +82,7 @@ class Model:
                         print("ERROR: Propensity non factorizable")
                         sys.exit()
 
-                    if elements[0] in propensities.keys():
+                    if elements[0] in propensities:
                         propensities[elements[0]] *= 1 / (factor * coefficient_d)
                     else:
                         propensities[elements[0]] = 1 / (factor * coefficient_d)
@@ -94,7 +97,7 @@ class Model:
 
     def add_reactions(self, reactants_list, products_list, propensities_list):
         for reactants, products, propensities in zip(
-            reactants_list, products_list, propensities_list
+            reactants_list, products_list, propensities_list, strict=False
         ):
             self.add_reaction(reactants, products, propensities)
 
@@ -160,8 +163,9 @@ def run(partitioning, output, tau, tfinal, snapshot=2, substeps=1, method="RK4")
     elif method == "RK4":
         m = "r"
     else:
-        print(
-            "Possible inputs for method: implicit_Euler, explicit_Euler, Crank_Nicolson, RK4"
+        print("Possible inputs for method: "\
+              "implicit_Euler, explicit_Euler, Crank_Nicolson, RK4"
         )
-    cmd = f"core/bin/hierarchical-cme -o {output} -s {snap} -t {tau} -f {tfinal} -n {substeps} -m {m}"
+    cmd = ("core/bin/hierarchical-cme "
+           f"-o {output} -s {snap} -t {tau} -f {tfinal} -n {substeps} -m {m}")
     os.system(cmd)

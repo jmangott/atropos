@@ -1,4 +1,5 @@
 import numpy as np
+
 from src.reaction import Reaction, ReactionSystem
 
 b = 0.4

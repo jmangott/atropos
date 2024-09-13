@@ -1,16 +1,16 @@
 """Script for setting the initial conditions for the lambda phage model."""
 
 import argparse
-import numpy as np
 import sys
+
+import numpy as np
 from scipy.special import factorial
 
+import examples.models.kinetic.lambda_phage as model
 from src.grid import GridParms
+from src.index_functions import incrVecIndex, tensorUnfold, vecIndexToState
 from src.initial_condition import InitialCondition
 from src.tree import Tree
-from src.index_functions import incrVecIndex, vecIndexToState, tensorUnfold
-
-import examples.models.kinetic.lambda_phage as model
 
 partition = ["(0 1)((2 3)(4))", "((0 1)(2 3))(4)", "((0 1)(2))(3 4)", "(0 1)(2 3 4)"]
 
