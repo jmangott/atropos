@@ -1,0 +1,29 @@
+[project]
+name = "kinetic-cme-wrapper"
+version = "0.0.1"
+authors = [
+  { name="Julian Mangott", email="julian.mangott@uibk.ac.at" },
+  { name="Stefan Brunner", email="stefan.brunner@uibk.ac.at" }
+]
+description = "Wrapper for the kinetic-cme C++ library"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = []
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # pydocstyle
+    # "D",
+    # isort
+    "I",
+]
