@@ -1,6 +1,7 @@
 import os
 import sys
 
+import math
 import numpy as np
 import sympy as sp
 
@@ -39,7 +40,7 @@ class Model:
             for sym in self.species:
                 for i in range(reactants.coeff(sym)):
                     propensities *= sym - i
-                propensities /= np.math.factorial(reactants.coeff(sym))
+                propensities /= math.factorial(reactants.coeff(sym))
 
         # If propensites in non factorised form, factorise it and generate a dictionary
         if isinstance(propensities, sp.Expr):
