@@ -3,6 +3,7 @@
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
+#include <generic/index_functions.hpp>
 
 #include "index_functions.hpp"
 
