@@ -2,9 +2,9 @@
 #define INTEGRATORS_HPP
 
 #include <generic/matrix.hpp>
+#include <generic/timer.hpp>
 
 #include "integration_methods.hpp"
-#include "timer_class.hpp"
 #include "tree_class.hpp"
 
 struct integrator_base {

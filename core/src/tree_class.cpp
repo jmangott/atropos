@@ -630,7 +630,7 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
                                      const cme_external_node* const node,
                                      const blas_ops& blas)
 {
-    get_time::start("CalculateKDot");
+    gt::start("CalculateKDot");
     multi_array<double, 2> K_dot(K.shape());
     set_zero(K_dot);
 
@@ -671,9 +671,9 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
             ptw_mult_row(KB, weight, aKB);
 
             // Shift prod_KC
-            get_time::start("ShiftKDot");
+            gt::start("ShiftKDot");
             Matrix::ShiftRows<1>(aKA_shift, aKA, node->grid, mu);
-            get_time::stop("ShiftKDot");
+            gt::stop("ShiftKDot");
 
             // Calculate K_dot = shift(C * K) - D * K
             aKA_shift -= aKB;
@@ -682,7 +682,7 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
         K_dot += K_dot_thread;
     }
 
-    get_time::stop("CalculateKDot");
+    gt::stop("CalculateKDot");
     return K_dot;
 }
 
@@ -755,38 +755,38 @@ multi_array<double, 2> CalculateQDot(const multi_array<double, 2>& Qmat,
 #endif
         for (Index mu = 0; mu < node->grid.n_reactions; ++mu) {
             blas.matmul_transb(Qmat, node->coefficients.A[mu], Qa);
-            get_time::start("Mat/Ten");
+            gt::start("Mat/Ten");
             Matrix::Tensorize<2>(Qa, Q_ten);
             Matrix::Matricize<0>(Q_ten, Qa_mat);
-            get_time::stop("Mat/Ten");
+            gt::stop("Mat/Ten");
             blas.matmul_transb(Qa_mat, node->child[0]->coefficients.A_bar[mu], QaA0);
-            get_time::start("Mat/Ten");
+            gt::start("Mat/Ten");
             Matrix::Tensorize<0>(QaA0, Q_ten);
             Matrix::Matricize<1>(Q_ten, QaA0_mat);
-            get_time::stop("Mat/Ten");
+            gt::stop("Mat/Ten");
             blas.matmul_transb(QaA0_mat, node->child[1]->coefficients.A_bar[mu],
                                QaA0A1);
-            get_time::start("Mat/Ten");
+            gt::start("Mat/Ten");
             Matrix::Tensorize<1>(QaA0A1, Q_ten);
             Matrix::Matricize<2>(Q_ten, Qa);
-            get_time::stop("Mat/Ten");
+            gt::stop("Mat/Ten");
 
             blas.matmul_transb(Qmat, node->coefficients.B[mu], Qb);
-            get_time::start("Mat/Ten");
+            gt::start("Mat/Ten");
             Matrix::Tensorize<2>(Qb, Q_ten);
             Matrix::Matricize<0>(Q_ten, Qb_mat);
-            get_time::stop("Mat/Ten");
+            gt::stop("Mat/Ten");
             blas.matmul_transb(Qb_mat, node->child[0]->coefficients.B_bar[mu], QbB0);
-            get_time::start("Mat/Ten");
+            gt::start("Mat/Ten");
             Matrix::Tensorize<0>(QbB0, Q_ten);
             Matrix::Matricize<1>(Q_ten, QbB0_mat);
-            get_time::stop("Mat/Ten");
+            gt::stop("Mat/Ten");
             blas.matmul_transb(QbB0_mat, node->child[1]->coefficients.B_bar[mu],
                                QbB0B1);
-            get_time::start("Mat/Ten");
+            gt::start("Mat/Ten");
             Matrix::Tensorize<1>(QbB0B1, Q_ten);
             Matrix::Matricize<2>(Q_ten, Qb);
-            get_time::stop("Mat/Ten");
+            gt::stop("Mat/Ten");
 
             Q_dot_thread += Qa;
             Q_dot_thread -= Qb;

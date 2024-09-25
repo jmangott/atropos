@@ -2,11 +2,11 @@
 #include <filesystem>
 
 #include <cxxopts.hpp>
+#include <generic/timer.hpp>
 
 #include "bug_integrator.hpp"
 #include "print_functions.hpp"
 #include "ps_integrator.hpp"
-#include "timer_class.hpp"
 #include "tree_class.hpp"
 
 #define STRING(x) #x
@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     tree.Write(fname, t, tau, dm);
 
     auto t_start(std::chrono::high_resolution_clock::now());
-    get_time::start("main");
+    gt::start("main");
     for (Index ts = 0; ts < kNsteps; ++ts) {
         if (tfinal - t < tau)
             tau = tfinal - t;
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
             tree.Write(fname, t, tau, dm);
         }
     }
-    get_time::stop("main");
+    gt::stop("main");
 
     auto t_stop(std::chrono::high_resolution_clock::now());
     auto t_elapsed = t_stop - t_start;
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     std::cout << "\n\n";
     std::cout << "TIMER RESULTS\n";
     std::cout << "-------------\n";
-    std::cout << get_time::sorted_output();
+    std::cout << gt::sorted_output();
 
     std::ofstream diagnostics_file;
     diagnostics dgn{integrator, t_elapsed, tau, dm_max};

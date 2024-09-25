@@ -138,7 +138,6 @@ set(SRC_FILES ${SRC}/bug_integrator.cpp
               ${SRC}/matrix.cpp
               ${SRC}/print_functions.cpp
               ${SRC}/ps_integrator.cpp
-              ${SRC}/timer_class.cpp
               ${SRC}/tree_class.cpp)
 
 ########################

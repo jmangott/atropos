@@ -5,10 +5,10 @@
 #include <cassert>
 
 #include <generic/storage.hpp>
+#include <generic/timer.hpp>
 #include <lr/lr.hpp>
 
 #include "index_functions.hpp"
-#include "timer_class.hpp"
 
 namespace Matrix {
 template <class InputIt, class OutputIt>

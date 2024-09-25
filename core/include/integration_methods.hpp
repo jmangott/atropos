@@ -11,11 +11,11 @@
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
+#include <generic/timer.hpp>
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
 #include "matrix_free.hpp"
-#include "timer_class.hpp"
 // TODO: use a function pointer instead of std::function for performance
 struct integration_method {
     integration_method() = default;

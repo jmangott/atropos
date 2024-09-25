@@ -6,6 +6,7 @@
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
+#include <generic/timer.hpp>
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
@@ -15,7 +16,6 @@
 #include "grid_class.hpp"
 #include "matrix.hpp"
 #include "netcdf_check.hpp"
-#include "timer_class.hpp"
 
 #ifdef __OPENMP__
 #pragma omp declare reduction(+ : multi_array<double, 2> : omp_out += omp_in)          \
