@@ -1,43 +1,42 @@
-import numpy as np
-import sympy as sp
 import unittest
 
-from src.generator import Model, Partitioning, run, species
+import numpy as np
+import sympy as sp
+
+from src.generator import Model, Partitioning, species
+
 
 class ModelTestCase(unittest.TestCase):
-    
     def setUp(self):
-
-        self.A,self.B = sp.symbols("A,B")
+        self.A, self.B = sp.symbols("A,B")
         self.model = Model((self.A, self.B))
 
     def test_species(self):
-
         res = species("A")
 
-        self.assertEqual(self.A,res)
+        self.assertEqual(self.A, res)
 
     def test_add_reaction(self):
-
         res_prop = 6
 
-        reactants = 2*self.A
-        products = 3*self.B
+        reactants = 2 * self.A
+        products = 3 * self.B
         propensities = 2
 
         self.model.add_reaction(reactants, products, propensities)
         self.model.generate_reaction_system()
 
-        self.assertEqual(self.model.reaction_system.reactions[0].propensity[0](3), res_prop)
+        self.assertEqual(
+            self.model.reaction_system.reactions[0].propensity[0](3), res_prop
+        )
+
 
 class PartitioningTestCase(unittest.TestCase):
-
     def setUp(self):
-
-        self.A,self.B = sp.symbols("A,B")
+        self.A, self.B = sp.symbols("A,B")
         self.model = Model((self.A, self.B))
 
-        self.model.add_reaction(2*self.A, 3*self.B, 2)
+        self.model.add_reaction(2 * self.A, 3 * self.B, 2)
 
         self.model.generate_reaction_system()
 
@@ -57,14 +56,12 @@ class PartitioningTestCase(unittest.TestCase):
         self.partitioning.generate_initial_condition(n_basisfunctions)
 
     def test_set_initial_condition(self):
-
         res = [[[1]]]
 
-        polynomials_dict = {self.A: self.A*(self.A-1), self.B: self.B*2}
+        polynomials_dict = {self.A: self.A * (self.A - 1), self.B: self.B * 2}
         self.partitioning.set_initial_condition(polynomials_dict)
 
         self.assertEqual(self.partitioning.initial_conditions.Q[0], res)
-
 
 
 if __name__ == "__main__":
