@@ -12,7 +12,7 @@
 
 #include "grid_class.hpp"
 
-namespace IndexFunction {
+namespace IndexFunctionCME {
 template <class InputIt, class InputItInt, class InputItDep>
 Index VecIndexToDepCombIndex(InputIt first, InputItInt first_int, InputItDep first_dep,
                              InputItDep last_dep)
@@ -39,6 +39,6 @@ Index SetVecIndex(InputIt first, InputIt last, InputItInt first_int, const Index
     return chunk_size;
 }
 #endif
-} // namespace IndexFunction
+} // namespace IndexFunctionCME
 
 #endif

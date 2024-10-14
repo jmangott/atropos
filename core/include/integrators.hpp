@@ -9,13 +9,13 @@
 
 struct integrator_base {
     integrator_base(
-        const blas_ops& _blas,
+        const Ensign::blas_ops& _blas,
         const std::map<std::string, integration_method*>& _integration_methods)
         : blas(_blas), integration_methods(_integration_methods)
     {
     }
 
-    const blas_ops blas;
+    const Ensign::blas_ops blas;
     const std::map<std::string, integration_method*> integration_methods;
 };
 

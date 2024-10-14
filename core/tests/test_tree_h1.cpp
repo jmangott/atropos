@@ -14,7 +14,7 @@
 
 TEST_CASE("tree_h1", "[tree_h1]")
 {
-    blas_ops blas;
+    Ensign::blas_ops blas;
 
     Index r = 2;
     Index n_basisfunctions = 1;
@@ -41,9 +41,9 @@ TEST_CASE("tree_h1", "[tree_h1]")
     std::vector<int> species0{val_species0};
     std::vector<int> species1{val_species1};
 
-    multi_array<bool, 2> dep({n_reactions, (Index)n.size()});
-    multi_array<bool, 2> dep0({n_reactions, (Index)n0.size()});
-    multi_array<bool, 2> dep1({n_reactions, (Index)n1.size()});
+    Ensign::multi_array<bool, 2> dep({n_reactions, (Index)n.size()});
+    Ensign::multi_array<bool, 2> dep0({n_reactions, (Index)n0.size()});
+    Ensign::multi_array<bool, 2> dep1({n_reactions, (Index)n1.size()});
 
     std::fill(std::begin(dep), std::end(dep), false);
     std::fill(std::begin(dep0), std::end(dep0), false);
@@ -60,9 +60,9 @@ TEST_CASE("tree_h1", "[tree_h1]")
     dep1(1, 0) = true;
     dep1(2, 0) = true;
 
-    multi_array<Index, 2> nu({n_reactions, (Index)n.size()});
-    multi_array<Index, 2> nu0({n_reactions, (Index)n0.size()});
-    multi_array<Index, 2> nu1({n_reactions, (Index)n1.size()});
+    Ensign::multi_array<Index, 2> nu({n_reactions, (Index)n.size()});
+    Ensign::multi_array<Index, 2> nu0({n_reactions, (Index)n0.size()});
+    Ensign::multi_array<Index, 2> nu1({n_reactions, (Index)n1.size()});
 
     std::fill(std::begin(nu), std::end(nu), 0);
     std::fill(std::begin(nu0), std::end(nu0), 0);
@@ -104,16 +104,16 @@ TEST_CASE("tree_h1", "[tree_h1]")
     propensity1[2] = {1.0, 0.5};
     propensity1[3] = {1.0};
 
-    multi_array<double, 3> Q({r, r, 1});
-    multi_array<double, 2> X0({val_n0, r}), X1({val_n1, r});
+    Ensign::multi_array<double, 3> Q({r, r, 1});
+    Ensign::multi_array<double, 2> X0({val_n0, r}), X1({val_n1, r});
 
     // Initialize Q and Q0
     std::fill(std::begin(Q), std::end(Q), 0.0);
     Q(0, 0, 0) = 1.0;
 
     // Initialize and normalize X0, X1
-    set_zero(X0);
-    set_zero(X1);
+    Ensign::set_zero(X0);
+    Ensign::set_zero(X1);
 
     X0(0, 0) = 1.0;
     X0(1, 0) = 1.0;
@@ -148,7 +148,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     cme_lr_tree tree(root);
 
     // Calculate probability distribution
-    multi_array<double, 2> p({val_n0, val_n1}), p_ortho({val_n0, val_n1});
+    Ensign::multi_array<double, 2> p({val_n0, val_n1}), p_ortho({val_n0, val_n1});
     std::fill(std::begin(p), std::end(p), 0.0);
 
     for (Index i = 0; i < r; ++i) {
@@ -186,8 +186,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     Q(0, 0, 0) = 2.0 * std::exp(-0.5);
 
-    set_zero(X0);
-    set_zero(X1);
+    Ensign::set_zero(X0);
+    Ensign::set_zero(X1);
 
     X0(0, 0) = 1.0;
     X0(1, 0) = 1.0;
@@ -220,12 +220,13 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     REQUIRE(bool(p == p_ortho));
 
-    multi_array<double, 3> G({root->RankOut()[0], root->RankOut()[1], root->RankIn()});
-    multi_array<double, 2> S0({root->RankOut()[0], root->RankOut()[0]});
+    Ensign::multi_array<double, 3> G(
+        {root->RankOut()[0], root->RankOut()[1], root->RankIn()});
+    Ensign::multi_array<double, 2> S0({root->RankOut()[0], root->RankOut()[0]});
 
     std::fill(std::begin(Q), std::end(Q), 0.0);
     std::fill(std::begin(G), std::end(G), 0.0);
-    set_zero(S0);
+    Ensign::set_zero(S0);
 
     Q(0, 0, 0) = 2.0 * std::exp(-0.5);
     G(0, 0, 0) = 1.0;
@@ -238,10 +239,12 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     tree.root->CalculateAB<0>(blas);
 
-    std::vector<multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
-    std::vector<multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
-    std::vector<multi_array<double, 2>> A1_bar_comparison(node1->grid.n_reactions);
-    std::vector<multi_array<double, 2>> B1_bar_comparison(node1->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> A1_bar_comparison(
+        node1->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> B1_bar_comparison(
+        node1->grid.n_reactions);
 
     // Calculate A1_comparison
     for (Index mu = 0; mu < root->grid.n_reactions; ++mu) {
@@ -250,10 +253,10 @@ TEST_CASE("tree_h1", "[tree_h1]")
         A1_bar_comparison[mu].resize({node1->RankIn(), node1->RankIn()});
         B1_bar_comparison[mu].resize({node1->RankIn(), node1->RankIn()});
 
-        set_zero(A0_comparison[mu]);
-        set_zero(B0_comparison[mu]);
-        set_zero(A1_bar_comparison[mu]);
-        set_zero(B1_bar_comparison[mu]);
+        Ensign::set_zero(A0_comparison[mu]);
+        Ensign::set_zero(B0_comparison[mu]);
+        Ensign::set_zero(A1_bar_comparison[mu]);
+        Ensign::set_zero(B1_bar_comparison[mu]);
     }
 
     A1_bar_comparison[0](0, 0) = 1.0;
@@ -312,7 +315,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     }
 
     // Test K step
-    multi_array<double, 2> K0_dot_comparison(node0->X.shape());
+    Ensign::multi_array<double, 2> K0_dot_comparison(node0->X.shape());
     double norm_2e = std::sqrt(2.0) * std::exp(-0.5);
 
     K0_dot_comparison(0, 0) = -0.25 * norm_2e;
@@ -320,8 +323,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
     K0_dot_comparison(1, 0) = -1.25 * norm_2e;
     K0_dot_comparison(1, 1) = 0.75 * norm_2e;
 
-    multi_array<double, 2> K0(node0->X.shape());
-    multi_array<double, 2> K0_dot(node0->X.shape());
+    Ensign::multi_array<double, 2> K0(node0->X.shape());
+    Ensign::multi_array<double, 2> K0_dot(node0->X.shape());
 
     blas.matmul(node0->X, node0->S, K0);
     K0_dot = CalculateKDot(K0, node0, blas);
@@ -329,8 +332,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
     REQUIRE(bool(K0_dot_comparison == K0_dot));
 
     // Test S step
-    multi_array<double, 2> S0_dot(node0->S.shape());
-    multi_array<double, 2> S0_dot_comparison(node0->S.shape());
+    Ensign::multi_array<double, 2> S0_dot(node0->S.shape());
+    Ensign::multi_array<double, 2> S0_dot_comparison(node0->S.shape());
 
     // Reset S and X0 to get reproducable results
     node0->X = X0;
@@ -346,33 +349,36 @@ TEST_CASE("tree_h1", "[tree_h1]")
     REQUIRE(bool(S0_dot_comparison == S0_dot));
 
     // Test the relation S1_dot(i1, j1) = Q_dot(i0, i1, i) * G(i0, j1, i)
-    multi_array<double, 2> S1_dot({tree.root->RankOut()[1], tree.root->RankOut()[1]});
-    multi_array<double, 3> Q_dot(root->Q.shape());
-    multi_array<double, 2> Qmat1(
+    Ensign::multi_array<double, 2> S1_dot(
+        {tree.root->RankOut()[1], tree.root->RankOut()[1]});
+    Ensign::multi_array<double, 3> Q_dot(root->Q.shape());
+    Ensign::multi_array<double, 2> Qmat1(
         {root->RankIn() * root->RankOut()[0], root->RankOut()[1]});
-    multi_array<double, 2> Qmat2({prod(root->RankOut()), root->RankIn()});
-    multi_array<double, 2> Qmat2_dot(Qmat2.shape());
-    multi_array<double, 2> Gmat1(Qmat1.shape());
-    set_zero(Qmat1);
+    Ensign::multi_array<double, 2> Qmat2(
+        {Ensign::prod(root->RankOut()), root->RankIn()});
+    Ensign::multi_array<double, 2> Qmat2_dot(Qmat2.shape());
+    Ensign::multi_array<double, 2> Gmat1(Qmat1.shape());
+    Ensign::set_zero(Qmat1);
 
-    multi_array<double, 2> S1({tree.root->RankOut()[1], tree.root->RankOut()[1]});
-    set_zero(S1);
+    Ensign::multi_array<double, 2> S1(
+        {tree.root->RankOut()[1], tree.root->RankOut()[1]});
+    Ensign::set_zero(S1);
     S1(0, 0) = 2.0 * std::exp(-0.5);
     node1->S = S1;
 
     root->CalculateAB<1>(blas);
     S1_dot = CalculateSDot(node1->S, node1, blas);
 
-    Matrix::Matricize<1>(root->G, Gmat1);
+    Ensign::Tensor::matricize<1>(root->G, Gmat1);
     blas.matmul_transb(Gmat1, node1->S, Qmat1);
-    Matrix::Tensorize<1>(Qmat1, root->Q);
+    Ensign::Tensor::tensorize<1>(Qmat1, root->Q);
 
-    Matrix::Matricize<2>(root->Q, Qmat2);
+    Ensign::Tensor::matricize<2>(root->Q, Qmat2);
     Qmat2_dot = CalculateQDot(Qmat2, root, blas);
-    Matrix::Tensorize<2>(Qmat2_dot, Q_dot);
+    Ensign::Tensor::tensorize<2>(Qmat2_dot, Q_dot);
 
-    multi_array<double, 2> Q_dotG(S1_dot.shape());
-    set_zero(Q_dotG);
+    Ensign::multi_array<double, 2> Q_dotG(S1_dot.shape());
+    Ensign::set_zero(Q_dotG);
 
     for (Index i = 0; i < root->RankIn(); ++i) {
         for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0) {

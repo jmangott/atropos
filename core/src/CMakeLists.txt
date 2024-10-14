@@ -5,7 +5,7 @@
 add_executable(${EXENAME} main.cpp)
 
 target_include_directories(${EXENAME} PRIVATE "${ENSIGN_BUILD_DIR}/extern/cxxopts/src/cxxopts/include")
-target_link_libraries(${EXENAME} ${LIBNAME} Eigen3::Eigen)
+target_link_libraries(${EXENAME} ${LIBNAME} Eigen3::Eigen Ensign::Ensign)
 
 if(${MKL_ENABLED})
     target_link_libraries(${EXENAME} ${MKL_LIBRARIES})

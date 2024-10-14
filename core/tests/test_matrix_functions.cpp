@@ -23,17 +23,17 @@ class generator {
 TEST_CASE("Matricize_Tensorize", "[Matricize_Tensorize]")
 {
     Index d0 = 5, d1 = 7, d2 = 9;
-    multi_array<Index, 3> ten({d0, d1, d2}), ten2({d0, d1, d2}), ten1({d0, d1, d2}),
-        ten0({d0, d1, d2});
-    multi_array<Index, 2> mat2({d0 * d1, d2}), mat2_ref({d0 * d1, d2});
-    multi_array<Index, 2> mat1({d2 * d0, d1}), mat1_ref({d2 * d0, d1});
-    multi_array<Index, 2> mat0({d1 * d2, d0}), mat0_ref({d1 * d2, d0});
+    Ensign::multi_array<Index, 3> ten({d0, d1, d2}), ten2({d0, d1, d2}),
+        ten1({d0, d1, d2}), ten0({d0, d1, d2});
+    Ensign::multi_array<Index, 2> mat2({d0 * d1, d2}), mat2_ref({d0 * d1, d2});
+    Ensign::multi_array<Index, 2> mat1({d2 * d0, d1}), mat1_ref({d2 * d0, d1});
+    Ensign::multi_array<Index, 2> mat0({d1 * d2, d0}), mat0_ref({d1 * d2, d0});
 
     std::generate(std::begin(ten), std::end(ten), generator{});
 
-    Matrix::Matricize<2>(ten, mat2);
-    Matrix::Matricize<1>(ten, mat1);
-    Matrix::Matricize<0>(ten, mat0);
+    Ensign::Tensor::matricize<2>(ten, mat2);
+    Ensign::Tensor::matricize<1>(ten, mat1);
+    Ensign::Tensor::matricize<0>(ten, mat0);
 
     generator generator2{};
     for (Index k = 0; k < d2; ++k) {
@@ -66,9 +66,9 @@ TEST_CASE("Matricize_Tensorize", "[Matricize_Tensorize]")
     REQUIRE(bool(mat1 == mat1_ref));
     REQUIRE(bool(mat0 == mat0_ref));
 
-    Matrix::Tensorize<2>(mat2, ten2);
-    Matrix::Tensorize<1>(mat1, ten1);
-    Matrix::Tensorize<0>(mat0, ten0);
+    Ensign::Tensor::tensorize<2>(mat2, ten2);
+    Ensign::Tensor::tensorize<1>(mat1, ten1);
+    Ensign::Tensor::tensorize<0>(mat0, ten0);
 
     REQUIRE(bool(ten2 == ten));
     REQUIRE(bool(ten1 == ten));
@@ -82,12 +82,12 @@ TEST_CASE("RemoveElement", "[RemoveElement]")
 
     std::generate(std::begin(start_vec), std::end(start_vec), generator{});
 
-    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec1),
-                          0);
-    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec2),
-                          5);
-    Matrix::RemoveElement(std::begin(start_vec), std::end(start_vec), std::begin(vec3),
-                          9);
+    Ensign::remove_element(std::begin(start_vec), std::end(start_vec), std::begin(vec1),
+                           0);
+    Ensign::remove_element(std::begin(start_vec), std::end(start_vec), std::begin(vec2),
+                           5);
+    Ensign::remove_element(std::begin(start_vec), std::end(start_vec), std::begin(vec3),
+                           9);
 
     vec1_ref = {2, 3, 4, 5, 6, 7, 8, 9, 10};
     vec2_ref = {1, 2, 3, 4, 5, 7, 8, 9, 10};
@@ -102,17 +102,17 @@ TEST_CASE("Orthogonalize", "[Orthogonalize]")
 {
     Index r = 5, dx = 6;
     Index n_basisfunctions = 1;
-    multi_array<double, 2> mat({dx, r}), mat_ref({dx, r});
-    set_zero(mat);
-    set_zero(mat_ref);
+    Ensign::multi_array<double, 2> mat({dx, r}), mat_ref({dx, r});
+    Ensign::set_zero(mat);
+    Ensign::set_zero(mat_ref);
     mat(0, 0) = 1.0;
     std::function<double(double*, double*)> ip;
-    blas_ops blas;
+    Ensign::blas_ops blas;
 
-    multi_array<double, 2> Q(mat), R({r, r});
+    Ensign::multi_array<double, 2> Q(mat), R({r, r});
     R = Matrix::Orthogonalize(Q, n_basisfunctions, 1.0, blas);
 
-    multi_array<double, 2> Q2({r, r}), id_r({r, r});
+    Ensign::multi_array<double, 2> Q2({r, r}), id_r({r, r});
     set_identity(id_r);
     blas.matmul_transa(Q, Q, Q2);
     blas.matmul(Q, R, mat_ref);
@@ -128,8 +128,8 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     std::vector<Index> n(d);
     std::vector<Index> binsize(d);
     std::vector<double> liml(d);
-    multi_array<bool, 2> dep({n_reactions, d});
-    multi_array<Index, 2> nu({n_reactions, d});
+    Ensign::multi_array<bool, 2> dep({n_reactions, d});
+    Ensign::multi_array<Index, 2> nu({n_reactions, d});
     std::vector<int> species(d);
 
     n = {4, 3};
@@ -156,14 +156,14 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
 
     // TEST 1
     Index n_rows = grid.dx;
-    multi_array<double, 2> input_array({n_rows, 1}), output_array({n_rows, 1});
-    multi_array<double, 2> comparison_array({n_rows, 1});
+    Ensign::multi_array<double, 2> input_array({n_rows, 1}), output_array({n_rows, 1});
+    Ensign::multi_array<double, 2> comparison_array({n_rows, 1});
 
-    set_zero(input_array);
+    Ensign::set_zero(input_array);
     for (Index i = 0; i < n_rows; ++i)
         input_array(i, 0) = (double)i + 1;
 
-    set_zero(comparison_array);
+    Ensign::set_zero(comparison_array);
     comparison_array(0, 0) = 6.0;
     comparison_array(1, 0) = 7.0;
     comparison_array(2, 0) = 8.0;
@@ -179,13 +179,13 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     input_array.resize({n_rows, 2}), output_array.resize({n_rows, 2});
     comparison_array.resize({n_rows, 2});
 
-    set_zero(input_array);
+    Ensign::set_zero(input_array);
     for (Index i = 0; i < n_rows; ++i) {
         input_array(i, 0) = (double)i + 1;
         input_array(i, 1) = (double)i + 2;
     }
 
-    set_zero(comparison_array);
+    Ensign::set_zero(comparison_array);
     comparison_array(5, 0) = 1.0;
     comparison_array(6, 0) = 2.0;
     comparison_array(7, 0) = 3.0;

@@ -4,17 +4,18 @@
 #include <algorithm>
 #include <cassert>
 
+#include <generic/index_functions.hpp>
 #include <generic/storage.hpp>
 #include <generic/timer.hpp>
 #include <lr/lr.hpp>
-#include <generic/index_functions.hpp>
 
 #include "index_functions.hpp"
 
 namespace Matrix {
 template <class T>
-multi_array<T, 2> Orthogonalize(multi_array<T, 2>& input, const Index n_basisfunctions,
-                                const T weight, const blas_ops& blas)
+Ensign::multi_array<T, 2> Orthogonalize(Ensign::multi_array<T, 2>& input,
+                                        const Index n_basisfunctions, const T weight,
+                                        const Ensign::blas_ops& blas)
 {
     Index rows = input.shape()[0];
     Index cols = input.shape()[1];
@@ -33,9 +34,9 @@ multi_array<T, 2> Orthogonalize(multi_array<T, 2>& input, const Index n_basisfun
         }
     }
 
-    multi_array<T, 2> R({cols, cols});
+    Ensign::multi_array<T, 2> R({cols, cols});
 
-    orthogonalize gs(&blas);
+    Ensign::orthogonalize gs(&blas);
     gs(input, R, weight);
 
     for (Index j = n_basisfunctions; j < cols; ++j) {
@@ -47,12 +48,12 @@ multi_array<T, 2> Orthogonalize(multi_array<T, 2>& input, const Index n_basisfun
 }
 
 template <Index inv>
-void ShiftRows(multi_array<double, 2>& output_array,
-               const multi_array<double, 2>& input_array, const grid_parms grid,
+void ShiftRows(Ensign::multi_array<double, 2>& output_array,
+               const Ensign::multi_array<double, 2>& input_array, const grid_parms grid,
                const Index mu)
 {
     assert(output_array.shape() == input_array.shape());
-    set_zero(output_array);
+    Ensign::set_zero(output_array);
 
     Index shift = inv * grid.shift[mu];
     Index n_rows = output_array.shape()[0];
@@ -72,8 +73,8 @@ void ShiftRows(multi_array<double, 2>& output_array,
     }
 
     std::vector<Index> vec_index(grid.d);
-    IndexFunction::CombIndexToVecIndex(min_i, std::begin(grid.n), std::begin(vec_index),
-                                       std::end(vec_index));
+    Ensign::IndexFunction::CombIndexToVecIndex(
+        min_i, std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
     for (Index i = min_i; i < max_i; ++i) {
         for (Index k = 0; k < grid.d; ++k) {
             if ((vec_index[k] - inv * grid.nu(mu, k) < 0) ||
@@ -88,8 +89,8 @@ void ShiftRows(multi_array<double, 2>& output_array,
                 break;
             }
         }
-        IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index),
-                                    std::end(vec_index));
+        Ensign::IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index),
+                                            std::end(vec_index));
     }
 }
 } // namespace Matrix

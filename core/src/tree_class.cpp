@@ -219,19 +219,19 @@ void cme_lr_tree::PrintHelper(std::ostream& os, cme_node const* const node) cons
 }
 
 void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
-                                      const blas_ops& blas) const
+                                      const Ensign::blas_ops& blas) const
 {
     std::function<double(double*, double*)> ip0;
     std::function<double(double*, double*)> ip1;
-    multi_array<double, 2> R0({node->RankOut()[0], node->RankOut()[0]});
-    multi_array<double, 2> R1({node->RankOut()[1], node->RankOut()[1]});
+    Ensign::multi_array<double, 2> R0({node->RankOut()[0], node->RankOut()[0]});
+    Ensign::multi_array<double, 2> R1({node->RankOut()[1], node->RankOut()[1]});
     if (node->child[0]->IsExternal() and node->child[1]->IsExternal()) {
         cme_external_node* node_left = (cme_external_node*)node->child[0];
         cme_external_node* node_right = (cme_external_node*)node->child[1];
 
-        // ip0 = inner_product_from_const_weight(node_left->grid.h_mult,
+        // ip0 = Ensign::inner_product_from_const_weight(node_left->grid.h_mult,
         // node_left->grid.dx); ip1 =
-        // inner_product_from_const_weight(node_right->grid.h_mult,
+        // Ensign::inner_product_from_const_weight(node_right->grid.h_mult,
         // node_right->grid.dx);
 
         R0 = node_left->Orthogonalize(node_left->grid.h_mult, blas);
@@ -243,9 +243,9 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
 
         OrthogonalizeHelper(node_right, blas);
 
-        // ip0 = inner_product_from_const_weight(node_left->grid.h_mult,
-        // node_left->grid.dx); ip1 = inner_product_from_const_weight(1.0,
-        // prod(node_right->RankOut()));
+        // ip0 = Ensign::inner_product_from_const_weight(node_left->grid.h_mult,
+        // node_left->grid.dx); ip1 = Ensign::inner_product_from_const_weight(1.0,
+        // Ensign::prod(node_right->RankOut()));
 
         R0 = node_left->Orthogonalize(node_left->grid.h_mult, blas);
         R1 = node_right->Orthogonalize(1.0, blas);
@@ -256,8 +256,9 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
 
         OrthogonalizeHelper(node_left, blas);
 
-        // ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
-        // ip1 = inner_product_from_const_weight(node_right->grid.h_mult,
+        // ip0 = Ensign::inner_product_from_const_weight(1.0,
+        // Ensign::prod(node_left->RankOut())); ip1 =
+        // Ensign::inner_product_from_const_weight(node_right->grid.h_mult,
         // node_right->grid.dx);
 
         R0 = node_left->Orthogonalize(1.0, blas);
@@ -270,8 +271,10 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         OrthogonalizeHelper(node_left, blas);
         OrthogonalizeHelper(node_right, blas);
 
-        // ip0 = inner_product_from_const_weight(1.0, prod(node_left->RankOut()));
-        // ip1 = inner_product_from_const_weight(1.0, prod(node_right->RankOut()));
+        // ip0 = Ensign::inner_product_from_const_weight(1.0,
+        // Ensign::prod(node_left->RankOut())); ip1 =
+        // Ensign::inner_product_from_const_weight(1.0,
+        // Ensign::prod(node_right->RankOut()));
 
         R0 = node_left->Orthogonalize(1.0, blas);
         R1 = node_right->Orthogonalize(1.0, blas);
@@ -289,8 +292,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         }
     }
 
-    multi_array<double, 2> tmp1(node->RankOut());
-    multi_array<double, 2> tmp2(node->RankOut());
+    Ensign::multi_array<double, 2> tmp1(node->RankOut());
+    Ensign::multi_array<double, 2> tmp2(node->RankOut());
 
     for (Index k = 0; k < node->RankIn(); ++k) {
         for (Index j = 0; j < node->RankOut()[1]; ++j) {
@@ -308,13 +311,13 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
     }
 }
 
-void cme_lr_tree::Orthogonalize(const blas_ops& blas) const
+void cme_lr_tree::Orthogonalize(const Ensign::blas_ops& blas) const
 {
     OrthogonalizeHelper(root, blas);
 };
 
 void cme_lr_tree::InitializeAB_barHelper(cme_node* const node,
-                                         const blas_ops& blas) const
+                                         const Ensign::blas_ops& blas) const
 {
     if (node->IsInternal()) {
         InitializeAB_barHelper(node->child[0], blas);
@@ -323,7 +326,7 @@ void cme_lr_tree::InitializeAB_barHelper(cme_node* const node,
     node->CalculateAB_bar(blas);
 }
 
-void cme_lr_tree::InitializeAB_bar(const blas_ops& blas) const
+void cme_lr_tree::InitializeAB_bar(const Ensign::blas_ops& blas) const
 {
     InitializeAB_barHelper(root, blas);
 }
@@ -431,7 +434,7 @@ grid_parms ReadHelpers::ReadGridParms(int ncid)
     NETCDF_CHECK(nc_inq_varid(ncid, "species", &id_species));
 
     grid_parms grid(d, n_reactions);
-    multi_array<signed char, 2> dep_int({n_reactions, d});
+    Ensign::multi_array<signed char, 2> dep_int({n_reactions, d});
 
     NETCDF_CHECK(nc_get_var_long(ncid, id_n, grid.n.data()));
     NETCDF_CHECK(nc_get_var_long(ncid, id_binsize, grid.binsize.data()));
@@ -539,7 +542,7 @@ cme_node* ReadHelpers::ReadNode(int ncid, const std::string id,
     return child_node;
 }
 
-void cme_node::CalculateAB_bar(const blas_ops& blas)
+void cme_node::CalculateAB_bar(const Ensign::blas_ops& blas)
 {
     if (IsExternal()) {
 #ifdef __OPENMP__
@@ -547,8 +550,9 @@ void cme_node::CalculateAB_bar(const blas_ops& blas)
 #endif
         {
             cme_external_node* this_node = (cme_external_node*)this;
-            multi_array<double, 2> X_shift({this_node->grid.dx, this_node->RankIn()});
-            multi_array<double, 1> weight({this_node->grid.dx});
+            Ensign::multi_array<double, 2> X_shift(
+                {this_node->grid.dx, this_node->RankIn()});
+            Ensign::multi_array<double, 1> weight({this_node->grid.dx});
 
 #ifdef __OPENMP__
 #pragma omp for
@@ -558,16 +562,16 @@ void cme_node::CalculateAB_bar(const blas_ops& blas)
                 std::vector<Index> vec_index(this_node->grid.d, 0);
 
                 for (Index alpha = 0; alpha < this_node->grid.dx; ++alpha) {
-                    Index alpha_dep = IndexFunction::VecIndexToDepCombIndex(
+                    Index alpha_dep = IndexFunctionCME::VecIndexToDepCombIndex(
                         std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]),
                         std::begin(this_node->grid.idx_dep[mu]),
                         std::end(this_node->grid.idx_dep[mu]));
 
                     weight(alpha) =
                         this_node->propensity[mu][alpha_dep] * this_node->grid.h_mult;
-                    IndexFunction::IncrVecIndex(std::begin(this_node->grid.n),
-                                                std::begin(vec_index),
-                                                std::end(vec_index));
+                    Ensign::IndexFunction::IncrVecIndex(std::begin(this_node->grid.n),
+                                                        std::begin(vec_index),
+                                                        std::end(vec_index));
                 }
                 coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
                 coeff(this_node->X, this_node->X, weight, coefficients.B_bar[mu], blas);
@@ -582,21 +586,23 @@ void cme_node::CalculateAB_bar(const blas_ops& blas)
 #pragma omp parallel
 #endif
         {
-            multi_array<double, 2> QA0_tilde({prod(rank_out), this_node->RankIn()});
-            multi_array<double, 2> QA1_tilde({prod(rank_out), this_node->RankIn()});
+            Ensign::multi_array<double, 2> QA0_tilde(
+                {Ensign::prod(rank_out), this_node->RankIn()});
+            Ensign::multi_array<double, 2> QA1_tilde(
+                {Ensign::prod(rank_out), this_node->RankIn()});
 
-            multi_array<double, 2> Q0_mat(
+            Ensign::multi_array<double, 2> Q0_mat(
                 {this_node->RankIn() * rank_out[1], rank_out[0]});
-            multi_array<double, 2> Q1_mat(
+            Ensign::multi_array<double, 2> Q1_mat(
                 {this_node->RankIn() * rank_out[0], rank_out[1]});
-            multi_array<double, 2> QA0_mat(Q0_mat.shape());
-            multi_array<double, 2> QA1_mat(Q1_mat.shape());
+            Ensign::multi_array<double, 2> QA0_mat(Q0_mat.shape());
+            Ensign::multi_array<double, 2> QA1_mat(Q1_mat.shape());
 
-            multi_array<double, 3> QA0(this_node->Q.shape());
-            multi_array<double, 3> QA1(this_node->Q.shape());
+            Ensign::multi_array<double, 3> QA0(this_node->Q.shape());
+            Ensign::multi_array<double, 3> QA1(this_node->Q.shape());
 
-            Matrix::Matricize<0>(this_node->Q, Q0_mat);
-            Matrix::Matricize<1>(this_node->Q, Q1_mat);
+            Ensign::Tensor::matricize<0>(this_node->Q, Q0_mat);
+            Ensign::Tensor::matricize<1>(this_node->Q, Q1_mat);
 
 #ifdef __OPENMP__
 #pragma omp for
@@ -604,48 +610,48 @@ void cme_node::CalculateAB_bar(const blas_ops& blas)
             for (Index mu = 0; mu < this_node->grid.n_reactions; ++mu) {
                 blas.matmul(Q0_mat, this_node->child[0]->coefficients.A_bar[mu],
                             QA0_mat);
-                Matrix::Tensorize<0>(QA0_mat, QA0);
-                Matrix::Matricize<2>(QA0, QA0_tilde);
+                Ensign::Tensor::tensorize<0>(QA0_mat, QA0);
+                Ensign::Tensor::matricize<2>(QA0, QA0_tilde);
                 blas.matmul_transb(Q1_mat, this_node->child[1]->coefficients.A_bar[mu],
                                    QA1_mat);
-                Matrix::Tensorize<1>(QA1_mat, QA1);
-                Matrix::Matricize<2>(QA1, QA1_tilde);
+                Ensign::Tensor::tensorize<1>(QA1_mat, QA1);
+                Ensign::Tensor::matricize<2>(QA1, QA1_tilde);
                 blas.matmul_transa(QA0_tilde, QA1_tilde, coefficients.A_bar[mu]);
 
                 blas.matmul(Q0_mat, this_node->child[0]->coefficients.B_bar[mu],
                             QA0_mat);
-                Matrix::Tensorize<0>(QA0_mat, QA0);
-                Matrix::Matricize<2>(QA0, QA0_tilde);
+                Ensign::Tensor::tensorize<0>(QA0_mat, QA0);
+                Ensign::Tensor::matricize<2>(QA0, QA0_tilde);
                 blas.matmul_transb(Q1_mat, this_node->child[1]->coefficients.B_bar[mu],
                                    QA1_mat);
-                Matrix::Tensorize<1>(QA1_mat, QA1);
-                Matrix::Matricize<2>(QA1, QA1_tilde);
+                Ensign::Tensor::tensorize<1>(QA1_mat, QA1);
+                Ensign::Tensor::matricize<2>(QA1, QA1_tilde);
                 blas.matmul_transa(QA0_tilde, QA1_tilde, coefficients.B_bar[mu]);
             }
         }
     }
 }
 
-multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
-                                     const cme_external_node* const node,
-                                     const blas_ops& blas)
+Ensign::multi_array<double, 2> CalculateKDot(const Ensign::multi_array<double, 2>& K,
+                                             const cme_external_node* const node,
+                                             const Ensign::blas_ops& blas)
 {
-    gt::start("CalculateKDot");
-    multi_array<double, 2> K_dot(K.shape());
-    set_zero(K_dot);
+    Ensign::gt::start("CalculateKDot");
+    Ensign::multi_array<double, 2> K_dot(K.shape());
+    Ensign::set_zero(K_dot);
 
 #ifdef __OPENMP__
 #pragma omp parallel reduction(+ : K_dot)
 #endif
     {
-        multi_array<double, 2> K_dot_thread(K.shape());
-        multi_array<double, 2> KA(K.shape());
-        multi_array<double, 2> KB(K.shape());
-        multi_array<double, 2> aKA(K.shape());
-        multi_array<double, 2> aKB(K.shape());
-        multi_array<double, 2> aKA_shift(K.shape());
-        multi_array<double, 1> weight({K.shape()[0]});
-        set_zero(K_dot_thread);
+        Ensign::multi_array<double, 2> K_dot_thread(K.shape());
+        Ensign::multi_array<double, 2> KA(K.shape());
+        Ensign::multi_array<double, 2> KB(K.shape());
+        Ensign::multi_array<double, 2> aKA(K.shape());
+        Ensign::multi_array<double, 2> aKB(K.shape());
+        Ensign::multi_array<double, 2> aKA_shift(K.shape());
+        Ensign::multi_array<double, 1> weight({K.shape()[0]});
+        Ensign::set_zero(K_dot_thread);
 
 #ifdef __OPENMP__
 #pragma omp for
@@ -657,12 +663,13 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
             std::vector<Index> vec_index(node->grid.d, 0);
 
             for (Index i = 0; i < node->grid.dx; ++i) {
-                Index alpha = IndexFunction::VecIndexToDepCombIndex(
+                Index alpha = IndexFunctionCME::VecIndexToDepCombIndex(
                     std::begin(vec_index), std::begin(node->grid.n_dep[mu]),
                     std::begin(node->grid.idx_dep[mu]),
                     std::end(node->grid.idx_dep[mu]));
-                IndexFunction::IncrVecIndex(std::begin(node->grid.n),
-                                            std::begin(vec_index), std::end(vec_index));
+                Ensign::IndexFunction::IncrVecIndex(std::begin(node->grid.n),
+                                                    std::begin(vec_index),
+                                                    std::end(vec_index));
 
                 weight(i) = node->propensity[mu][alpha];
             }
@@ -671,9 +678,9 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
             ptw_mult_row(KB, weight, aKB);
 
             // Shift prod_KC
-            gt::start("ShiftKDot");
+            Ensign::gt::start("ShiftKDot");
             Matrix::ShiftRows<1>(aKA_shift, aKA, node->grid, mu);
-            gt::stop("ShiftKDot");
+            Ensign::gt::stop("ShiftKDot");
 
             // Calculate K_dot = shift(C * K) - D * K
             aKA_shift -= aKB;
@@ -682,25 +689,26 @@ multi_array<double, 2> CalculateKDot(const multi_array<double, 2>& K,
         K_dot += K_dot_thread;
     }
 
-    gt::stop("CalculateKDot");
+    Ensign::gt::stop("CalculateKDot");
     return K_dot;
 }
 
-multi_array<double, 2> CalculateSDot(const multi_array<double, 2>& S,
-                                     const cme_node* const node, const blas_ops& blas)
+Ensign::multi_array<double, 2> CalculateSDot(const Ensign::multi_array<double, 2>& S,
+                                             const cme_node* const node,
+                                             const Ensign::blas_ops& blas)
 {
-    multi_array<double, 2> S_dot(S.shape());
-    set_zero(S_dot);
+    Ensign::multi_array<double, 2> S_dot(S.shape());
+    Ensign::set_zero(S_dot);
 
 #ifdef __OPENMP__
 #pragma omp parallel reduction(+ : S_dot)
 #endif
     {
-        multi_array<double, 2> S_dot_thread(S_dot);
-        multi_array<double, 2> AS(S_dot);
-        multi_array<double, 2> ASa(S_dot);
-        multi_array<double, 2> BS(S_dot);
-        multi_array<double, 2> BSb(S_dot);
+        Ensign::multi_array<double, 2> S_dot_thread(S_dot);
+        Ensign::multi_array<double, 2> AS(S_dot);
+        Ensign::multi_array<double, 2> ASa(S_dot);
+        Ensign::multi_array<double, 2> BS(S_dot);
+        Ensign::multi_array<double, 2> BSb(S_dot);
 
 #ifdef __OPENMP__
 #pragma omp for
@@ -719,74 +727,74 @@ multi_array<double, 2> CalculateSDot(const multi_array<double, 2>& S,
     return S_dot;
 }
 
-multi_array<double, 2> CalculateQDot(const multi_array<double, 2>& Qmat,
-                                     const cme_internal_node* const node,
-                                     const blas_ops& blas)
+Ensign::multi_array<double, 2> CalculateQDot(const Ensign::multi_array<double, 2>& Qmat,
+                                             const cme_internal_node* const node,
+                                             const Ensign::blas_ops& blas)
 {
-    multi_array<double, 2> Q_dot(Qmat.shape());
-    set_zero(Q_dot);
+    Ensign::multi_array<double, 2> Q_dot(Qmat.shape());
+    Ensign::set_zero(Q_dot);
 
 #ifdef __OPENMP__
 #pragma omp parallel reduction(+ : Q_dot)
 #endif
     {
-        multi_array<double, 3> Q_ten(
+        Ensign::multi_array<double, 3> Q_ten(
             {node->RankOut()[0], node->RankOut()[1], node->RankIn()});
-        multi_array<double, 2> Q_dot_thread(Q_dot);
+        Ensign::multi_array<double, 2> Q_dot_thread(Q_dot);
 
-        multi_array<double, 2> Qa(Q_dot);
-        multi_array<double, 2> Qa_mat(
+        Ensign::multi_array<double, 2> Qa(Q_dot);
+        Ensign::multi_array<double, 2> Qa_mat(
             {node->RankOut()[1] * node->RankIn(), node->RankOut()[0]});
-        multi_array<double, 2> QaA0(Qa_mat.shape());
-        multi_array<double, 2> QaA0_mat(
+        Ensign::multi_array<double, 2> QaA0(Qa_mat.shape());
+        Ensign::multi_array<double, 2> QaA0_mat(
             {node->RankOut()[0] * node->RankIn(), node->RankOut()[1]});
-        multi_array<double, 2> QaA0A1(QaA0_mat.shape());
+        Ensign::multi_array<double, 2> QaA0A1(QaA0_mat.shape());
 
-        multi_array<double, 2> Qb(Q_dot);
-        multi_array<double, 2> Qb_mat(
+        Ensign::multi_array<double, 2> Qb(Q_dot);
+        Ensign::multi_array<double, 2> Qb_mat(
             {node->RankOut()[1] * node->RankIn(), node->RankOut()[0]});
-        multi_array<double, 2> QbB0(Qb_mat.shape());
-        multi_array<double, 2> QbB0_mat(
+        Ensign::multi_array<double, 2> QbB0(Qb_mat.shape());
+        Ensign::multi_array<double, 2> QbB0_mat(
             {node->RankOut()[0] * node->RankIn(), node->RankOut()[1]});
-        multi_array<double, 2> QbB0B1(QbB0_mat.shape());
+        Ensign::multi_array<double, 2> QbB0B1(QbB0_mat.shape());
 
 #ifdef __OPENMP__
 #pragma omp for
 #endif
         for (Index mu = 0; mu < node->grid.n_reactions; ++mu) {
             blas.matmul_transb(Qmat, node->coefficients.A[mu], Qa);
-            gt::start("Mat/Ten");
-            Matrix::Tensorize<2>(Qa, Q_ten);
-            Matrix::Matricize<0>(Q_ten, Qa_mat);
-            gt::stop("Mat/Ten");
+            Ensign::gt::start("Mat/Ten");
+            Ensign::Tensor::tensorize<2>(Qa, Q_ten);
+            Ensign::Tensor::matricize<0>(Q_ten, Qa_mat);
+            Ensign::gt::stop("Mat/Ten");
             blas.matmul_transb(Qa_mat, node->child[0]->coefficients.A_bar[mu], QaA0);
-            gt::start("Mat/Ten");
-            Matrix::Tensorize<0>(QaA0, Q_ten);
-            Matrix::Matricize<1>(Q_ten, QaA0_mat);
-            gt::stop("Mat/Ten");
+            Ensign::gt::start("Mat/Ten");
+            Ensign::Tensor::tensorize<0>(QaA0, Q_ten);
+            Ensign::Tensor::matricize<1>(Q_ten, QaA0_mat);
+            Ensign::gt::stop("Mat/Ten");
             blas.matmul_transb(QaA0_mat, node->child[1]->coefficients.A_bar[mu],
                                QaA0A1);
-            gt::start("Mat/Ten");
-            Matrix::Tensorize<1>(QaA0A1, Q_ten);
-            Matrix::Matricize<2>(Q_ten, Qa);
-            gt::stop("Mat/Ten");
+            Ensign::gt::start("Mat/Ten");
+            Ensign::Tensor::tensorize<1>(QaA0A1, Q_ten);
+            Ensign::Tensor::matricize<2>(Q_ten, Qa);
+            Ensign::gt::stop("Mat/Ten");
 
             blas.matmul_transb(Qmat, node->coefficients.B[mu], Qb);
-            gt::start("Mat/Ten");
-            Matrix::Tensorize<2>(Qb, Q_ten);
-            Matrix::Matricize<0>(Q_ten, Qb_mat);
-            gt::stop("Mat/Ten");
+            Ensign::gt::start("Mat/Ten");
+            Ensign::Tensor::tensorize<2>(Qb, Q_ten);
+            Ensign::Tensor::matricize<0>(Q_ten, Qb_mat);
+            Ensign::gt::stop("Mat/Ten");
             blas.matmul_transb(Qb_mat, node->child[0]->coefficients.B_bar[mu], QbB0);
-            gt::start("Mat/Ten");
-            Matrix::Tensorize<0>(QbB0, Q_ten);
-            Matrix::Matricize<1>(Q_ten, QbB0_mat);
-            gt::stop("Mat/Ten");
+            Ensign::gt::start("Mat/Ten");
+            Ensign::Tensor::tensorize<0>(QbB0, Q_ten);
+            Ensign::Tensor::matricize<1>(Q_ten, QbB0_mat);
+            Ensign::gt::stop("Mat/Ten");
             blas.matmul_transb(QbB0_mat, node->child[1]->coefficients.B_bar[mu],
                                QbB0B1);
-            gt::start("Mat/Ten");
-            Matrix::Tensorize<1>(QbB0B1, Q_ten);
-            Matrix::Matricize<2>(Q_ten, Qb);
-            gt::stop("Mat/Ten");
+            Ensign::gt::start("Mat/Ten");
+            Ensign::Tensor::tensorize<1>(QbB0B1, Q_ten);
+            Ensign::Tensor::matricize<2>(Q_ten, Qb);
+            Ensign::gt::stop("Mat/Ten");
 
             Q_dot_thread += Qa;
             Q_dot_thread -= Qb;

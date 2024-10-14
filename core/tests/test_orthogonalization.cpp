@@ -65,11 +65,11 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     std::vector<int> species00{val_species00};
     std::vector<int> species01{val_species01};
 
-    multi_array<bool, 2> dep({n_reactions, (Index)n.size()});
-    multi_array<bool, 2> dep0({n_reactions, (Index)n0.size()});
-    multi_array<bool, 2> dep1({n_reactions, (Index)n1.size()});
-    multi_array<bool, 2> dep00({n_reactions, (Index)n00.size()});
-    multi_array<bool, 2> dep01({n_reactions, (Index)n01.size()});
+    Ensign::multi_array<bool, 2> dep({n_reactions, (Index)n.size()});
+    Ensign::multi_array<bool, 2> dep0({n_reactions, (Index)n0.size()});
+    Ensign::multi_array<bool, 2> dep1({n_reactions, (Index)n1.size()});
+    Ensign::multi_array<bool, 2> dep00({n_reactions, (Index)n00.size()});
+    Ensign::multi_array<bool, 2> dep01({n_reactions, (Index)n01.size()});
 
     std::fill(std::begin(dep), std::end(dep), false);
     std::fill(std::begin(dep0), std::end(dep0), false);
@@ -77,11 +77,11 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     std::fill(std::begin(dep00), std::end(dep00), false);
     std::fill(std::begin(dep01), std::end(dep01), false);
 
-    multi_array<Index, 2> nu({n_reactions, (Index)n.size()});
-    multi_array<Index, 2> nu0({n_reactions, (Index)n0.size()});
-    multi_array<Index, 2> nu1({n_reactions, (Index)n1.size()});
-    multi_array<Index, 2> nu00({n_reactions, (Index)n00.size()});
-    multi_array<Index, 2> nu01({n_reactions, (Index)n01.size()});
+    Ensign::multi_array<Index, 2> nu({n_reactions, (Index)n.size()});
+    Ensign::multi_array<Index, 2> nu0({n_reactions, (Index)n0.size()});
+    Ensign::multi_array<Index, 2> nu1({n_reactions, (Index)n1.size()});
+    Ensign::multi_array<Index, 2> nu00({n_reactions, (Index)n00.size()});
+    Ensign::multi_array<Index, 2> nu01({n_reactions, (Index)n01.size()});
 
     std::fill(std::begin(nu), std::end(nu), 0);
     std::fill(std::begin(nu0), std::end(nu0), 0);
@@ -100,11 +100,12 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     grid00.Initialize();
     grid01.Initialize();
 
-    multi_array<double, 3> p({val_n00, val_n01, val_n1}),
+    Ensign::multi_array<double, 3> p({val_n00, val_n01, val_n1}),
         p_ortho({val_n00, val_n01, val_n1});
-    multi_array<double, 3> Q({r, r, 1}), Q0({r0, r0, r});
-    multi_array<double, 2> X00({val_n00, r0}), X01({val_n01, r0}), X1({val_n1, r});
-    multi_array<double, 2> Q0_mat({r0 * r0, r});
+    Ensign::multi_array<double, 3> Q({r, r, 1}), Q0({r0, r0, r});
+    Ensign::multi_array<double, 2> X00({val_n00, r0}), X01({val_n01, r0}),
+        X1({val_n1, r});
+    Ensign::multi_array<double, 2> Q0_mat({r0 * r0, r});
 
     // Initialize Q and Q0
     std::fill(std::begin(Q), std::end(Q), 0.0);
@@ -113,17 +114,17 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     Q0(0, 0, 0) = 1.0;
 
     // Initialize and normalize X00, X01, X1
-    set_zero(X00);
-    set_zero(X01);
-    set_zero(X1);
+    Ensign::set_zero(X00);
+    Ensign::set_zero(X01);
+    Ensign::set_zero(X1);
     std::function<double(double*, double*)> ip00 =
-        inner_product_from_const_weight(grid00.h_mult, grid00.dx);
+        Ensign::inner_product_from_const_weight(grid00.h_mult, grid00.dx);
     std::function<double(double*, double*)> ip01 =
-        inner_product_from_const_weight(grid01.h_mult, grid01.dx);
+        Ensign::inner_product_from_const_weight(grid01.h_mult, grid01.dx);
     std::function<double(double*, double*)> ip1 =
-        inner_product_from_const_weight(grid1.h_mult, grid1.dx);
+        Ensign::inner_product_from_const_weight(grid1.h_mult, grid1.dx);
     std::function<double(double*, double*)> ip0 =
-        inner_product_from_const_weight(1.0, r0 * r0);
+        Ensign::inner_product_from_const_weight(1.0, r0 * r0);
 
     std::generate(std::begin(X00), std::begin(X00) + val_n00,
                   initial_distribution(val_liml00, val_binsize00));
@@ -196,7 +197,7 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     // Check if the probability distribution remains the same under orthogonalization
     std::fill(std::begin(p_ortho), std::end(p_ortho), 0.0);
 
-    blas_ops blas;
+    Ensign::blas_ops blas;
     tree.Orthogonalize(blas);
 
     for (Index i = 0; i < r; ++i) {
@@ -226,12 +227,12 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     REQUIRE(bool(p == p_ortho));
 
     // Check if the Xs and Qs are orthonormal
-    multi_array<double, 2> X00_ortho({r0, r0}), X01_ortho({r0, r0}), X1_ortho({r, r}),
-        Q_ortho({1, 1}), Q0_ortho({r, r});
-    set_zero(X00_ortho);
-    set_zero(X01_ortho);
-    set_zero(X1_ortho);
-    set_zero(Q0_ortho);
+    Ensign::multi_array<double, 2> X00_ortho({r0, r0}), X01_ortho({r0, r0}),
+        X1_ortho({r, r}), Q_ortho({1, 1}), Q0_ortho({r, r});
+    Ensign::set_zero(X00_ortho);
+    Ensign::set_zero(X01_ortho);
+    Ensign::set_zero(X1_ortho);
+    Ensign::set_zero(Q0_ortho);
 
     blas.matmul_transa(((cme_external_node*)tree.root->child[0]->child[0])->X,
                        ((cme_external_node*)tree.root->child[0]->child[0])->X,
@@ -244,10 +245,10 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     blas.matmul_transa(((cme_external_node*)tree.root->child[1])->X,
                        ((cme_external_node*)tree.root->child[1])->X, X1_ortho);
 
-    Matrix::Matricize<2>(((cme_internal_node*)tree.root->child[0])->Q, Q0_mat);
+    Ensign::Tensor::matricize<2>(((cme_internal_node*)tree.root->child[0])->Q, Q0_mat);
     blas.matmul_transa(Q0_mat, Q0_mat, Q0_ortho);
 
-    multi_array<double, 2> id_r({r, r}), id_r0({r0, r0}), id_1({1, 1});
+    Ensign::multi_array<double, 2> id_r({r, r}), id_r0({r0, r0}), id_1({1, 1});
     set_identity(id_r);
     set_identity(id_r0);
 

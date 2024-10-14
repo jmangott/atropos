@@ -10,7 +10,7 @@
 
 // TODO: rename A->a, B->b, A_bar->A and B_bar->B
 struct cme_coeff {
-    std::vector<multi_array<double, 2>> A, B, A_bar, B_bar;
+    std::vector<Ensign::multi_array<double, 2>> A, B, A_bar, B_bar;
 
     cme_coeff(const Index _n_reactions, const Index _r_in)
         : A(_n_reactions), B(_n_reactions), A_bar(_n_reactions), B_bar(_n_reactions)

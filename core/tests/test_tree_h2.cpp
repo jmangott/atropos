@@ -15,7 +15,7 @@
 
 TEST_CASE("tree_h2", "[tree_h2]")
 {
-    blas_ops blas;
+    Ensign::blas_ops blas;
 
     Index r = 3, r0 = 2;
     Index n_basisfunctions = 1, n_basisfunctions0 = 1;
@@ -50,11 +50,11 @@ TEST_CASE("tree_h2", "[tree_h2]")
     std::vector<int> species00{val_species00};
     std::vector<int> species01{val_species01};
 
-    multi_array<bool, 2> dep({n_reactions, (Index)n.size()});
-    multi_array<bool, 2> dep0({n_reactions, (Index)n0.size()});
-    multi_array<bool, 2> dep1({n_reactions, (Index)n1.size()});
-    multi_array<bool, 2> dep00({n_reactions, (Index)n00.size()});
-    multi_array<bool, 2> dep01({n_reactions, (Index)n01.size()});
+    Ensign::multi_array<bool, 2> dep({n_reactions, (Index)n.size()});
+    Ensign::multi_array<bool, 2> dep0({n_reactions, (Index)n0.size()});
+    Ensign::multi_array<bool, 2> dep1({n_reactions, (Index)n1.size()});
+    Ensign::multi_array<bool, 2> dep00({n_reactions, (Index)n00.size()});
+    Ensign::multi_array<bool, 2> dep01({n_reactions, (Index)n01.size()});
 
     std::fill(std::begin(dep), std::end(dep), false);
     std::fill(std::begin(dep0), std::end(dep0), false);
@@ -83,11 +83,11 @@ TEST_CASE("tree_h2", "[tree_h2]")
     dep01(1, 0) = true;
     dep01(4, 0) = true;
 
-    multi_array<Index, 2> nu({n_reactions, (Index)n.size()});
-    multi_array<Index, 2> nu0({n_reactions, (Index)n0.size()});
-    multi_array<Index, 2> nu1({n_reactions, (Index)n1.size()});
-    multi_array<Index, 2> nu00({n_reactions, (Index)n00.size()});
-    multi_array<Index, 2> nu01({n_reactions, (Index)n01.size()});
+    Ensign::multi_array<Index, 2> nu({n_reactions, (Index)n.size()});
+    Ensign::multi_array<Index, 2> nu0({n_reactions, (Index)n0.size()});
+    Ensign::multi_array<Index, 2> nu1({n_reactions, (Index)n1.size()});
+    Ensign::multi_array<Index, 2> nu00({n_reactions, (Index)n00.size()});
+    Ensign::multi_array<Index, 2> nu01({n_reactions, (Index)n01.size()});
 
     std::fill(std::begin(nu), std::end(nu), 0);
     std::fill(std::begin(nu0), std::end(nu0), 0);
@@ -176,9 +176,10 @@ TEST_CASE("tree_h2", "[tree_h2]")
     propensity01[4] = {1.0, 0.5};
     propensity01[5] = {1.0};
 
-    multi_array<double, 3> Q({r, r, 1}), Q0({r0, r0, r});
-    multi_array<double, 2> X00({val_n00, r0}), X01({val_n01, r0}), X1({val_n1, r});
-    multi_array<double, 2> Q0_mat({r0 * r0, r});
+    Ensign::multi_array<double, 3> Q({r, r, 1}), Q0({r0, r0, r});
+    Ensign::multi_array<double, 2> X00({val_n00, r0}), X01({val_n01, r0}),
+        X1({val_n1, r});
+    Ensign::multi_array<double, 2> Q0_mat({r0 * r0, r});
 
     // Initialize Q and Q0
     std::fill(std::begin(Q), std::end(Q), 0.0);
@@ -187,9 +188,9 @@ TEST_CASE("tree_h2", "[tree_h2]")
     Q0(0, 0, 0) = 1.0;
 
     // Initialize and normalize X00, X01, X1
-    set_zero(X00);
-    set_zero(X01);
-    set_zero(X1);
+    Ensign::set_zero(X00);
+    Ensign::set_zero(X01);
+    Ensign::set_zero(X1);
 
     X00(0, 0) = 1.0;
     X00(1, 0) = 1.0;
@@ -238,7 +239,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
     cme_lr_tree tree(root);
 
     // Calculate probability distribution
-    multi_array<double, 3> p({val_n00, val_n01, val_n1}),
+    Ensign::multi_array<double, 3> p({val_n00, val_n01, val_n1}),
         p_ortho({val_n00, val_n01, val_n1});
     std::fill(std::begin(p), std::end(p), 0.0);
 
@@ -293,17 +294,17 @@ TEST_CASE("tree_h2", "[tree_h2]")
     // Orthogonalize Q and X manually
     std::fill(std::begin(Q), std::end(Q), 0.0);
     std::fill(std::begin(Q0), std::end(Q0), 0.0);
-    set_zero(Q0_mat);
+    Ensign::set_zero(Q0_mat);
 
     Q(0, 0, 0) = (2.0 * std::exp(-0.5) * std::exp(-0.25) * sqrt(2.0 + std::exp(-4.0)));
     Q0_mat(0, 0) = 1.0;
     Q0_mat(1, 1) = 1.0;
     Q0_mat(2, 2) = 1.0;
-    Matrix::Tensorize<2>(Q0_mat, Q0);
+    Ensign::Tensor::tensorize<2>(Q0_mat, Q0);
 
-    set_zero(X00);
-    set_zero(X01);
-    set_zero(X1);
+    Ensign::set_zero(X00);
+    Ensign::set_zero(X01);
+    Ensign::set_zero(X1);
 
     X00(0, 0) = 1.0;
     X00(1, 0) = 1.0;
@@ -358,12 +359,13 @@ TEST_CASE("tree_h2", "[tree_h2]")
 
     REQUIRE(bool(p == p_ortho));
 
-    multi_array<double, 3> G({root->RankOut()[0], root->RankOut()[1], root->RankIn()});
-    multi_array<double, 2> S0({root->RankOut()[0], root->RankOut()[0]});
+    Ensign::multi_array<double, 3> G(
+        {root->RankOut()[0], root->RankOut()[1], root->RankIn()});
+    Ensign::multi_array<double, 2> S0({root->RankOut()[0], root->RankOut()[0]});
 
     std::fill(std::begin(Q), std::end(Q), 0.0);
     std::fill(std::begin(G), std::end(G), 0.0);
-    set_zero(S0);
+    Ensign::set_zero(S0);
 
     Q(0, 0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
     G(0, 0, 0) = 1.0;
@@ -371,13 +373,13 @@ TEST_CASE("tree_h2", "[tree_h2]")
     G(2, 2, 0) = 1.0;
     S0(0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
 
-    multi_array<double, 3> G0(
+    Ensign::multi_array<double, 3> G0(
         {node0->RankOut()[0], node0->RankOut()[1], node0->RankIn()});
-    multi_array<double, 2> S00({node0->RankOut()[0], node0->RankOut()[0]});
+    Ensign::multi_array<double, 2> S00({node0->RankOut()[0], node0->RankOut()[0]});
 
     std::fill(std::begin(Q0), std::end(Q0), 0.0);
     std::fill(std::begin(G0), std::end(G0), 0.0);
-    set_zero(S00);
+    Ensign::set_zero(S00);
 
     Q0(0, 0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
     G0(0, 0, 0) = 1.0;
@@ -399,14 +401,20 @@ TEST_CASE("tree_h2", "[tree_h2]")
     root->CalculateAB<0>(blas);
     node0->CalculateAB<0>(blas);
 
-    std::vector<multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
-    std::vector<multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
-    std::vector<multi_array<double, 2>> A00_comparison(node00->grid.n_reactions);
-    std::vector<multi_array<double, 2>> B00_comparison(node00->grid.n_reactions);
-    std::vector<multi_array<double, 2>> A1_bar_comparison(node1->grid.n_reactions);
-    std::vector<multi_array<double, 2>> B1_bar_comparison(node1->grid.n_reactions);
-    std::vector<multi_array<double, 2>> A01_bar_comparison(node01->grid.n_reactions);
-    std::vector<multi_array<double, 2>> B01_bar_comparison(node01->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> A0_comparison(node0->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> B0_comparison(node0->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> A00_comparison(
+        node00->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> B00_comparison(
+        node00->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> A1_bar_comparison(
+        node1->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> B1_bar_comparison(
+        node1->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> A01_bar_comparison(
+        node01->grid.n_reactions);
+    std::vector<Ensign::multi_array<double, 2>> B01_bar_comparison(
+        node01->grid.n_reactions);
 
     for (Index mu = 0; mu < root->grid.n_reactions; ++mu) {
         A0_comparison[mu].resize({node0->RankIn(), node0->RankIn()});
@@ -418,14 +426,14 @@ TEST_CASE("tree_h2", "[tree_h2]")
         A01_bar_comparison[mu].resize({node01->RankIn(), node01->RankIn()});
         B01_bar_comparison[mu].resize({node01->RankIn(), node01->RankIn()});
 
-        set_zero(A0_comparison[mu]);
-        set_zero(B0_comparison[mu]);
-        set_zero(A00_comparison[mu]);
-        set_zero(B00_comparison[mu]);
-        set_zero(A1_bar_comparison[mu]);
-        set_zero(B1_bar_comparison[mu]);
-        set_zero(A01_bar_comparison[mu]);
-        set_zero(B01_bar_comparison[mu]);
+        Ensign::set_zero(A0_comparison[mu]);
+        Ensign::set_zero(B0_comparison[mu]);
+        Ensign::set_zero(A00_comparison[mu]);
+        Ensign::set_zero(B00_comparison[mu]);
+        Ensign::set_zero(A1_bar_comparison[mu]);
+        Ensign::set_zero(B1_bar_comparison[mu]);
+        Ensign::set_zero(A01_bar_comparison[mu]);
+        Ensign::set_zero(B01_bar_comparison[mu]);
     }
 
     // Calculate A1_bar_comparison and B1_bar_comparison
@@ -658,9 +666,9 @@ TEST_CASE("tree_h2", "[tree_h2]")
                      B00_comparison[mu]));
     }
 
-    multi_array<double, 2> K00(X00.shape());
-    multi_array<double, 2> K00_dot(X00.shape());
-    multi_array<double, 2> K00_dot_comparison(X00.shape());
+    Ensign::multi_array<double, 2> K00(X00.shape());
+    Ensign::multi_array<double, 2> K00_dot(X00.shape());
+    Ensign::multi_array<double, 2> K00_dot_comparison(X00.shape());
 
     blas.matmul(X00, S00, K00);
     K00_dot = CalculateKDot(K00, node00, blas);

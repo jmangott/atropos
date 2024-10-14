@@ -31,8 +31,8 @@ class matrix_free : public Eigen::EigenBase<matrix_free> {
         IsRowMajor = false
     };
 
-    Eigen::Index rows() const { return prod(arr_shape); }
-    Eigen::Index cols() const { return prod(arr_shape); }
+    Eigen::Index rows() const { return Ensign::prod(arr_shape); }
+    Eigen::Index cols() const { return Ensign::prod(arr_shape); }
 
     template <typename Rhs>
     Eigen::Product<matrix_free, Rhs, Eigen::AliasFreeProduct>
@@ -43,17 +43,17 @@ class matrix_free : public Eigen::EigenBase<matrix_free> {
     }
 
     // Custom API
-    matrix_free(
-        const std::array<Index, 2> _arr_shape,
-        const std::function<multi_array<double, 2>(const multi_array<double, 2>&)>&
-            _eqn,
-        const double _tau)
+    matrix_free(const std::array<Index, 2> _arr_shape,
+                const std::function<Ensign::multi_array<double, 2>(
+                    const Ensign::multi_array<double, 2>&)>& _eqn,
+                const double _tau)
         : arr_shape(_arr_shape), eqn(_eqn), tau(_tau)
     {
     }
 
     std::array<Index, 2> arr_shape;
-    const std::function<multi_array<double, 2>(multi_array<double, 2>)> eqn;
+    const std::function<Ensign::multi_array<double, 2>(Ensign::multi_array<double, 2>)>
+        eqn;
     double tau;
 };
 
@@ -77,11 +77,11 @@ struct generic_product_impl<matrix_free, Rhs, SparseShape, DenseShape,
 
         double tau = lhs.tau;
 
-        multi_array<double, 2> arr(lhs.arr_shape);
+        Ensign::multi_array<double, 2> arr(lhs.arr_shape);
         Eigen::Map<Rhs>(arr.data(), rhs.size()) = rhs;
 
         arr -= lhs.eqn(arr) * tau;
-        dst = Eigen::Map<Dest>(arr.data(), prod(arr.shape()));
+        dst = Eigen::Map<Dest>(arr.data(), Ensign::prod(arr.shape()));
     }
 };
 } // namespace internal

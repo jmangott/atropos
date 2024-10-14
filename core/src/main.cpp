@@ -87,7 +87,7 @@ int main(int argc, char** argv)
         std::exit(EXIT_FAILURE);
     }
 
-    blas_ops blas;
+    Ensign::blas_ops blas;
     ps_integrator integrator(blas, integration_methods);
     cme_lr_tree tree;
 
@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     tree.Write(fname, t, tau, dm);
 
     auto t_start(std::chrono::high_resolution_clock::now());
-    gt::start("main");
+    Ensign::gt::start("main");
     for (Index ts = 0; ts < kNsteps; ++ts) {
         if (tfinal - t < tau)
             tau = tfinal - t;
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
             tree.Write(fname, t, tau, dm);
         }
     }
-    gt::stop("main");
+    Ensign::gt::stop("main");
 
     auto t_stop(std::chrono::high_resolution_clock::now());
     auto t_elapsed = t_stop - t_start;
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     std::cout << "\n\n";
     std::cout << "TIMER RESULTS\n";
     std::cout << "-------------\n";
-    std::cout << gt::sorted_output();
+    std::cout << Ensign::gt::sorted_output();
 
     std::ofstream diagnostics_file;
     diagnostics dgn{integrator, t_elapsed, tau, dm_max};

@@ -5,7 +5,7 @@
 
 struct bug_integrator : integrator_base {
     bug_integrator(
-        const blas_ops& _blas,
+        const Ensign::blas_ops& _blas,
         const std::map<std::string, integration_method*>& _integration_methods,
         const double _theta)
         : integrator_base(_blas, _integration_methods), theta(_theta)

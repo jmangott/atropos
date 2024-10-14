@@ -64,10 +64,10 @@ ExternalProject_Add(Ensign
   GIT_TAG "development"
   INSTALL_COMMAND ""
   CMAKE_ARGS -DMKL_ENABLED=${MKL_ENABLED} -DOPENMP=${OPENMP_ENABLED}
-  UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
 )
 set(ENSIGN_SRC_DIR ${EXTERNALS_DIR}/src/Ensign)
 set(ENSIGN_BUILD_DIR ${EXTERNALS_DIR}/src/Ensign-build)
+find_package(Ensign CONFIG REQUIRED)
 
 # OpenMP
 if(${OPENMP})

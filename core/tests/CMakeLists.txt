@@ -20,11 +20,11 @@ target_include_directories(test_orthogonalization PRIVATE "${ENSIGN_BUILD_DIR}/e
 target_include_directories(test_tree_h1 PRIVATE "${ENSIGN_BUILD_DIR}/extern/Catch2/src/Catch2/single_include")
 target_include_directories(test_tree_h2 PRIVATE "${ENSIGN_BUILD_DIR}/extern/Catch2/src/Catch2/single_include")
 
-target_link_libraries(test_index_functions ${LIBNAME})
-target_link_libraries(test_matrix_functions ${LIBNAME})
-target_link_libraries(test_orthogonalization ${LIBNAME})
-target_link_libraries(test_tree_h1 ${LIBNAME})
-target_link_libraries(test_tree_h2 ${LIBNAME})
+target_link_libraries(test_index_functions ${LIBNAME} Ensign::Ensign)
+target_link_libraries(test_matrix_functions ${LIBNAME} Ensign::Ensign)
+target_link_libraries(test_orthogonalization ${LIBNAME} Ensign::Ensign)
+target_link_libraries(test_tree_h1 ${LIBNAME} Ensign::Ensign)
+target_link_libraries(test_tree_h2 ${LIBNAME} Ensign::Ensign)
 
 if(${MKL_ENABLED})
     target_link_libraries(test_index_functions ${MKL_LIBRARIES})
