@@ -562,7 +562,7 @@ void cme_node::CalculateAB_bar(const Ensign::blas_ops& blas)
                 std::vector<Index> vec_index(this_node->grid.d, 0);
 
                 for (Index alpha = 0; alpha < this_node->grid.dx; ++alpha) {
-                    Index alpha_dep = IndexFunctionCME::VecIndexToDepCombIndex(
+                    Index alpha_dep = VecIndexToDepCombIndex(
                         std::begin(vec_index), std::begin(this_node->grid.n_dep[mu]),
                         std::begin(this_node->grid.idx_dep[mu]),
                         std::end(this_node->grid.idx_dep[mu]));
@@ -663,10 +663,10 @@ Ensign::multi_array<double, 2> CalculateKDot(const Ensign::multi_array<double, 2
             std::vector<Index> vec_index(node->grid.d, 0);
 
             for (Index i = 0; i < node->grid.dx; ++i) {
-                Index alpha = IndexFunctionCME::VecIndexToDepCombIndex(
-                    std::begin(vec_index), std::begin(node->grid.n_dep[mu]),
-                    std::begin(node->grid.idx_dep[mu]),
-                    std::end(node->grid.idx_dep[mu]));
+                Index alpha = VecIndexToDepCombIndex(std::begin(vec_index),
+                                                     std::begin(node->grid.n_dep[mu]),
+                                                     std::begin(node->grid.idx_dep[mu]),
+                                                     std::end(node->grid.idx_dep[mu]));
                 Ensign::IndexFunction::IncrVecIndex(std::begin(node->grid.n),
                                                     std::begin(vec_index),
                                                     std::end(vec_index));

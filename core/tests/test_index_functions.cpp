@@ -76,9 +76,8 @@ TEST_CASE("VecIndexToDepCombIndex", "[VecIndexToDepCombIndex]")
     std::vector<Index> vec_index = {6, 3, 2, 4, 11};
     std::vector<Index> n_dep = {6, 5, 13};
     std::vector<Index> idx_dep = {1, 3, 4};
-    Index comb_index = IndexFunctionCME::VecIndexToDepCombIndex(
-        std::begin(vec_index), std::begin(n_dep), std::begin(idx_dep),
-        std::end(idx_dep));
+    Index comb_index = VecIndexToDepCombIndex(std::begin(vec_index), std::begin(n_dep),
+                                              std::begin(idx_dep), std::end(idx_dep));
 
     Index comparison_comb_index = 357;
     REQUIRE(bool(comb_index == comparison_comb_index));
@@ -96,8 +95,8 @@ TEST_CASE("SetVecIndex", "[SetVecIndex]")
     {
         std::vector<Index> vec_index(3);
         std::vector<Index> comparison_vec_index(3);
-        Index chunk_size = IndexFunctionCME::SetVecIndex(
-            std::begin(vec_index), std::end(vec_index), std::begin(interval), dx);
+        Index chunk_size = SetVecIndex(std::begin(vec_index), std::end(vec_index),
+                                       std::begin(interval), dx);
 
         REQUIRE((chunk_size == 100));
         switch (omp_get_num_threads()) {
