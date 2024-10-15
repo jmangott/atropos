@@ -569,9 +569,9 @@ void cme_node::CalculateAB_bar(const Ensign::blas_ops& blas)
 
                     weight(alpha) =
                         this_node->propensity[mu][alpha_dep] * this_node->grid.h_mult;
-                    Ensign::IndexFunction::IncrVecIndex(std::begin(this_node->grid.n),
-                                                        std::begin(vec_index),
-                                                        std::end(vec_index));
+                    Ensign::IndexFunction::incr_vec_index(std::begin(this_node->grid.n),
+                                                          std::begin(vec_index),
+                                                          std::end(vec_index));
                 }
                 coeff(X_shift, this_node->X, weight, coefficients.A_bar[mu], blas);
                 coeff(this_node->X, this_node->X, weight, coefficients.B_bar[mu], blas);
@@ -667,9 +667,9 @@ Ensign::multi_array<double, 2> CalculateKDot(const Ensign::multi_array<double, 2
                                                      std::begin(node->grid.n_dep[mu]),
                                                      std::begin(node->grid.idx_dep[mu]),
                                                      std::end(node->grid.idx_dep[mu]));
-                Ensign::IndexFunction::IncrVecIndex(std::begin(node->grid.n),
-                                                    std::begin(vec_index),
-                                                    std::end(vec_index));
+                Ensign::IndexFunction::incr_vec_index(std::begin(node->grid.n),
+                                                      std::begin(vec_index),
+                                                      std::end(vec_index));
 
                 weight(i) = node->propensity[mu][alpha];
             }

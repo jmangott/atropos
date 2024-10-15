@@ -34,7 +34,7 @@ Index SetVecIndex(InputIt first, InputIt last, InputItInt first_int, const Index
     int thread_num = omp_get_thread_num();
     chunk_size = (Index)std::ceil((double)dx / num_threads);
     start_index = thread_num * chunk_size;
-    CombIndexToVecIndex(start_index, first_int, first, last);
+    Ensign::IndexFunction::comb_index_to_vec_index(start_index, first_int, first, last);
     return chunk_size;
 }
 #endif

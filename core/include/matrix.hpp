@@ -73,7 +73,7 @@ void ShiftRows(Ensign::multi_array<double, 2>& output_array,
     }
 
     std::vector<Index> vec_index(grid.d);
-    Ensign::IndexFunction::CombIndexToVecIndex(
+    Ensign::IndexFunction::comb_index_to_vec_index(
         min_i, std::begin(grid.n), std::begin(vec_index), std::end(vec_index));
     for (Index i = min_i; i < max_i; ++i) {
         for (Index k = 0; k < grid.d; ++k) {
@@ -89,8 +89,8 @@ void ShiftRows(Ensign::multi_array<double, 2>& output_array,
                 break;
             }
         }
-        Ensign::IndexFunction::IncrVecIndex(std::begin(grid.n), std::begin(vec_index),
-                                            std::end(vec_index));
+        Ensign::IndexFunction::incr_vec_index(std::begin(grid.n), std::begin(vec_index),
+                                              std::end(vec_index));
     }
 }
 } // namespace Matrix
