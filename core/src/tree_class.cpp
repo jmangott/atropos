@@ -2,16 +2,6 @@
 
 // TODO: Add cast functions `to_internal_node`, `to_external_node`
 
-template <> void internal_node<double>::Initialize(int ncid)
-{
-    // read Q
-    int id_Q;
-    NETCDF_CHECK(nc_inq_varid(ncid, "Q", &id_Q));
-    NETCDF_CHECK(nc_get_var_double(ncid, id_Q, Q.data()));
-
-    return;
-}
-
 void cme_internal_node::Initialize(int ncid)
 {
     internal_node::Initialize(ncid);
@@ -28,16 +18,6 @@ void cme_internal_node::Initialize(int ncid)
     return;
 }
 
-template <> void external_node<double>::Initialize(int ncid)
-{
-    // read X
-    int id_X;
-    NETCDF_CHECK(nc_inq_varid(ncid, "X", &id_X));
-    NETCDF_CHECK(nc_get_var_double(ncid, id_X, X.data()));
-
-    return;
-}
-
 void cme_external_node::Initialize(int ncid)
 {
     external_node::Initialize(ncid);
@@ -45,26 +25,6 @@ void cme_external_node::Initialize(int ncid)
     // read propensity
     propensity = ReadHelpers::ReadPropensity(ncid, grid.n_reactions);
     return;
-}
-
-template <>
-void internal_node<double>::Write(int ncid, int id_r_in,
-                                  std::array<int, 2> id_r_out) const
-{
-    int varid_Q;
-    // NOTE: netCDF stores arrays in row-major order (but Ensign column-major order)
-    int dimids_Q[3] = {id_r_in, id_r_out[1], id_r_out[0]};
-    NETCDF_CHECK(nc_def_var(ncid, "Q", NC_DOUBLE, 3, dimids_Q, &varid_Q));
-    NETCDF_CHECK(nc_put_var_double(ncid, varid_Q, Q.data()));
-}
-
-template <> void external_node<double>::Write(int ncid, int id_r_in, int id_dx) const
-{
-    int varid_X;
-    // NOTE: netCDF stores arrays in row-major order (but Ensign column-major order)
-    int dimids_X[2] = {id_r_in, id_dx};
-    NETCDF_CHECK(nc_def_var(ncid, "X", NC_DOUBLE, 2, dimids_X, &varid_X));
-    NETCDF_CHECK(nc_put_var_double(ncid, varid_X, X.data()));
 }
 
 void cme_lr_tree::Read(const std::string fn)
@@ -234,8 +194,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         // Ensign::inner_product_from_const_weight(node_right->grid.h_mult,
         // node_right->grid.dx);
 
-        R0 = node_left->Orthogonalize(node_left->grid.h_mult, blas);
-        R1 = node_right->Orthogonalize(node_right->grid.h_mult, blas);
+        R0 = node_left->ortho(node_left->grid.h_mult, blas);
+        R1 = node_right->ortho(node_right->grid.h_mult, blas);
     }
     else if (node->child[0]->IsExternal() and node->child[1]->IsInternal()) {
         cme_external_node* node_left = (cme_external_node*)node->child[0];
@@ -247,8 +207,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         // node_left->grid.dx); ip1 = Ensign::inner_product_from_const_weight(1.0,
         // Ensign::prod(node_right->RankOut()));
 
-        R0 = node_left->Orthogonalize(node_left->grid.h_mult, blas);
-        R1 = node_right->Orthogonalize(1.0, blas);
+        R0 = node_left->ortho(node_left->grid.h_mult, blas);
+        R1 = node_right->ortho(1.0, blas);
     }
     else if (node->child[0]->IsInternal() and node->child[1]->IsExternal()) {
         cme_internal_node* node_left = (cme_internal_node*)node->child[0];
@@ -261,8 +221,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         // Ensign::inner_product_from_const_weight(node_right->grid.h_mult,
         // node_right->grid.dx);
 
-        R0 = node_left->Orthogonalize(1.0, blas);
-        R1 = node_right->Orthogonalize(node_right->grid.h_mult, blas);
+        R0 = node_left->ortho(1.0, blas);
+        R1 = node_right->ortho(node_right->grid.h_mult, blas);
     }
     else {
         cme_internal_node* node_left = (cme_internal_node*)node->child[0];
@@ -276,8 +236,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         // Ensign::inner_product_from_const_weight(1.0,
         // Ensign::prod(node_right->RankOut()));
 
-        R0 = node_left->Orthogonalize(1.0, blas);
-        R1 = node_right->Orthogonalize(1.0, blas);
+        R0 = node_left->ortho(1.0, blas);
+        R1 = node_right->ortho(1.0, blas);
     }
 
     for (int j = node->child[0]->n_basisfunctions; j < node->RankOut()[0]; ++j) {

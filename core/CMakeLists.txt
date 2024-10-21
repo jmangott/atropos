@@ -121,6 +121,7 @@ set(ENSIGN_FILES ${ENSIGN_SRC_DIR}/src/lr/lr.cpp
                  ${ENSIGN_SRC_DIR}/src/generic/utility.cpp
                  ${ENSIGN_SRC_DIR}/src/generic/matrix.cpp
                  ${ENSIGN_SRC_DIR}/src/generic/timer.cpp
+                 ${ENSIGN_SRC_DIR}/src/generic/tree.cpp
                  ${ENSIGN_SRC_DIR}/src/generic/fft.cpp
                  ${ENSIGN_SRC_DIR}/src/generic/netcdf.cpp)
 
