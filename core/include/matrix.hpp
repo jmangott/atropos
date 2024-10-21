@@ -18,7 +18,7 @@ void ShiftRows(Ensign::multi_array<double, 2>& output_array,
                const Index mu)
 {
     assert(output_array.shape() == input_array.shape());
-    Ensign::set_zero(output_array);
+    Ensign::Matrix::set_zero(output_array);
 
     Index shift = inv * grid.shift[mu];
     Index n_rows = output_array.shape()[0];

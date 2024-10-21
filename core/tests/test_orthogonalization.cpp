@@ -6,6 +6,7 @@
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
+#include <generic/tensor.hpp>
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
@@ -114,9 +115,9 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     Q0(0, 0, 0) = 1.0;
 
     // Initialize and normalize X00, X01, X1
-    Ensign::set_zero(X00);
-    Ensign::set_zero(X01);
-    Ensign::set_zero(X1);
+    Ensign::Matrix::set_zero(X00);
+    Ensign::Matrix::set_zero(X01);
+    Ensign::Matrix::set_zero(X1);
     std::function<double(double*, double*)> ip00 =
         Ensign::inner_product_from_const_weight(grid00.h_mult, grid00.dx);
     std::function<double(double*, double*)> ip01 =
@@ -197,7 +198,7 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     // Check if the probability distribution remains the same under orthogonalization
     std::fill(std::begin(p_ortho), std::end(p_ortho), 0.0);
 
-    Ensign::blas_ops blas;
+    Ensign::Matrix::blas_ops blas;
     tree.Orthogonalize(blas);
 
     for (Index i = 0; i < r; ++i) {
@@ -229,10 +230,10 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     // Check if the Xs and Qs are orthonormal
     Ensign::multi_array<double, 2> X00_ortho({r0, r0}), X01_ortho({r0, r0}),
         X1_ortho({r, r}), Q_ortho({1, 1}), Q0_ortho({r, r});
-    Ensign::set_zero(X00_ortho);
-    Ensign::set_zero(X01_ortho);
-    Ensign::set_zero(X1_ortho);
-    Ensign::set_zero(Q0_ortho);
+    Ensign::Matrix::set_zero(X00_ortho);
+    Ensign::Matrix::set_zero(X01_ortho);
+    Ensign::Matrix::set_zero(X1_ortho);
+    Ensign::Matrix::set_zero(Q0_ortho);
 
     blas.matmul_transa(((cme_external_node*)tree.root->child[0]->child[0])->X,
                        ((cme_external_node*)tree.root->child[0]->child[0])->X,
@@ -249,8 +250,8 @@ TEST_CASE("orthogonalization", "[orthogonalization]")
     blas.matmul_transa(Q0_mat, Q0_mat, Q0_ortho);
 
     Ensign::multi_array<double, 2> id_r({r, r}), id_r0({r0, r0}), id_1({1, 1});
-    set_identity(id_r);
-    set_identity(id_r0);
+    Ensign::Matrix::set_identity(id_r);
+    Ensign::Matrix::set_identity(id_r0);
 
     REQUIRE(bool(X00_ortho == id_r0));
     REQUIRE(bool(X01_ortho == id_r0));

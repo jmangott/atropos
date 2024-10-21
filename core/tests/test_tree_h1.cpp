@@ -6,6 +6,7 @@
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
+#include <generic/tensor.hpp>
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
@@ -14,7 +15,7 @@
 
 TEST_CASE("tree_h1", "[tree_h1]")
 {
-    Ensign::blas_ops blas;
+    Ensign::Matrix::blas_ops blas;
 
     Index r = 2;
     Index n_basisfunctions = 1;
@@ -112,8 +113,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
     Q(0, 0, 0) = 1.0;
 
     // Initialize and normalize X0, X1
-    Ensign::set_zero(X0);
-    Ensign::set_zero(X1);
+    Ensign::Matrix::set_zero(X0);
+    Ensign::Matrix::set_zero(X1);
 
     X0(0, 0) = 1.0;
     X0(1, 0) = 1.0;
@@ -186,8 +187,8 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     Q(0, 0, 0) = 2.0 * std::exp(-0.5);
 
-    Ensign::set_zero(X0);
-    Ensign::set_zero(X1);
+    Ensign::Matrix::set_zero(X0);
+    Ensign::Matrix::set_zero(X1);
 
     X0(0, 0) = 1.0;
     X0(1, 0) = 1.0;
@@ -226,7 +227,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
 
     std::fill(std::begin(Q), std::end(Q), 0.0);
     std::fill(std::begin(G), std::end(G), 0.0);
-    Ensign::set_zero(S0);
+    Ensign::Matrix::set_zero(S0);
 
     Q(0, 0, 0) = 2.0 * std::exp(-0.5);
     G(0, 0, 0) = 1.0;
@@ -253,10 +254,10 @@ TEST_CASE("tree_h1", "[tree_h1]")
         A1_bar_comparison[mu].resize({node1->RankIn(), node1->RankIn()});
         B1_bar_comparison[mu].resize({node1->RankIn(), node1->RankIn()});
 
-        Ensign::set_zero(A0_comparison[mu]);
-        Ensign::set_zero(B0_comparison[mu]);
-        Ensign::set_zero(A1_bar_comparison[mu]);
-        Ensign::set_zero(B1_bar_comparison[mu]);
+        Ensign::Matrix::set_zero(A0_comparison[mu]);
+        Ensign::Matrix::set_zero(B0_comparison[mu]);
+        Ensign::Matrix::set_zero(A1_bar_comparison[mu]);
+        Ensign::Matrix::set_zero(B1_bar_comparison[mu]);
     }
 
     A1_bar_comparison[0](0, 0) = 1.0;
@@ -358,11 +359,11 @@ TEST_CASE("tree_h1", "[tree_h1]")
         {Ensign::prod(root->RankOut()), root->RankIn()});
     Ensign::multi_array<double, 2> Qmat2_dot(Qmat2.shape());
     Ensign::multi_array<double, 2> Gmat1(Qmat1.shape());
-    Ensign::set_zero(Qmat1);
+    Ensign::Matrix::set_zero(Qmat1);
 
     Ensign::multi_array<double, 2> S1(
         {tree.root->RankOut()[1], tree.root->RankOut()[1]});
-    Ensign::set_zero(S1);
+    Ensign::Matrix::set_zero(S1);
     S1(0, 0) = 2.0 * std::exp(-0.5);
     node1->S = S1;
 
@@ -378,7 +379,7 @@ TEST_CASE("tree_h1", "[tree_h1]")
     Ensign::Tensor::tensorize<2>(Qmat2_dot, Q_dot);
 
     Ensign::multi_array<double, 2> Q_dotG(S1_dot.shape());
-    Ensign::set_zero(Q_dotG);
+    Ensign::Matrix::set_zero(Q_dotG);
 
     for (Index i = 0; i < root->RankIn(); ++i) {
         for (Index i0 = 0; i0 < root->RankOut()[0]; ++i0) {

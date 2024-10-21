@@ -7,6 +7,7 @@
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
+#include <generic/tensor.hpp>
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
@@ -15,7 +16,7 @@
 
 TEST_CASE("tree_h2", "[tree_h2]")
 {
-    Ensign::blas_ops blas;
+    Ensign::Matrix::blas_ops blas;
 
     Index r = 3, r0 = 2;
     Index n_basisfunctions = 1, n_basisfunctions0 = 1;
@@ -188,9 +189,9 @@ TEST_CASE("tree_h2", "[tree_h2]")
     Q0(0, 0, 0) = 1.0;
 
     // Initialize and normalize X00, X01, X1
-    Ensign::set_zero(X00);
-    Ensign::set_zero(X01);
-    Ensign::set_zero(X1);
+    Ensign::Matrix::set_zero(X00);
+    Ensign::Matrix::set_zero(X01);
+    Ensign::Matrix::set_zero(X1);
 
     X00(0, 0) = 1.0;
     X00(1, 0) = 1.0;
@@ -294,7 +295,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
     // Orthogonalize Q and X manually
     std::fill(std::begin(Q), std::end(Q), 0.0);
     std::fill(std::begin(Q0), std::end(Q0), 0.0);
-    Ensign::set_zero(Q0_mat);
+    Ensign::Matrix::set_zero(Q0_mat);
 
     Q(0, 0, 0) = (2.0 * std::exp(-0.5) * std::exp(-0.25) * sqrt(2.0 + std::exp(-4.0)));
     Q0_mat(0, 0) = 1.0;
@@ -302,9 +303,9 @@ TEST_CASE("tree_h2", "[tree_h2]")
     Q0_mat(2, 2) = 1.0;
     Ensign::Tensor::tensorize<2>(Q0_mat, Q0);
 
-    Ensign::set_zero(X00);
-    Ensign::set_zero(X01);
-    Ensign::set_zero(X1);
+    Ensign::Matrix::set_zero(X00);
+    Ensign::Matrix::set_zero(X01);
+    Ensign::Matrix::set_zero(X1);
 
     X00(0, 0) = 1.0;
     X00(1, 0) = 1.0;
@@ -365,7 +366,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
 
     std::fill(std::begin(Q), std::end(Q), 0.0);
     std::fill(std::begin(G), std::end(G), 0.0);
-    Ensign::set_zero(S0);
+    Ensign::Matrix::set_zero(S0);
 
     Q(0, 0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
     G(0, 0, 0) = 1.0;
@@ -379,7 +380,7 @@ TEST_CASE("tree_h2", "[tree_h2]")
 
     std::fill(std::begin(Q0), std::end(Q0), 0.0);
     std::fill(std::begin(G0), std::end(G0), 0.0);
-    Ensign::set_zero(S00);
+    Ensign::Matrix::set_zero(S00);
 
     Q0(0, 0, 0) = 2.0 * std::exp(-0.75) * sqrt(2.0 + std::exp(-4.0));
     G0(0, 0, 0) = 1.0;
@@ -426,14 +427,14 @@ TEST_CASE("tree_h2", "[tree_h2]")
         A01_bar_comparison[mu].resize({node01->RankIn(), node01->RankIn()});
         B01_bar_comparison[mu].resize({node01->RankIn(), node01->RankIn()});
 
-        Ensign::set_zero(A0_comparison[mu]);
-        Ensign::set_zero(B0_comparison[mu]);
-        Ensign::set_zero(A00_comparison[mu]);
-        Ensign::set_zero(B00_comparison[mu]);
-        Ensign::set_zero(A1_bar_comparison[mu]);
-        Ensign::set_zero(B1_bar_comparison[mu]);
-        Ensign::set_zero(A01_bar_comparison[mu]);
-        Ensign::set_zero(B01_bar_comparison[mu]);
+        Ensign::Matrix::set_zero(A0_comparison[mu]);
+        Ensign::Matrix::set_zero(B0_comparison[mu]);
+        Ensign::Matrix::set_zero(A00_comparison[mu]);
+        Ensign::Matrix::set_zero(B00_comparison[mu]);
+        Ensign::Matrix::set_zero(A1_bar_comparison[mu]);
+        Ensign::Matrix::set_zero(B1_bar_comparison[mu]);
+        Ensign::Matrix::set_zero(A01_bar_comparison[mu]);
+        Ensign::Matrix::set_zero(B01_bar_comparison[mu]);
     }
 
     // Calculate A1_bar_comparison and B1_bar_comparison

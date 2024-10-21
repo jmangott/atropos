@@ -87,7 +87,7 @@ int main(int argc, char** argv)
         std::exit(EXIT_FAILURE);
     }
 
-    Ensign::blas_ops blas;
+    Ensign::Matrix::blas_ops blas;
     ps_integrator integrator(blas, integration_methods);
     cme_lr_tree tree;
 

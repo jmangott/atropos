@@ -6,6 +6,7 @@
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
+#include <generic/tensor.hpp>
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
@@ -103,17 +104,17 @@ TEST_CASE("Orthogonalize", "[Orthogonalize]")
     Index r = 5, dx = 6;
     Index n_basisfunctions = 1;
     Ensign::multi_array<double, 2> mat({dx, r}), mat_ref({dx, r});
-    Ensign::set_zero(mat);
-    Ensign::set_zero(mat_ref);
+    Ensign::Matrix::set_zero(mat);
+    Ensign::Matrix::set_zero(mat_ref);
     mat(0, 0) = 1.0;
     std::function<double(double*, double*)> ip;
-    Ensign::blas_ops blas;
+    Ensign::Matrix::blas_ops blas;
 
     Ensign::multi_array<double, 2> Q(mat), R({r, r});
     R = Ensign::Tensor::ortho(Q, n_basisfunctions, 1.0, blas);
 
     Ensign::multi_array<double, 2> Q2({r, r}), id_r({r, r});
-    set_identity(id_r);
+    Ensign::Matrix::set_identity(id_r);
     blas.matmul_transa(Q, Q, Q2);
     blas.matmul(Q, R, mat_ref);
 
@@ -159,11 +160,11 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     Ensign::multi_array<double, 2> input_array({n_rows, 1}), output_array({n_rows, 1});
     Ensign::multi_array<double, 2> comparison_array({n_rows, 1});
 
-    Ensign::set_zero(input_array);
+    Ensign::Matrix::set_zero(input_array);
     for (Index i = 0; i < n_rows; ++i)
         input_array(i, 0) = (double)i + 1;
 
-    Ensign::set_zero(comparison_array);
+    Ensign::Matrix::set_zero(comparison_array);
     comparison_array(0, 0) = 6.0;
     comparison_array(1, 0) = 7.0;
     comparison_array(2, 0) = 8.0;
@@ -179,13 +180,13 @@ TEST_CASE("ShiftRows", "[ShiftRows]")
     input_array.resize({n_rows, 2}), output_array.resize({n_rows, 2});
     comparison_array.resize({n_rows, 2});
 
-    Ensign::set_zero(input_array);
+    Ensign::Matrix::set_zero(input_array);
     for (Index i = 0; i < n_rows; ++i) {
         input_array(i, 0) = (double)i + 1;
         input_array(i, 1) = (double)i + 2;
     }
 
-    Ensign::set_zero(comparison_array);
+    Ensign::Matrix::set_zero(comparison_array);
     comparison_array(5, 0) = 1.0;
     comparison_array(6, 0) = 2.0;
     comparison_array(7, 0) = 3.0;

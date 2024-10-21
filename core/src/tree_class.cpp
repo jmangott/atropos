@@ -179,7 +179,7 @@ void cme_lr_tree::PrintHelper(std::ostream& os, cme_node const* const node) cons
 }
 
 void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
-                                      const Ensign::blas_ops& blas) const
+                                      const Ensign::Matrix::blas_ops& blas) const
 {
     std::function<double(double*, double*)> ip0;
     std::function<double(double*, double*)> ip1;
@@ -271,13 +271,13 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
     }
 }
 
-void cme_lr_tree::Orthogonalize(const Ensign::blas_ops& blas) const
+void cme_lr_tree::Orthogonalize(const Ensign::Matrix::blas_ops& blas) const
 {
     OrthogonalizeHelper(root, blas);
 };
 
 void cme_lr_tree::InitializeAB_barHelper(cme_node* const node,
-                                         const Ensign::blas_ops& blas) const
+                                         const Ensign::Matrix::blas_ops& blas) const
 {
     if (node->IsInternal()) {
         InitializeAB_barHelper(node->child[0], blas);
@@ -286,7 +286,7 @@ void cme_lr_tree::InitializeAB_barHelper(cme_node* const node,
     node->CalculateAB_bar(blas);
 }
 
-void cme_lr_tree::InitializeAB_bar(const Ensign::blas_ops& blas) const
+void cme_lr_tree::InitializeAB_bar(const Ensign::Matrix::blas_ops& blas) const
 {
     InitializeAB_barHelper(root, blas);
 }
@@ -502,7 +502,7 @@ cme_node* ReadHelpers::ReadNode(int ncid, const std::string id,
     return child_node;
 }
 
-void cme_node::CalculateAB_bar(const Ensign::blas_ops& blas)
+void cme_node::CalculateAB_bar(const Ensign::Matrix::blas_ops& blas)
 {
     if (IsExternal()) {
 #ifdef __OPENMP__
@@ -594,11 +594,11 @@ void cme_node::CalculateAB_bar(const Ensign::blas_ops& blas)
 
 Ensign::multi_array<double, 2> CalculateKDot(const Ensign::multi_array<double, 2>& K,
                                              const cme_external_node* const node,
-                                             const Ensign::blas_ops& blas)
+                                             const Ensign::Matrix::blas_ops& blas)
 {
     Ensign::gt::start("CalculateKDot");
     Ensign::multi_array<double, 2> K_dot(K.shape());
-    Ensign::set_zero(K_dot);
+    Ensign::Matrix::set_zero(K_dot);
 
 #ifdef __OPENMP__
 #pragma omp parallel reduction(+ : K_dot)
@@ -611,7 +611,7 @@ Ensign::multi_array<double, 2> CalculateKDot(const Ensign::multi_array<double, 2
         Ensign::multi_array<double, 2> aKB(K.shape());
         Ensign::multi_array<double, 2> aKA_shift(K.shape());
         Ensign::multi_array<double, 1> weight({K.shape()[0]});
-        Ensign::set_zero(K_dot_thread);
+        Ensign::Matrix::set_zero(K_dot_thread);
 
 #ifdef __OPENMP__
 #pragma omp for
@@ -634,8 +634,8 @@ Ensign::multi_array<double, 2> CalculateKDot(const Ensign::multi_array<double, 2
                 weight(i) = node->propensity[mu][alpha];
             }
 
-            ptw_mult_row(KA, weight, aKA);
-            ptw_mult_row(KB, weight, aKB);
+            Ensign::Matrix::ptw_mult_row(KA, weight, aKA);
+            Ensign::Matrix::ptw_mult_row(KB, weight, aKB);
 
             // Shift prod_KC
             Ensign::gt::start("ShiftKDot");
@@ -655,10 +655,10 @@ Ensign::multi_array<double, 2> CalculateKDot(const Ensign::multi_array<double, 2
 
 Ensign::multi_array<double, 2> CalculateSDot(const Ensign::multi_array<double, 2>& S,
                                              const cme_node* const node,
-                                             const Ensign::blas_ops& blas)
+                                             const Ensign::Matrix::blas_ops& blas)
 {
     Ensign::multi_array<double, 2> S_dot(S.shape());
-    Ensign::set_zero(S_dot);
+    Ensign::Matrix::set_zero(S_dot);
 
 #ifdef __OPENMP__
 #pragma omp parallel reduction(+ : S_dot)
@@ -689,10 +689,10 @@ Ensign::multi_array<double, 2> CalculateSDot(const Ensign::multi_array<double, 2
 
 Ensign::multi_array<double, 2> CalculateQDot(const Ensign::multi_array<double, 2>& Qmat,
                                              const cme_internal_node* const node,
-                                             const Ensign::blas_ops& blas)
+                                             const Ensign::Matrix::blas_ops& blas)
 {
     Ensign::multi_array<double, 2> Q_dot(Qmat.shape());
-    Ensign::set_zero(Q_dot);
+    Ensign::Matrix::set_zero(Q_dot);
 
 #ifdef __OPENMP__
 #pragma omp parallel reduction(+ : Q_dot)

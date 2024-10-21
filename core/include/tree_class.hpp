@@ -6,6 +6,7 @@
 
 #include <generic/matrix.hpp>
 #include <generic/storage.hpp>
+#include <generic/tensor.hpp>
 #include <generic/timer.hpp>
 #include <generic/tree.hpp>
 #include <lr/coefficients.hpp>
@@ -27,7 +28,7 @@ struct cme_node : virtual Ensign::node<double> {
           child({nullptr, nullptr}), grid(_grid), coefficients(_grid.n_reactions, _r_in)
     {
     }
-    void CalculateAB_bar(const Ensign::blas_ops& blas);
+    void CalculateAB_bar(const Ensign::Matrix::blas_ops& blas);
 };
 
 struct cme_internal_node : cme_node, Ensign::internal_node<double> {
@@ -42,7 +43,7 @@ struct cme_internal_node : cme_node, Ensign::internal_node<double> {
     }
     void Initialize(int ncid) override;
 
-    template <Index id> void CalculateAB(const Ensign::blas_ops& blas);
+    template <Index id> void CalculateAB(const Ensign::Matrix::blas_ops& blas);
 };
 
 struct cme_external_node : cme_node, Ensign::external_node<double> {
@@ -64,15 +65,15 @@ struct cme_external_node : cme_node, Ensign::external_node<double> {
 
 Ensign::multi_array<double, 2> CalculateKDot(const Ensign::multi_array<double, 2>& K,
                                              const cme_external_node* const node,
-                                             const Ensign::blas_ops& blas);
+                                             const Ensign::Matrix::blas_ops& blas);
 
 Ensign::multi_array<double, 2> CalculateSDot(const Ensign::multi_array<double, 2>& S,
                                              const cme_node* const node,
-                                             const Ensign::blas_ops& blas);
+                                             const Ensign::Matrix::blas_ops& blas);
 
 Ensign::multi_array<double, 2> CalculateQDot(const Ensign::multi_array<double, 2>& Qmat,
                                              const cme_internal_node* const node,
-                                             const Ensign::blas_ops& blas);
+                                             const Ensign::Matrix::blas_ops& blas);
 
 struct cme_lr_tree {
     cme_internal_node* root;
@@ -88,17 +89,17 @@ struct cme_lr_tree {
   private:
     void PrintHelper(std::ostream& os, cme_node const* const node) const;
     void OrthogonalizeHelper(cme_internal_node* const node,
-                             const Ensign::blas_ops& blas) const;
+                             const Ensign::Matrix::blas_ops& blas) const;
     void InitializeAB_barHelper(cme_node* const node,
-                                const Ensign::blas_ops& blas) const;
+                                const Ensign::Matrix::blas_ops& blas) const;
     std::vector<double> NormalizeHelper(cme_node const* const node) const;
 
   public:
     void Read(const std::string fn);
     void Write(const std::string, const double t, const double tau,
                const double dm) const;
-    void Orthogonalize(const Ensign::blas_ops& blas) const;
-    void InitializeAB_bar(const Ensign::blas_ops& blas) const;
+    void Orthogonalize(const Ensign::Matrix::blas_ops& blas) const;
+    void InitializeAB_bar(const Ensign::Matrix::blas_ops& blas) const;
     double Normalize() const;
 };
 
@@ -120,7 +121,8 @@ cme_node* ReadNode(int ncid, const std::string id, cme_internal_node* const pare
                    const Index r_in);
 } // namespace ReadHelpers
 
-template <Index id> void cme_internal_node::CalculateAB(const Ensign::blas_ops& blas)
+template <Index id>
+void cme_internal_node::CalculateAB(const Ensign::Matrix::blas_ops& blas)
 {
     const Index id_c = (id == 0) ? 1 : 0;
     Index rank_out = RankOut()[id];

@@ -5,7 +5,7 @@
 
 struct ps_integrator : integrator_base {
     ps_integrator(
-        const Ensign::blas_ops& _blas,
+        const Ensign::Matrix::blas_ops& _blas,
         const std::map<std::string, integration_method*>& _integration_methods)
         : integrator_base(_blas, _integration_methods)
     {

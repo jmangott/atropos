@@ -20,7 +20,7 @@ void bug_integrator::SubflowPhi(cme_internal_node* const node, const double tau)
     Ensign::gt::start("Mat/Ten");
     Ensign::Tensor::tensorize<id>(Qmat, node->G);
     Ensign::gt::stop("Mat/Ten");
-    transpose_inplace(node->child[id]->S);
+    Ensign::Matrix::transpose_inplace(node->child[id]->S);
 
     Ensign::gt::start("CalculateAB");
     node->CalculateAB<id>(blas);
@@ -64,7 +64,7 @@ void bug_integrator::SubflowPhi(cme_internal_node* const node, const double tau)
         Ensign::gt::start("Mat/Ten");
         Ensign::Tensor::matricize<2>(child_node->Q, Qmat_child);
         Ensign::gt::stop("Mat/Ten");
-        Ensign::set_zero(Cmat_child);
+        Ensign::Matrix::set_zero(Cmat_child);
         blas.matmul(Qmat_child, child_node->S, Cmat_child);
         Ensign::gt::start("Mat/Ten");
         Ensign::Tensor::tensorize<2>(Cmat_child, child_node->Q);
@@ -102,7 +102,7 @@ void bug_integrator::SubflowPhi(cme_internal_node* const node, const double tau)
     Ensign::multi_array<double, 2> Gmat(
         {node->RankIn() * node->RankOut()[id_c], node->RankOut()[id]});
     Ensign::Tensor::matricize<id>(node->G, Gmat);
-    Ensign::set_zero(Qmat);
+    Ensign::Matrix::set_zero(Qmat);
     blas.matmul_transb(Gmat, node->child[id]->S, Qmat);
     Ensign::Tensor::tensorize<id>(Qmat, node->Q);
     Ensign::gt::stop("S");
