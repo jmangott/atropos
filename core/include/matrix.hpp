@@ -12,41 +12,6 @@
 #include "index_functions.hpp"
 
 namespace Matrix {
-template <class T>
-Ensign::multi_array<T, 2> Orthogonalize(Ensign::multi_array<T, 2>& input,
-                                        const Index n_basisfunctions, const T weight,
-                                        const Ensign::blas_ops& blas)
-{
-    Index rows = input.shape()[0];
-    Index cols = input.shape()[1];
-
-    assert(n_basisfunctions <= cols);
-
-    std::default_random_engine generator(1234);
-    std::normal_distribution<double> distribution(0.0, 1.0);
-
-#ifdef __OPENMP__
-#pragma omp parallel for
-#endif
-    for (Index k = n_basisfunctions; k < cols; ++k) {
-        for (Index i = 0; i < rows; ++i) {
-            input(i, k) = distribution(generator);
-        }
-    }
-
-    Ensign::multi_array<T, 2> R({cols, cols});
-
-    Ensign::orthogonalize gs(&blas);
-    gs(input, R, weight);
-
-    for (Index j = n_basisfunctions; j < cols; ++j) {
-        for (Index i = 0; i < cols; ++i) {
-            R(i, j) = T(0.0);
-        }
-    }
-    return R;
-}
-
 template <Index inv>
 void ShiftRows(Ensign::multi_array<double, 2>& output_array,
                const Ensign::multi_array<double, 2>& input_array, const grid_parms grid,

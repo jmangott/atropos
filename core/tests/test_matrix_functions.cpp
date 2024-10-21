@@ -110,7 +110,7 @@ TEST_CASE("Orthogonalize", "[Orthogonalize]")
     Ensign::blas_ops blas;
 
     Ensign::multi_array<double, 2> Q(mat), R({r, r});
-    R = Matrix::Orthogonalize(Q, n_basisfunctions, 1.0, blas);
+    R = Ensign::Tensor::ortho(Q, n_basisfunctions, 1.0, blas);
 
     Ensign::multi_array<double, 2> Q2({r, r}), id_r({r, r});
     set_identity(id_r);

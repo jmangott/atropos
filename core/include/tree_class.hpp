@@ -218,7 +218,7 @@ Ensign::multi_array<T, 2> internal_node<T>::Orthogonalize(const T weight,
     Ensign::multi_array<T, 2> Qmat({Ensign::prod(RankOut()), node<T>::RankIn()});
     Ensign::multi_array<T, 2> Q_R({node<T>::RankIn(), node<T>::RankIn()});
     Ensign::Tensor::matricize<2>(Q, Qmat);
-    Q_R = Matrix::Orthogonalize(Qmat, node<T>::n_basisfunctions, weight, blas);
+    Q_R = Ensign::Tensor::ortho(Qmat, node<T>::n_basisfunctions, weight, blas);
     Ensign::Tensor::tensorize<2>(Qmat, Q);
 
     return Q_R;
@@ -229,7 +229,7 @@ Ensign::multi_array<T, 2> external_node<T>::Orthogonalize(const T weight,
                                                           const Ensign::blas_ops& blas)
 {
     Ensign::multi_array<T, 2> X_R({node<T>::RankIn(), node<T>::RankIn()});
-    X_R = Matrix::Orthogonalize(X, node<T>::n_basisfunctions, weight, blas);
+    X_R = Ensign::Tensor::ortho(X, node<T>::n_basisfunctions, weight, blas);
 
     return X_R;
 };
