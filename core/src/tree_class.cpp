@@ -194,8 +194,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         // Ensign::inner_product_from_const_weight(node_right->grid.h_mult,
         // node_right->grid.dx);
 
-        R0 = node_left->ortho(node_left->grid.h_mult, blas);
-        R1 = node_right->ortho(node_right->grid.h_mult, blas);
+        R0 = node_left->orthogonalize(node_left->grid.h_mult, blas);
+        R1 = node_right->orthogonalize(node_right->grid.h_mult, blas);
     }
     else if (node->child[0]->IsExternal() and node->child[1]->IsInternal()) {
         cme_external_node* node_left = (cme_external_node*)node->child[0];
@@ -207,8 +207,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         // node_left->grid.dx); ip1 = Ensign::inner_product_from_const_weight(1.0,
         // Ensign::prod(node_right->RankOut()));
 
-        R0 = node_left->ortho(node_left->grid.h_mult, blas);
-        R1 = node_right->ortho(1.0, blas);
+        R0 = node_left->orthogonalize(node_left->grid.h_mult, blas);
+        R1 = node_right->orthogonalize(1.0, blas);
     }
     else if (node->child[0]->IsInternal() and node->child[1]->IsExternal()) {
         cme_internal_node* node_left = (cme_internal_node*)node->child[0];
@@ -221,8 +221,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         // Ensign::inner_product_from_const_weight(node_right->grid.h_mult,
         // node_right->grid.dx);
 
-        R0 = node_left->ortho(1.0, blas);
-        R1 = node_right->ortho(node_right->grid.h_mult, blas);
+        R0 = node_left->orthogonalize(1.0, blas);
+        R1 = node_right->orthogonalize(node_right->grid.h_mult, blas);
     }
     else {
         cme_internal_node* node_left = (cme_internal_node*)node->child[0];
@@ -236,8 +236,8 @@ void cme_lr_tree::OrthogonalizeHelper(cme_internal_node* const node,
         // Ensign::inner_product_from_const_weight(1.0,
         // Ensign::prod(node_right->RankOut()));
 
-        R0 = node_left->ortho(1.0, blas);
-        R1 = node_right->ortho(1.0, blas);
+        R0 = node_left->orthogonalize(1.0, blas);
+        R1 = node_right->orthogonalize(1.0, blas);
     }
 
     for (int j = node->child[0]->n_basisfunctions; j < node->RankOut()[0]; ++j) {
