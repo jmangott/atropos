@@ -11,12 +11,9 @@
 #include <lr/coefficients.hpp>
 #include <lr/lr.hpp>
 
-#include <netcdf.h>
-
 #include "coeff_class.hpp"
 #include "grid_class.hpp"
 #include "matrix.hpp"
-#include "netcdf_check.hpp"
 
 struct cme_node : virtual Ensign::node<double> {
     std::array<cme_node*, 2> child;
