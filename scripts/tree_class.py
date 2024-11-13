@@ -344,7 +344,7 @@ class Tree:
         external_ids = self.external_nodes.keys()
         attributes = {self.species_names[species]: {"id": id} for id in external_ids for species in self.external_nodes[id].grid.species}
 
-        G = nx.Graph(edges_weights)
+        G = nx.MultiDiGraph(edges_weights)
         nx.set_node_attributes(G, attributes)
         return G
 
@@ -465,7 +465,7 @@ def findIndex(array: list, values):
             pass
     return idx
 
-def plotReactionGraph(G: nx.Graph, fname: str, color_hex=None):
+def plotReactionGraph(G: nx.MultiDiGraph, fname: str, color_hex=None, seed=5):
     """
     Helper function for plotting the `nx.Graph` member variable `G` of a `Tree` object.
     """
@@ -480,20 +480,20 @@ def plotReactionGraph(G: nx.Graph, fname: str, color_hex=None):
         color_hls = colorsys.rgb_to_hls(*color_rgb)
         color_hls_21 = color_hls[1]*1.5
         community_to_color = {
-            0 : colorsys.hls_to_rgb(color_hls[0],
+            0 : colorsys.hls_to_rgb(color_hls[0],   # 00
                                     color_hls[1]*0.65,
                                     color_hls[2]),
-            1 : (0.55, 0.55, 0.55),
-            2 : colorsys.hls_to_rgb(color_hls[0],
+            1 : colorsys.hls_to_rgb(color_hls[0],   # 01
                                     color_hls_21 if color_hls_21 < 1.0 else color_hls[1],
                                     color_hls[2]),
-            3 : (0.85, 0.85, 0.85),
+            2 : (0.55, 0.55, 0.55),                 # 10
+            3 : (0.85, 0.85, 0.85),                 # 11
         }
 
         community_to_fontcolor = {
             0 : "white",
-            1 : "white",
-            2 : "black",
+            1 : "black",
+            2 : "white",
             3 : "black",
         }
 
@@ -509,8 +509,9 @@ def plotReactionGraph(G: nx.Graph, fname: str, color_hex=None):
     A.node_attr["shape"] = "circle"
     A.node_attr["fixedsize"] = "true"
     A.node_attr["penwidth"] = 0.0
-    A.edge_attr["penwidth"] = 2.0
-    A.edge_attr["color"] = "gray"
+    A.edge_attr["arrowsize"] = 0.6
+    A.edge_attr["penwidth"] = 1.3
+    A.edge_attr["color"] = "darkgray"
 
-    A.layout(prog="neato", args='-Gsplines=true -Goverlap=false -Gstart=5 -Gmodel="subset"')
+    A.layout(prog="neato", args='-Gsplines=true -Goverlap=false -Gconcentrate=true -Gstart={} -Gmodel="subset"'.format(seed))
     A.draw(fname)
