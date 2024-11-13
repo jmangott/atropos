@@ -57,7 +57,7 @@ option("OPENMP" "Enable OpenMP" OFF)
 ExternalProject_Add(Ensign
   PREFIX "${EXTERNALS_DIR}"
   GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
-  GIT_TAG "development"
+  GIT_TAG "929dd03"
   INSTALL_COMMAND ""
   CMAKE_ARGS -DMKL_ENABLED=${MKL_ENABLED} -DOPENMP=${OPENMP_ENABLED}
   UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
