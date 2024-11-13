@@ -8,7 +8,7 @@ font.family: "serif"
 legend.fontsize: 10
 legend.frameon: False
 
-lines.linewidth: 1
+lines.linewidth: 1.2
 lines.markersize: 4.5
 
 pgf.rcfonts: False
