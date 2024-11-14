@@ -465,7 +465,8 @@ def findIndex(array: list, values):
             pass
     return idx
 
-def plotReactionGraph(G: nx.MultiDiGraph, fname: str, color_hex=None, seed=5):
+def plotReactionGraph(
+    G: nx.MultiDiGraph, fname: str, color_hex=None, fontcolor_hex="#000000", mode="partitions", fontsize=10.0, prog="neato", seed=5):
     """
     Helper function for plotting the `nx.Graph` member variable `G` of a `Tree` object.
     """
@@ -476,36 +477,43 @@ def plotReactionGraph(G: nx.MultiDiGraph, fname: str, color_hex=None, seed=5):
         color = {node: matplotlib.colors.to_hex(cmap(int(id))) for node, id in color_id.items()}
 
     else:
-        color_rgb = matplotlib.colors.hex2color(color_hex)
-        color_hls = colorsys.rgb_to_hls(*color_rgb)
-        color_hls_21 = color_hls[1]*1.5
-        community_to_color = {
-            0 : colorsys.hls_to_rgb(color_hls[0],   # 00
-                                    color_hls[1]*0.65,
-                                    color_hls[2]),
-            1 : colorsys.hls_to_rgb(color_hls[0],   # 01
-                                    color_hls_21 if color_hls_21 < 1.0 else color_hls[1],
-                                    color_hls[2]),
-            2 : (0.55, 0.55, 0.55),                 # 10
-            3 : (0.85, 0.85, 0.85),                 # 11
-        }
+        if mode == "partitions":
+            color_rgb = matplotlib.colors.hex2color(color_hex)
+            color_hls = colorsys.rgb_to_hls(*color_rgb)
+            color_hls_21 = color_hls[1]*1.5
+            community_to_color = {
+                0 : colorsys.hls_to_rgb(color_hls[0],   # 00
+                                        color_hls[1]*0.65,
+                                        color_hls[2]),
+                1 : colorsys.hls_to_rgb(color_hls[0],   # 01
+                                        color_hls_21 if color_hls_21 < 1.0 else color_hls[1],
+                                        color_hls[2]),
+                2 : (0.55, 0.55, 0.55),                 # 10
+                3 : (0.85, 0.85, 0.85),                 # 11
+            }
 
-        community_to_fontcolor = {
-            0 : "white",
-            1 : "black",
-            2 : "white",
-            3 : "black",
-        }
+            community_to_fontcolor = {
+                0 : "white",
+                1 : "black",
+                2 : "white",
+                3 : "black",
+            }
+            color = {node: matplotlib.colors.to_hex(community_to_color[int(id)]) for node, id in color_id.items()}
+            fontcolor = {node: matplotlib.colors.to_hex(community_to_fontcolor[int(id)]) for node, id in color_id.items()}
+        elif mode == "uniform":
+            color = {node: color_hex for node in color_id}
+            fontcolor = {node: fontcolor_hex for node in color_id}
+        else:
+            raise Exception(
+                "`mode` must be either `partitions` or `uniform`")
 
-        color = {node: matplotlib.colors.to_hex(community_to_color[int(id)]) for node, id in color_id.items()}
-        fontcolor = {node: matplotlib.colors.to_hex(community_to_fontcolor[int(id)]) for node, id in color_id.items()}
-    nx.set_node_attributes(G, color, name="fillcolor")
-    nx.set_node_attributes(G, fontcolor, name="fontcolor")
+        nx.set_node_attributes(G, color, name="fillcolor")
+        nx.set_node_attributes(G, fontcolor, name="fontcolor")
 
     A = nx.nx_agraph.to_agraph(G)
     A.node_attr["style"] = "filled"
     A.node_attr["fontname"] = "CMU Sans Serif"
-    A.node_attr["fontsize"] = 10.0
+    A.node_attr["fontsize"] = fontsize
     A.node_attr["shape"] = "circle"
     A.node_attr["fixedsize"] = "true"
     A.node_attr["penwidth"] = 0.0
@@ -513,5 +521,5 @@ def plotReactionGraph(G: nx.MultiDiGraph, fname: str, color_hex=None, seed=5):
     A.edge_attr["penwidth"] = 1.3
     A.edge_attr["color"] = "darkgray"
 
-    A.layout(prog="neato", args='-Gsplines=true -Goverlap=false -Gconcentrate=true -Gstart={} -Gmodel="subset"'.format(seed))
+    A.layout(prog=prog, args='-Gsplines=true -Goverlap=false -Gconcentrate=true -Gstart={} -Gmodel="subset"'.format(seed))
     A.draw(fname)
