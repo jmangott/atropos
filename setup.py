@@ -9,6 +9,7 @@ setup(name='hierarchical-cme-scripts',
                     'scripts.initial_condition_class',
                     'scripts.index_functions',
                     'scripts.grid_class',
+                    'scripts.notebooks.output_helper',
                     'scripts.reaction_class',
                     'scripts.tree_class']
       )
