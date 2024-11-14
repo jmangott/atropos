@@ -11,10 +11,16 @@ import textwrap
 
 import scripts.reaction_class
 
+def fun_x0(x):
+    return 1 - x
+def fun_x1(x):
+    return x
+
 def convertRulesToReactions(filename: str):
     """
     Converts a rule file of the Boolean CME integrator of https://bitbucket.org/mprugger/low_rank_cme to a instance of the `ReactionSystem` class.
     NOTE: This method is only capable of converting systems with a maximum of 64 species.
+    Apparently this only works correctly on macOS, for Fedora 36 (and Linux in general?) there occurs an overflow in lines 85–86.
     """
     with open(filename) as f:
         line0 = f.readline()
@@ -65,8 +71,6 @@ def convertRulesToReactions(filename: str):
 
         handle = ctypes.CDLL(tmpdirname + "/rule_set_temp.so")
 
-    fun_x0 = lambda x: 1 - x
-    fun_x1 = lambda x: x
     reactions = []
 
     for i in range(d):
