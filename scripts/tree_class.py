@@ -479,12 +479,11 @@ def plotReactionGraph(
     else:
         if mode == "partitions":
             n_nodes = len(collections.Counter([int(id) for id in color_id.values()]))
-            print(n_nodes)
             color_rgb = matplotlib.colors.hex2color(color_hex)
             if n_nodes == 2:
                 community_to_color = {
                     0 : color_rgb,          # 0
-                    1 : (0.75, 0.75, 0.75), # 1
+                    1 : (0.85, 0.85, 0.85), # 1
                 }
 
                 community_to_fontcolor = {
