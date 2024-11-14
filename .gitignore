@@ -15,3 +15,5 @@ __pycache__
 /Testing/
 /profiling/
 CMakeFiles
+
+!pancreatic_cancer_macOS.npz
