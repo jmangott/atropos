@@ -478,26 +478,39 @@ def plotReactionGraph(
 
     else:
         if mode == "partitions":
+            n_nodes = len(collections.Counter([int(id) for id in color_id.values()]))
+            print(n_nodes)
             color_rgb = matplotlib.colors.hex2color(color_hex)
-            color_hls = colorsys.rgb_to_hls(*color_rgb)
-            color_hls_21 = color_hls[1]*1.5
-            community_to_color = {
-                0 : colorsys.hls_to_rgb(color_hls[0],   # 00
-                                        color_hls[1]*0.65,
-                                        color_hls[2]),
-                1 : colorsys.hls_to_rgb(color_hls[0],   # 01
-                                        color_hls_21 if color_hls_21 < 1.0 else color_hls[1],
-                                        color_hls[2]),
-                2 : (0.55, 0.55, 0.55),                 # 10
-                3 : (0.85, 0.85, 0.85),                 # 11
-            }
+            if n_nodes == 2:
+                community_to_color = {
+                    0 : color_rgb,          # 0
+                    1 : (0.75, 0.75, 0.75), # 1
+                }
 
-            community_to_fontcolor = {
-                0 : "white",
-                1 : "black",
-                2 : "white",
-                3 : "black",
-            }
+                community_to_fontcolor = {
+                    0 : "white",
+                    1 : "black",
+                }
+            elif n_nodes == 4:
+                color_hls = colorsys.rgb_to_hls(*color_rgb)
+                color_hls_21 = color_hls[1]*1.5
+                community_to_color = {
+                    0 : colorsys.hls_to_rgb(color_hls[0],   # 00
+                                            color_hls[1]*0.65,
+                                            color_hls[2]),
+                    1 : colorsys.hls_to_rgb(color_hls[0],   # 01
+                                            color_hls_21 if color_hls_21 < 1.0 else color_hls[1],
+                                            color_hls[2]),
+                    2 : (0.55, 0.55, 0.55),                 # 10
+                    3 : (0.85, 0.85, 0.85),                 # 11
+                }
+
+                community_to_fontcolor = {
+                    0 : "white",
+                    1 : "black",
+                    2 : "white",
+                    3 : "black",
+                }
             color = {node: matplotlib.colors.to_hex(community_to_color[int(id)]) for node, id in color_id.items()}
             fontcolor = {node: matplotlib.colors.to_hex(community_to_fontcolor[int(id)]) for node, id in color_id.items()}
         elif mode == "uniform":
