@@ -525,7 +525,10 @@ def plotReactionGraph(
 
     A = nx.nx_agraph.to_agraph(G)
     A.node_attr["style"] = "filled"
-    A.node_attr["fontname"] = "CMU Sans Serif"
+    try:
+        A.node_attr["fontname"] = "CMU Sans Serif"
+    except:  # noqa: E722
+        Warning("For best results, `CMU Sans Serif` has to be installed")
     A.node_attr["fontsize"] = fontsize
     A.node_attr["shape"] = "circle"
     A.node_attr["fixedsize"] = "true"
