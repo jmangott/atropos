@@ -16,4 +16,5 @@ __pycache__
 /profiling/
 CMakeFiles
 
+!apoptosis_macOS.npz
 !pancreatic_cancer_macOS.npz
