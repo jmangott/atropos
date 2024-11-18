@@ -1,14 +1,31 @@
 [project]
 name = "kinetic-cme-wrapper"
-version = "0.0.1"
+version = "0.0.5"
 authors = [
   { name="Julian Mangott", email="julian.mangott@uibk.ac.at" },
-  { name="Stefan Brunner", email="stefan.brunner@uibk.ac.at" }
+  { name="Stefan Brunner", email="stefan.brunner@student.uibk.ac.at" }
 ]
 description = "Wrapper for the kinetic-cme C++ library"
 readme = "README.md"
+dependencies = [
+  "netCDF4",
+  "networkx",
+  "numba==0.60.0",
+  "numpy==1.26.4",
+  "matplotlib",
+  "regex",
+  "scipy",
+  "xarray",
+  "xarray-datatree",
+]
 requires-python = ">=3.10"
 classifiers = []
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
 
 [tool.ruff.lint]
 select = [

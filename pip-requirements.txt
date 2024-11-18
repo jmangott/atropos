@@ -1,6 +1,6 @@
 netCDF4
 networkx
-numba
+numba==0.60.0
 numpy==1.26.4
 matplotlib
 pygraphviz
