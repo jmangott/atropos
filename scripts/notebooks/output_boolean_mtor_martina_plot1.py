@@ -3072,7 +3072,7 @@ M32max = 0.01633032165986715
 
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
-fig, ax1 = plt.subplots(figsize=(5.5, 4))
+fig, ax1 = plt.subplots(figsize=(5, 3.5))
 ax1.plot(BLUEidx, BLUEmax, "x", fillstyle="none", color=colors[0])
 ax1.plot(BLUE, color=colors[0], label="BLUE")
 ax1.plot(M1.index(M1max), M1max, "x", fillstyle="none", color=colors[1])

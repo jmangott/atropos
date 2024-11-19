@@ -62,7 +62,7 @@ reg16 = np.poly1d(coef16)
 
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
-fig, ax1 = plt.subplots(figsize=(6, 5))
+fig, ax1 = plt.subplots(figsize=(5, 4.5))
 ax1.plot(1.025, 0.06249999658962048, "o", fillstyle="none", color=colors[0])
 ax1.plot(1.025, 0.02767572112065949, "o", fillstyle="none", color=colors[1])
 ax1.plot(1.025, 0.00370577261843439, "o", fillstyle="none", color=colors[2])
@@ -142,7 +142,11 @@ legend2 = fig.legend(
 fig.add_artist(legend1)
 
 ax1.set_xlabel("entropy $H$")
-ax1.set_xticks(xpos, xpos, rotation=90)
+
+xpos_adjusted = xpos
+xpos_adjusted[2] = xpos[2]+0.1
+
+ax1.set_xticks(xpos_adjusted, xpos, rotation=90)
 
 ax2 = ax1.twiny()
 ax1.set_xlim([0.925, 4.6])
@@ -155,6 +159,6 @@ ax2.set_xticks(
 )
 ax2.set_xlabel("partitioning")
 
-ax1.set_ylabel("$\| P - P_\mathrm{{ref}}\|_2$")
+ax1.set_ylabel("$\| P - P_\mathrm{{ref}}\|_\infty$")
 plt.tight_layout()
 plt.savefig("plots/mTor_figure2.pdf", bbox_inches="tight")
