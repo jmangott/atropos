@@ -1,7 +1,8 @@
+import math
 import os
 import sys
+import tempfile
 
-import math
 import numpy as np
 import sympy as sp
 
@@ -153,23 +154,26 @@ class Partitioning:
 
 
 def run(partitioning, output, tau, tfinal, snapshot=2, substeps=1, method="RK4"):
-    partitioning.tree.write()
-    snap = int(np.floor((tfinal / tau) / snapshot))
-    if method == "implicit_Euler":
-        m = "i"
-    elif method == "explicit_Euler":
-        m = "e"
-    elif method == "Crank_Nicolson":
-        m = "c"
-    elif method == "RK4":
-        m = "r"
-    else:
-        print(
-            "Possible inputs for method: "
-            "implicit_Euler, explicit_Euler, Crank_Nicolson, RK4"
+    with tempfile.NamedTemporaryFile(suffix=".nc", delete=True) as temp_file:
+        file_name = temp_file.name
+        partitioning.tree.write(fname=file_name)
+        snap = int(np.floor((tfinal / tau) / snapshot))
+        if method == "implicit_Euler":
+            m = "i"
+        elif method == "explicit_Euler":
+            m = "e"
+        elif method == "Crank_Nicolson":
+            m = "c"
+        elif method == "RK4":
+            m = "r"
+        else:
+            print(
+                "Possible inputs for method: "
+                "implicit_Euler, explicit_Euler, Crank_Nicolson, RK4"
+            )
+        cmd = (
+            "core/bin/hierarchical-cme "
+            f"""-i {file_name} -o {output} -s {snap} -t {tau} -f {tfinal}
+             -n {substeps} -m {m}"""
         )
-    cmd = (
-        "core/bin/hierarchical-cme "
-        f"-o {output} -s {snap} -t {tau} -f {tfinal} -n {substeps} -m {m}"
-    )
-    os.system(cmd)
+        os.system(cmd)
