@@ -12,6 +12,8 @@
     - [Preparing input data](#preparing-input-data)
   - [Output](#output)
   - [Example problems](#example-problems)
+    - [Generating plots for https://arxiv.org/abs/2407.11792](#generating-plots-for-httpsarxivorgabs240711792)
+    - [Generating plots for ](#generating-plots-for)
   - [References](#references)
 
 ## Objective
@@ -153,8 +155,9 @@ The low-rank factors and coupling coefficients as well as the chosen model param
 <!-- TODO: Describe the structure of the .netCDF file -->
 
 ## Example problems
-Input generation scripts for the example problems (lambda phage and reaction cascade) are provided in `scripts/input_generation` and the corresponding model files can be found in `scripts/models`.
+Input generation scripts for the example problems are provided in `scripts/input_generation` and the corresponding model files can be found in `scripts/models`.
 
+### Generating plots for https://arxiv.org/abs/2407.11792
 All required output files and reference solutions for reproducing the plots in https://arxiv.org/abs/2407.11792 can be computed with the shell scripts provided in `scripts/shell`. Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
 ```shell
 mkdir plots
@@ -166,6 +169,27 @@ sh scripts/shell/run_lambda_phage.sh
 and for the cascade reaction example
 ```shell
 sh scripts/shell/run_cascade.sh
+```
+
+### Generating plots for <TODO>
+All required output files and reference solutions for reproducing the plots for the pancreatic cancer and apoptosis examples in <TODO> can be computed with the shell scripts provided in `scripts/shell`. Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
+```shell
+mkdir plots
+```
+The partitions can be generated with the interactive Python notebook `scripts/notebooks/boolean_entropy.ipynb`.
+Then, for the pancreatic cancer example with one-level partitioning one has to run
+```shell
+sh scripts/shell/run_boolean_pancreatic_cancer_matrix.sh
+```
+The resulting files have to be post-processed with `scripts/notebooks/output_boolean_pancreatic_helper.py`.
+
+For the pancreatic cancer with hierarchical partitioning it is sufficient to call
+```shell
+sh scripts/shell/run_boolean_pancreatic_cancer.sh
+```
+and for the apoptosis example with hierarchical partitioning
+```shell
+sh scripts/shell/run_boolean_apoptosis.sh
 ```
 
 ## References
