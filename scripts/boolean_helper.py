@@ -19,8 +19,6 @@ def fun_x1(x):
 def convertRulesToReactions(filename: str):
     """
     Converts a rule file of the Boolean CME integrator of https://bitbucket.org/mprugger/low_rank_cme to a instance of the `ReactionSystem` class.
-    NOTE: This method is only capable of converting systems with a maximum of 64 species.
-    Apparently this only works correctly on macOS, for Fedora 36 (and Linux in general?) there occurs an overflow in lines 85–86.
     """
     with open(filename) as f:
         line0 = f.readline()
@@ -84,7 +82,8 @@ def convertRulesToReactions(filename: str):
                 x[k_dep] = x_dep[k]
             curr_rule = handle["rule_{}".format(i)]
             curr_rule.argtypes = [ctypes.c_ulonglong] # avoid overflow for large systems
-            x_i_prime = curr_rule(bitarray.util.ba2int(x))
+            curr_rule.restype = ctypes.c_bool
+            x_i_prime = int(curr_rule(bitarray.util.ba2int(x)))
             if x[i] != x_i_prime: # create a reaction only when output is different from input
                 nu = np.zeros(d)
                 nu[i] = 1 if x[i] == 0 else -1

@@ -9,9 +9,7 @@ from scripts.initial_condition_class import InitialCondition
 from scripts.tree_class import Tree
 from scripts.index_functions import incrVecIndex
 
-# reaction_system = scripts.boolean_helper.convertRulesToReactions("scripts/models/boolean_rulefiles/apoptosis.hpp")
-with np.load("scripts/models/boolean_rulefiles/apoptosis_macOS.npz", allow_pickle=True) as f:
-    reaction_system = f["reaction_system"][()]
+reaction_system = scripts.boolean_helper.convertRulesToReactions("scripts/models/boolean_rulefiles/apoptosis.hpp")
 
 # 24-10-03
 p_best = "((0 2 3 4 5 6 7 8 9 12 20)(21 25 26 27 28 29 30 31 39 40))((1 10 11 14 15 22 23 32 33 38)(13 16 17 18 19 24 34 35 36 37))"
