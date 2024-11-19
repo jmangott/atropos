@@ -36,3 +36,11 @@ python3 scripts/input_generation/set_boolean_pancreatic_cancer_matrix.py -pl -r 
 
 python3 scripts/input_generation/set_boolean_pancreatic_cancer_matrix.py -pl -r 20
 ./bin/hierarchical-cme -o pancreatic_matrix_pl_r20_e_tau1e-2 -s 100 -t 0.01 -f 20.0 -m e
+
+
+# Reference solutions
+python3 scripts/input_generation/set_boolean_pancreatic_cancer_matrix.py -pl -r 50
+./bin/hierarchical-cme -o pancreatic_matrix_pl_r50_e_tau1e-2 -s 100 -t 0.01 -f 20.0 -m e
+
+python3 scripts/input_generation/set_boolean_pancreatic_cancer_matrix.py -pl -r 60
+./bin/hierarchical-cme -o pancreatic_matrix_pl_r60_e_tau1e-2 -s 100 -t 0.01 -f 20.0 -m e
