@@ -1,12 +1,12 @@
 [project]
 name = "kinetic-cme-wrapper"
-version = "0.0.5"
+version = "0.0.7"
 authors = [
   { name="Julian Mangott", email="julian.mangott@uibk.ac.at" },
   { name="Stefan Brunner", email="stefan.brunner@student.uibk.ac.at" }
 ]
 description = "Wrapper for the kinetic-cme C++ library"
-readme = "README.md"
+license = {file = "LICENSE.txt"}
 dependencies = [
   "netCDF4",
   "networkx",
@@ -20,6 +20,10 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 classifiers = []
+
+[project.urls]
+Homepage = "https://stefanbrunner2709.github.io/kinetic-cme/"
+GitLab = "https://git.uibk.ac.at/c7021158/kinetic-cme"
 
 [build-system]
 requires = ["setuptools"]
