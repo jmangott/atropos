@@ -3,6 +3,8 @@ name = "kinetic-cme-wrapper"
 version = "0.0.7"
 authors = [
   { name="Julian Mangott", email="julian.mangott@uibk.ac.at" },
+  { name="Lukas Einkemmer", email="lukas.einkemmer@uibk.ac.at" },
+  { name="Martina Prugger", email="martina.prugger@ipp.mpg.de" },
   { name="Stefan Brunner", email="stefan.brunner@student.uibk.ac.at" }
 ]
 description = "Wrapper for the kinetic-cme C++ library"
