@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.generator import Model, Partitioning, run, species
+from src.run_generator.generator import Model, Partitioning, run, species
 
 """
 Define some symbols, to then try out with those symbols

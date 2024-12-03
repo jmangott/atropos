@@ -1,6 +1,6 @@
 [project]
-name = "kinetic-cme-wrapper"
-version = "0.0.7"
+name = "run_generator"
+version = "0.0.1"
 authors = [
   { name="Julian Mangott", email="julian.mangott@uibk.ac.at" },
   { name="Lukas Einkemmer", email="lukas.einkemmer@uibk.ac.at" },
@@ -32,6 +32,12 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
+where = ["src"]
+include =["run_generator", "run_generator.bin"]
+
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.ruff.lint]
 select = [

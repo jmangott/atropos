@@ -1,7 +1,7 @@
 import numpy as np
 import sympy as sp
 
-from src.generator import Model, Partitioning, run, species
+from src.run_generator.generator import Model, Partitioning, run, species
 
 """
 Define variables
