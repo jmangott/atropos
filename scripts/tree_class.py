@@ -7,6 +7,7 @@ import copy
 from datatree import DataTree
 import matplotlib.colors
 import networkx as nx
+from numba import njit
 import numpy as np
 import numpy.typing as npt
 import os
@@ -364,43 +365,60 @@ class Tree:
 
     def __getReactionDependencies(self):
         """
-        This method computes the input/output dependencies of the reaction network as a dictionary.
+        This method collects all reactions with the same reactants/products in a dictionary.
         """
         reaction_dependencies = collections.defaultdict(list)
         for mu, reaction in enumerate(self.reaction_system.reactions):
-            input = tuple([self.species_names[k] for k in reaction.propensity.keys()])
-            output = tuple([self.species_names[k] for k in np.nonzero(reaction.nu)[0]])
-            reaction_dependencies[(input, output)].append(mu)
+            reactants = tuple([self.species_names[k] for k in reaction.propensity.keys()])
+            products = tuple([self.species_names[k] for k in np.nonzero(reaction.nu)[0]])
+            reaction_dependencies[(reactants, products)].append(mu)
         return reaction_dependencies
 
-    # TODO: check if this function also works for general kinetic models
-    # TODO: for kinetic models the products may be more than one, 
-    # but then the reactions have to be converted to a 'normal' form, where only a single product is present
     def calculateEntropy(self, node: InternalNode):
         reaction_dependencies = self.__getReactionDependencies()
-        S = {}
+        total_entropy = 0.0
+        propensity0_orig = self.__calculatePropensity(node.child[0])
+        propensity1_orig = self.__calculatePropensity(node.child[1])
 
-        for key, val in reaction_dependencies.items():
-            S[key] = 0
+        for react_prod, mu_list in reaction_dependencies.items():
+            mu_vec = np.array(mu_list, dtype=int)
 
             # take the first reaction (all other reactions have the same `grid.dep` values)
-            mu_0 = reaction_dependencies[key][0]
+            mu_0 = mu_vec[0]
 
-            # mapping species_names <-> species_id for the products
-            products = findIndex(self.species_names, key[1])
-            
+            # mapping species_names <-> species_id for the reactants and product
+            reactant_id = findIndex(self.species_names, react_prod[0])
+            product_id = self.species_names.index(react_prod[1][0])
+
             # TODO: rewrite this function that it is clearly visible that only a single product is allowed
-            prod_lies_in_partition_0 = (products[0] in node.child[0].grid.species)
+            prod_lies_in_partition_0 = product_id in node.child[0].grid.species
             if prod_lies_in_partition_0:
                 grid0 = node.child[0].grid
                 grid1 = node.child[1].grid
-                propensity0 = self.__calculatePropensity(node.child[0])
-                propensity1 = self.__calculatePropensity(node.child[1])
-            else: # exchange the partitions
+                propensity0_list = propensity0_orig
+                propensity1_list = propensity1_orig
+            else:  # exchange the partitions
                 grid0 = node.child[1].grid
                 grid1 = node.child[0].grid
-                propensity0 = self.__calculatePropensity(node.child[1])
-                propensity1 = self.__calculatePropensity(node.child[0])
+                propensity0_list = propensity1_orig
+                propensity1_list = propensity0_orig
+
+            species0 = list(grid0.species)
+            species1 = list(grid1.species)
+
+            # obtain species_id for the products with respect to partition 0
+            product0 = np.array(findIndex(species0, [product_id]), dtype=int)
+            
+            # omit all reaction pathways which have the product lying outside of the partitioning
+            if len(product0) == 0:
+                continue
+
+            reactants0 = findIndex(species0, reactant_id)
+            reactants1 = findIndex(species1, reactant_id)
+
+            # omit all reaction pathways which have reactants lying outside of the partition
+            if (len(reactants0) + len(reactants1) < len(react_prod[0])):
+                continue
 
             d0 = grid0.d()
             d1 = grid1.d()
@@ -411,50 +429,55 @@ class Tree:
             dx_dep0 = np.prod(grid0.n[grid0.dep[:, mu_0]])
             dx_dep1 = np.prod(grid1.n[grid1.dep[:, mu_0]])
 
-            species0 = list(grid0.species)
-            species1 = list(grid1.species)
+            # convert quantities to numpy arrays
+            nu0 = np.zeros((mu_vec.size, d0))
+            propensity0 = np.zeros((mu_vec.size, len(propensity0_list[mu_0])))
+            propensity1 = np.zeros((mu_vec.size, len(propensity1_list[mu_0])))
+            for i, mu in enumerate(mu_vec):
+                # `mu` are all reactions with the same input/output dependencies
+                nu0[i, :] = self.reaction_system.reactions[mu].nu[species0]
+                propensity0[i, :] = propensity0_list[mu]
+                propensity1[i, :] = propensity1_list[mu]
 
-            # obtain species_id for the products in partition 0 and 1
-            products0 = findIndex(species0, products)
-            products1 = findIndex(species1, products)
-
-            state0 = np.zeros(d0)
-            dep_vec_index0 = np.zeros(n_dep0.size, dtype=int)
-
-            for i0 in range(dx_dep0):
-                count = collections.defaultdict(int)
-                state1 = np.zeros(d1)
-                dep_vec_index1 = np.zeros(n_dep1.size, dtype=int)
-                for i1 in range(dx_dep1):
-                    product_population_number0 = state0[products0]
-                    product_population_number1 = state1[products1]
-                    weight = 1.0
-                    for mu in val: # `val` are all reactions with the same input/output dependencies
-                        nu0 = self.reaction_system.reactions[mu].nu[species0]
-                        nu1 = self.reaction_system.reactions[mu].nu[species1]
-                        propensity = propensity0[mu][i0] * propensity1[mu][i1]
-                        if not np.isclose(propensity, 0.0, atol=1e-12):
-                            # weight *= propensity # for the kinetic case?
-                            product_population_number0 += nu0[products0]
-                            product_population_number1 += nu1[products1]
-
-                    count[(tuple(product_population_number0), tuple(product_population_number1))] += weight 
-                    incrVecIndex(dep_vec_index1, n_dep1, n_dep1.size)
-                    state1[dep1] = dep_vec_index1
-
-                count_values = np.array(list(count.values()))
-                sum_count_values = np.sum(count_values)
-                if sum_count_values != 0:
-                    probabilities = count_values / sum_count_values
-                    # NOTE: `xlogy` handles the special case `probability=0`
-                    S[key] -= np.sum(scipy.special.xlogy(probabilities, probabilities)) / np.log(2.0)
-                incrVecIndex(dep_vec_index0, n_dep0, n_dep0.size)
-                state0[dep0] = dep_vec_index0
-            S[key] /= dx_dep0
-
-        total_entropy = np.sum(np.array(list(S.values())))
+            rule_specific_entropy = calculateRuleSpecificEntropy(product0, d0, d1, dep0, dep1, n_dep0, n_dep1, dx_dep0, dx_dep1, propensity0, propensity1, nu0)
+            total_entropy += rule_specific_entropy
 
         return total_entropy
+    
+@njit
+def calculateRuleSpecificEntropy(product0, d0, d1, dep0, dep1, n_dep0, n_dep1, dx_dep0, dx_dep1, propensity0, propensity1, nu0):
+    state0 = np.zeros(d0)
+    n_reactions = nu0.shape[0]
+    dep_vec_index0 = np.zeros(n_dep0.size, dtype="int64")
+    rule_specific_entropy = 0.0
+
+    for i0 in range(dx_dep0):
+        count_values = np.zeros(2, dtype="int64")
+        state1 = np.zeros(d1)
+        dep_vec_index1 = np.zeros(n_dep1.size, dtype="int64")
+        for i1 in range(dx_dep1):
+            product_population_number0 = state0[product0]
+            for i_mu in range(n_reactions):
+                # loop through all reactions with the same input/output dependencies
+                propensity = propensity0[i_mu, i0] * propensity1[i_mu, i1]
+                product_population_number0 += nu0[i_mu, product0] * int(propensity)
+            if int(product_population_number0[0]) == 0:
+                count_values[0] += 1
+            else:
+                count_values[1] += 1
+            incrVecIndex(dep_vec_index1, n_dep1, n_dep1.size)
+            state1[dep1] = dep_vec_index1
+        
+        sum_count_values = np.sum(count_values)
+        if sum_count_values != 0:
+            probabilities = count_values / sum_count_values
+            if not np.any(np.isclose(probabilities, 0.0, atol=1e-12)):
+                rule_specific_entropy -= np.sum(probabilities * np.log2(probabilities))
+        incrVecIndex(dep_vec_index0, n_dep0, n_dep0.size)
+        state0[dep0] = dep_vec_index0
+
+    rule_specific_entropy /= dx_dep0
+    return rule_specific_entropy
 
 def findIndex(array: list, values):
     idx = []
