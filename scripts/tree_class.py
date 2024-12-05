@@ -12,7 +12,6 @@ import numpy as np
 import numpy.typing as npt
 import os
 import regex
-import scipy.special
 import xarray as xr
 
 from scripts.grid_class import GridParms
