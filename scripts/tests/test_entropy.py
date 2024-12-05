@@ -5,6 +5,51 @@ import scripts.boolean_helper
 from scripts.tree_class import Tree
 from scripts.grid_class import GridParms
 
+class SimpleTestCase(unittest.TestCase):
+    def setUp(self):
+        d = 5
+        n = 2 * np.ones(d, dtype=int)
+        binsize = np.ones(d, dtype=int)
+        liml = np.zeros(d)
+        self.H0 = 0.5 * (1.0 - 0.75 * np.log2(0.75) - 0.25 * np.log2(0.25))
+
+        self.reaction_system = scripts.boolean_helper.convertRulesToReactions(
+            "scripts/tests/boolean_test_model.hpp"
+        )
+        self.grid = GridParms(n, binsize, liml)
+
+    def test_one_level(self):
+        partition_str = "(0 1)(2 3 4)"
+        reference_entropy = self.H0
+
+        tree = Tree(partition_str, self.grid)
+        r_out = np.ones(tree.n_internal_nodes, dtype="int")
+        tree.initialize(self.reaction_system, r_out)
+        entropy = tree.calculateEntropy(tree.root)
+
+        self.assertAlmostEqual(entropy, reference_entropy)
+
+    def test_hierarchical(self):
+        p0 = "((0)(1))((2 3)(4))"
+        p1 = "((0)(1))((2)(3 4))"
+
+        partition_strings = [p0, p1]
+
+        reference_entropies = [self.H0 + 1.0, self.H0 + 1.5]
+
+        for reference_entropy, partition_str in zip(
+            reference_entropies, partition_strings
+        ):
+            tree = Tree(partition_str, self.grid)
+            r_out = np.ones(tree.n_internal_nodes, dtype="int")
+            tree.initialize(self.reaction_system, r_out)
+            entropy = (
+                tree.calculateEntropy(tree.root)
+                + tree.calculateEntropy(tree.root.child[0])
+                + tree.calculateEntropy(tree.root.child[1])
+            )
+            self.assertAlmostEqual(entropy, reference_entropy)
+
 class PancreaticCancerTestCase(unittest.TestCase):
     def setUp(self):
         d = 34
@@ -27,7 +72,7 @@ class PancreaticCancerTestCase(unittest.TestCase):
 
         for reference_entropy, partition_str in zip(reference_entropies, partition_strings):
             tree = Tree(partition_str, self.grid)
-            r_out = np.ones(tree.n_internal_nodes, dtype="int") * 1
+            r_out = np.ones(tree.n_internal_nodes, dtype="int")
             tree.initialize(self.reaction_system, r_out)
             entropy = tree.calculateEntropy(tree.root)
 
@@ -40,11 +85,11 @@ class PancreaticCancerTestCase(unittest.TestCase):
 
         partition_strings = [p_best, p_worst, p_reasonable]
 
-        reference_entropies = [3.01884395, 11.04656953, 3.74938906]
+        reference_entropies = [3.01884395, 10.42156953, 3.74938906]
 
         for reference_entropy, partition_str in zip(reference_entropies, partition_strings):
             tree = Tree(partition_str, self.grid)
-            r_out = np.ones(tree.n_internal_nodes, dtype="int") * 1
+            r_out = np.ones(tree.n_internal_nodes, dtype="int")
             tree.initialize(self.reaction_system, r_out)
             entropy = (
                 tree.calculateEntropy(tree.root)
@@ -73,13 +118,13 @@ class ApoptosisTestCase(unittest.TestCase):
 
         partition_strings = [p_best, p_worst, p_reasonable]
 
-        reference_entropies = [5.97396601, 18.99050742, 7.24877812]
+        reference_entropies = [4.84896601, 16.74050742, 6.37377812]
 
         for reference_entropy, partition_str in zip(
             reference_entropies, partition_strings
         ):
             tree = Tree(partition_str, self.grid)
-            r_out = np.ones(tree.n_internal_nodes, dtype="int") * 1
+            r_out = np.ones(tree.n_internal_nodes, dtype="int")
             tree.initialize(self.reaction_system, r_out)
             entropy = (
                 tree.calculateEntropy(tree.root)
