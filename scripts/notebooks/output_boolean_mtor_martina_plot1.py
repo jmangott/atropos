@@ -3072,25 +3072,27 @@ M32max = 0.01633032165986715
 
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
-fig, ax1 = plt.subplots(figsize=(5, 3.5))
+fig, ax1 = plt.subplots(figsize=(5.5, 3.5))
 ax1.plot(BLUEidx, BLUEmax, "x", fillstyle="none", color=colors[0])
-ax1.plot(BLUE, color=colors[0], label="BLUE")
+l0, = ax1.plot(BLUE, color=colors[0], label="BLUE")
 ax1.plot(M1.index(M1max), M1max, "x", fillstyle="none", color=colors[1])
-ax1.plot(M1, color=colors[1], label="M1")
+l1, = ax1.plot(M1, color=colors[1], label="M1")
 ax1.plot(M3idx, M3max, "x", fillstyle="none", color=colors[2])
-ax1.plot(M3, color=colors[2], label="M3")
+l2, = ax1.plot(M3, color=colors[2], label="M3")
 ax1.plot(PURPLEidx, PURPLEmax, "x", fillstyle="none", color=colors[3])
-ax1.plot(PURPLE, color=colors[3], label="PURPLE")
+l3, = ax1.plot(PURPLE, color=colors[3], label="PURPLE")
 ax1.plot(M4idx, M4max, "x", fillstyle="none", color=colors[4])
-ax1.plot(M4, color=colors[4], label="M4")
+l4, = ax1.plot(M4, color=colors[4], label="M4")
 ax1.plot(M6idx, M6max, "x", fillstyle="none", color=colors[5])
-ax1.plot(M6, color=colors[5], label="M6")
+l5, = ax1.plot(M6, color=colors[5], label="M6")
 ax1.plot(M7idx, M7max, "x", fillstyle="none", color=colors[6])
-ax1.plot(M7, color=colors[6], label="M7")
+l6, = ax1.plot(M7, color=colors[6], label="M7")
 ax1.plot(GREENidx, GREENmax, "x", fillstyle="none", color=colors[7])
-ax1.plot(GREEN, color=colors[7], label="GREEN")
+l7, = ax1.plot(GREEN, color=colors[7], label="GREEN")
 ax1.plot(M32idx, M32max, "x", fillstyle="none", color=colors[8])
-ax1.plot(M32, color=colors[8], label="M32")
+l8, = ax1.plot(M32, color=colors[8], label="M32")
+
+lines = [l0, l1, l2, l3, l4, l5, l6, l7, l8]
 
 fig.legend(
     ncol=3,
@@ -3098,12 +3100,48 @@ fig.legend(
     bbox_to_anchor=(0.5+0.06, 1.07),
 )
 
-# title = ("$\\bf{rank = 16}$",)
-
 ax1.set_yscale("log")
 ax1.set_xlim([-5, 305])
 ax1.set_ylim([1e-4, 3e-2])
 ax1.set_xlabel("$t$")
 ax1.set_ylabel("$\| P(t) - P_\mathrm{{ref}}(t)\|_\infty$")
+
+x_start = 300
+x_end = 330
+pad = 5.0
+label_y = [1.0, 1.0, 0.9, 1.0, 1.1, 1.0, 0.8, 1.0, 1.0] * 9
+cuts = [3, 3, 3, 4, 4, 5, 5, 5, 6]
+
+for i, line in enumerate(lines):
+    text = cuts[i] # line.get_label()
+
+    y_start = line.get_ydata()[-1]
+    y_end = line.get_ydata()[-1] * label_y[i]
+
+    ax1.plot(
+        [x_start, (x_start + x_end - pad) / 2, x_end - pad],
+        [y_start, y_end, y_end],
+        color=colors[i],
+        alpha=0.5,
+        ls="dashed",
+        clip_on=False
+    )
+
+    ax1.text(
+        x_end,
+        y_end * 0.92,
+        text,
+        fontsize=9,
+        horizontalalignment="center",
+        # color=colors[i]
+    )
+
+ax1.text(
+    x_end,
+    2.5 * 1e-2,
+    "\\textbf{{cuts}}",
+    horizontalalignment="center",
+    )
+
 fig.tight_layout()
 fig.savefig("plots/mTor_figure1.pdf", bbox_inches="tight")
