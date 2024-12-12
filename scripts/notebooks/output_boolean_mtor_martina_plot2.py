@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 plt.style.use("./scripts/notebooks/custom_style_boolean.mplstyle")
 
+inc = 0.1
 xpos = [1.025, 1.45, 1.531, 2.25, 2.5, 3, 3.25, 4.061, 4.5]
 r2 = [
     0.06249999658962048,
@@ -73,10 +74,10 @@ ax1.plot(1.45, 0.026219852191997732, "o", fillstyle="none", color=colors[1])
 ax1.plot(1.45, 0.012777562053622349, "o", fillstyle="none", color=colors[2])
 ax1.plot(1.45, 0.0014916257642706918, "o", fillstyle="none", color=colors[3])
 
-ax1.plot(1.531, 0.03580575595163796, "o", fillstyle="none", color=colors[0])
-ax1.plot(1.531, 0.01951168230570425, "o", fillstyle="none", color=colors[1])
-ax1.plot(1.531, 0.0028898680592915824, "o", fillstyle="none", color=colors[2])
-ax1.plot(1.531, 0.00095222559883653, "o", fillstyle="none", color=colors[3])
+ax1.plot(1.531+inc, 0.03580575595163796, "o", fillstyle="none", color=colors[0])
+ax1.plot(1.531+inc, 0.01951168230570425, "o", fillstyle="none", color=colors[1])
+ax1.plot(1.531+inc, 0.0028898680592915824, "o", fillstyle="none", color=colors[2])
+ax1.plot(1.531+inc, 0.00095222559883653, "o", fillstyle="none", color=colors[3])
 
 ax1.plot(2.25, 0.015476746806795005, "x", fillstyle="none", color=colors[0])
 ax1.plot(2.25, 0.014793954536987966, "x", fillstyle="none", color=colors[1])
@@ -143,8 +144,8 @@ fig.add_artist(legend1)
 
 ax1.set_xlabel("entropy $H$")
 
-xpos_adjusted = xpos
-xpos_adjusted[2] = xpos[2]+0.1
+xpos_adjusted = xpos.copy()
+xpos_adjusted[2] = xpos[2]+inc
 
 ax1.set_xticks(xpos_adjusted, xpos, rotation=90)
 
@@ -153,7 +154,7 @@ ax1.set_xlim([0.925, 4.6])
 ax1.set_ylim([-0.005, 0.065])
 ax2.set_xlim(ax1.get_xlim())
 ax2.set_xticks(
-    xpos,
+    xpos_adjusted,
     ["M11", "M4", "PURPLE", "M1", "BLUE", "M3", "M10", "M32", "GREEN"],
     rotation=90,
 )
