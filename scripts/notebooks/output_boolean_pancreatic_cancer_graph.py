@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import matplotlib.colors
 import numpy as np
 
 import scripts.boolean_helper
@@ -29,7 +28,7 @@ plotReactionGraph(
     tree.G,
     "plots/pancreatic_graph_literature.pdf",
     mode="partitions",
-    color_hex=matplotlib.colors.to_hex((0.55, 0.55, 0.55)),
+    color_hex="#D55E00",
     prog="neato",
     seed=5,
 )
