@@ -12,8 +12,8 @@
     - [Preparing input data](#preparing-input-data)
   - [Output](#output)
   - [Example problems](#example-problems)
-    - [Generating plots for https://arxiv.org/abs/2407.11792](#generating-plots-for-httpsarxivorgabs240711792)
-    - [Generating plots for ](#generating-plots-for)
+    - [Generating plots for doi:10.48550/arXiv.2407.11792](#generating-plots-for-doi1048550arxiv240711792)
+    - [Generating plots for doi:10.48550/arXiv.](#generating-plots-for-doi1048550arxiv)
   - [References](#references)
 
 ## Objective
@@ -112,7 +112,7 @@ pytest scripts/tests
 ```
 and expects the following command line arguments:
 - `-i`, `--input`: Name of the input .nc file (default: `input/input.nc`)
-- `-o`, `--output`: Name of the output folder, stored in `output/`
+- `-o`, `--output`: Name of the output folder
 - `-s`, `--snapshot`: Number of steps between two snapshots
 - `-t`, `--tau`: Time step size
 - `-f`, `--tfinal`: Final integration time
@@ -157,8 +157,8 @@ The low-rank factors and coupling coefficients as well as the chosen model param
 ## Example problems
 Input generation scripts for the example problems are provided in `scripts/input_generation` and the corresponding model files can be found in `scripts/models`.
 
-### Generating plots for https://arxiv.org/abs/2407.11792
-All required output files and reference solutions for reproducing the plots in https://arxiv.org/abs/2407.11792 can be computed with the shell scripts provided in `scripts/shell`. Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
+### Generating plots for [doi:10.48550/arXiv.2407.11792](https://arxiv.org/abs/2407.11792)
+All required output files and reference solutions for reproducing the plots in [doi:10.48550/arXiv.2407.11792](https://arxiv.org/abs/2407.11792) can be computed with the shell scripts provided in `scripts/shell`. Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
 ```shell
 mkdir plots
 ```
@@ -171,13 +171,10 @@ and for the cascade reaction example
 sh scripts/shell/run_cascade.sh
 ```
 
-### Generating plots for <TODO>
-All required output files and reference solutions for reproducing the plots for the pancreatic cancer and apoptosis examples in <TODO> can be computed with the shell scripts provided in `scripts/shell`. Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
-```shell
-mkdir plots
-```
-The partitions can be generated with the interactive Python notebook `scripts/notebooks/boolean_entropy.ipynb`.
-Then, for the pancreatic cancer example with one-level partitioning one has to run
+### Generating plots for [doi:10.48550/arXiv.<TODO>](https://arxiv.org/abs/<TODO>)
+All required output files and reference solutions for reproducing the plots for the pancreatic cancer and apoptosis examples in [doi:10.48550/arXiv.<TODO>](https://arxiv.org/abs/<TODO>) can be computed with the shell scripts provided in `scripts/shell`.
+Own partitionings can be generated with the interactive Python notebook `scripts/notebooks/boolean_entropy.ipynb`.
+For the pancreatic cancer example with one-level partitioning one has to run
 ```shell
 sh scripts/shell/run_boolean_pancreatic_cancer_matrix.sh
 ```
@@ -190,6 +187,12 @@ sh scripts/shell/run_boolean_pancreatic_cancer.sh
 and for the apoptosis example with hierarchical partitioning
 ```shell
 sh scripts/shell/run_boolean_apoptosis.sh
+```
+without any post-processing of the files.
+
+Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
+```shell
+mkdir plots
 ```
 
 ## References
