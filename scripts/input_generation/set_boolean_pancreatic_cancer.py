@@ -11,15 +11,9 @@ from scripts.index_functions import incrVecIndex
 
 reaction_system = scripts.boolean_helper.convertRulesToReactions("scripts/models/boolean_rulefiles/pancreatic_cancer.hpp")
 
-# 24-10-03
 p_best = "((0 1 2 3 4 5 7 8 9)(6 10 11 12 17 21 23 26))((13 14 19 20 25 27 29 30 32)(15 16 18 22 24 28 31 33))"
 p_worst = "((0 1 19 20 21 23 25 26 30)(2 11 15 16 18 28 29 32))((3 4 5 6 8 9 10 13)(7 12 14 17 22 24 27 31 33))"
 p_reasonable = "((0 1 2 3 4 5 7 9)(13 14 19 20 25 27 29 30 32))((6 8 10 12 17 21 23 26)(11 15 16 18 22 24 28 31 33))"
-
-# 24-09-03
-# p_best = '((0 1 2 3 4 5 6 9 12)(7 8 10 11 17 21 23 26))((13 14 19 20 22 27 28 31 33)(15 16 18 24 25 29 30 32))'
-# p_worst = '((0 1 2 4 8 11 17 26)(3 5 6 7 9 10 12 21 23))((13 18 19 20 22 25 31 33)(14 15 16 24 27 28 29 30 32))'
-# p_reasonable = '((0 1 2 3 4 5 7 9)(13 14 19 20 25 27 29 30 32))((6 10 12 16 18 21 24 26 31)(8 11 15 17 22 23 28 33))'
 
 parser = argparse.ArgumentParser(
                     prog='set_bax',
