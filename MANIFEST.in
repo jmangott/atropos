@@ -1,1 +1,7 @@
-include src/run_generator/bin/hierarchical-cme
+include atropy/examples/models/boolean/*
+include atropy/core/*
+include atropy/core/cmake-modules/*
+include atropy/core/include/*
+include atropy/core/src/*
+include atropy/core/tests/*
+include atropy/core/CMakeLists.txt

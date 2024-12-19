@@ -1,5 +1,5 @@
 [project]
-name = "run_generator"
+name = "atropy"
 version = "0.0.1"
 authors = [
   { name="Julian Mangott", email="julian.mangott@uibk.ac.at" },
@@ -32,9 +32,6 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["src"]
-include =["run_generator", "run_generator.bin"]
-
 
 [tool.setuptools]
 include-package-data = true
