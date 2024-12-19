@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15.1)
-project(kinetic-cme
+project(atropy
         VERSION 0.0.1
         DESCRIPTION "Dynamical low-rank solver for the kinetic CME"
         HOMEPAGE_URL https://git.uibk.ac.at/c7021158/kinetic-cme

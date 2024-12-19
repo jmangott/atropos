@@ -2,7 +2,7 @@ import numpy as np
 from scipy.special import factorial
 
 from src.index_functions import incrVecIndex, tensorUnfold, vecIndexToState
-from src.run_generator.generator import Model, Partitioning, run, species
+from atropy.src.generator import Model, Partitioning, run, species
 
 # Partitition p0, rank 5 4
 # Snapshot 100, tau 1e-3, final_time 1, rest default
