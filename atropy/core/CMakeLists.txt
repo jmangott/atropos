@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15.1)
+cmake_minimum_required(VERSION 3.27 FATAL_ERROR)
 project(atropy
         VERSION 0.0.1
         DESCRIPTION "Dynamical low-rank solver for the kinetic CME"
@@ -6,17 +6,25 @@ project(atropy
         LANGUAGES CXX)
 enable_testing()
 
+include(FetchContent)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake-modules")
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Profile" CACHE STRING "" FORCE)
 
-include(ExternalProject)
-set(EXTERNALS_DIR ${CMAKE_BINARY_DIR}/external)
 
-####################
-# Compiler options #
-####################
+################################################################################
+# General options
+################################################################################
+
+option("MKL_ENABLED" "Enable MKL for Ensign" OFF)
+option("OPENMP" "Enable OpenMP" OFF)
+
+
+################################################################################
+# Compiler options
+################################################################################
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Warn all")
@@ -26,150 +34,93 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
 else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall")
     set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb3 -Wall -D_GLIBCXX_DEBUG -fno-omit-frame-pointer -ftrapv")
-    # set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb3 -Wall -D_GLIBCXX_DEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=leak -fsanitize=undefined -ftrapv")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -mtune=native")
 endif()
 
-##############################################################
-# Define the actual files and folders that make up the build #
-##############################################################
 
-# Define some directories
-set(SRC ${CMAKE_SOURCE_DIR}/src)
-set(INC ${CMAKE_SOURCE_DIR}/include)
-set(BIN ${CMAKE_SOURCE_DIR}/bin)
+################################################################################
+# External libraries
+################################################################################
 
-##########################################
-# Define the executable and library name #
-##########################################
-
-set(EXENAME hierarchical-cme)
-set(LIBNAME coreLib)
-
-############################################
-# Find external packages and set libraries #
-############################################
-
-# Add SOURCE_ROOT as a preprocessor directive
-add_compile_definitions("SOURCE_ROOT=${CMAKE_SOURCE_DIR}")
-
-# Options
-option("MKL_ENABLED" "Enable MKL" OFF)
-option("OPENMP" "Enable OpenMP" OFF)
-
-# Ensign
-ExternalProject_Add(Ensign
-  PREFIX "${EXTERNALS_DIR}"
-  GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
-  GIT_TAG "development"
-  INSTALL_COMMAND ""
-  CMAKE_ARGS -DMKL_ENABLED=${MKL_ENABLED} -DOPENMP=${OPENMP_ENABLED}
-)
-set(ENSIGN_SRC_DIR ${EXTERNALS_DIR}/src/Ensign)
-set(ENSIGN_BUILD_DIR ${EXTERNALS_DIR}/src/Ensign-build)
-find_package(Ensign CONFIG REQUIRED)
-
-# OpenMP
-if(${OPENMP})
-  find_package(OpenMP)
-  if(OPENMP_FOUND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_PROFILE} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    set(OPENMP_DEFINES "-D__OPENMP__")
-    add_definitions(${OPENMP_DEFINES})
-  endif()
-endif()
-
-# MKL/OpenBLAS
-option("MKL_ENABLED" OFF)
-set(MKL_INCLUDEDIR "$ENV{MKLROOT}/include" CACHE PATH "Intel MKL include directory")
-set(MKL_LIBDIR "$ENV{MKLROOT}/lib/intel64" CACHE PATH "Intel MKL lib directory")
-set(MKL_INCLUDEDIR "$ENV{MKLINCLUDEDIR}")
-set(MKL_LIBDIR "$ENV{MKLLIBDIR}")
-if(${MKL_ENABLED})
-  set(MKL_DEFINES    "-D__MKL__" "-DMKL_ILP64" "-m64")
-  set(MKL_LIBRARIES  "-L{MKL_LIBDIR} -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl")
-  add_definitions(${MKL_DEFINES})
-  include_directories(${MKL_INCLUDEDIR})
-else()
-  set(OPENBLAS_LIBRARIES "${ENSIGN_BUILD_DIR}/extern/OpenBLAS/opt/OpenBLAS/lib/libopenblas.a")
-endif()
-find_package(Threads REQUIRED)
-
-# fftw
-set(FFTW_LIBRARIES "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3.a" "${ENSIGN_BUILD_DIR}/extern/fftw/lib/libfftw3_omp.a")
-
+################################################################################
 # Eigen
+
 find_package(Eigen3 3.4 REQUIRED)
 
+
+################################################################################
 # NetCDF
-find_package(NetCDF)
-if(${NETCDF_FOUND})
-  include_directories(${NETCDF_INCLUDE_DIR})
-  message("test: ${NETCDF_INCLUDE_DIR}")
-  add_definitions("-D__NETCDF__")
-else()
-  message("NetCDF has _not_ been found. If you want to write snapshots to disk please set the path in CMake appropriately.")
-  set(NETCDF_LIBRARIES "")
+
+find_package(NetCDF REQUIRED)
+
+
+################################################################################
+# cxxopts
+
+find_package(cxxopts QUIET)
+if(NOT cxxopts_FOUND)
+  FetchContent_Declare(cxxopts
+    GIT_REPOSITORY "https://github.com/jarro2783/cxxopts.git"
+    GIT_TAG "v3.2.1"
+    GIT_SHALLOW ON
+    GIT_PROGRESS ON
+    OVERRIDE_FIND_PACKAGE
+  )
+  FetchContent_MakeAvailable(cxxopts)
+  find_package(cxxopts REQUIRED)
 endif()
 
-###############################################################
-# Define a short-hand for source, the Ensign and header files #
-###############################################################
 
-set(ENSIGN_FILES ${ENSIGN_SRC_DIR}/src/lr/lr.cpp
-                 ${ENSIGN_SRC_DIR}/src/lr/coefficients.cpp
-                 ${ENSIGN_SRC_DIR}/src/generic/utility.cpp
-                 ${ENSIGN_SRC_DIR}/src/generic/matrix.cpp
-                 ${ENSIGN_SRC_DIR}/src/generic/timer.cpp
-                 ${ENSIGN_SRC_DIR}/src/generic/tree.cpp
-                 ${ENSIGN_SRC_DIR}/src/generic/tensor.cpp
-                 ${ENSIGN_SRC_DIR}/src/generic/fft.cpp
-                 ${ENSIGN_SRC_DIR}/src/generic/netcdf.cpp)
+################################################################################
+# Ensign
 
-set(ENSIGN_FILES_GPU ${ENSIGN_SRC_DIR}/src/lr/lr.cu
-                     ${ENSIGN_SRC_DIR}/src/lr/coefficients.cu
-                     ${ENSIGN_SRC_DIR}/src/generic/utility.cu
-                     ${ENSIGN_SRC_DIR}/src/generic/matrix.cu
-                     ${ENSIGN_SRC_DIR}/src/generic/timer.cu
-                     ${ENSIGN_SRC_DIR}/src/generic/fft.cu
-                     ${ENSIGN_SRC_DIR}/src/generic/kernels.cu
-                     ${ENSIGN_SRC_DIR}/src/generic/netcdf.cpp)
+find_package(Ensign QUIET)
+if(NOT ensign_FOUND)
+  message(STATUS "Did not find Ensign, so we download it instead.")
+  FetchContent_Declare(Ensign
+    GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
+    GIT_TAG "development"
+    GIT_SHALLOW ON
+    GIT_PROGRESS ON
+    OVERRIDE_FIND_PACKAGE
+  )
+  FetchContent_MakeAvailable(Ensign)
+  find_package(Ensign REQUIRED)
+endif()
 
+
+################################################################################
+# Add definitions and directories
+################################################################################
+
+# Add SOURCE_ROOT as a preprocessor directive
+add_compile_definitions("SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}")
+
+# Create `input` and `output` directories
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/input)
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
+
+# Define short-hands for the src directory and the files
+set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SRC_FILES ${SRC}/bug_integrator.cpp
               ${SRC}/grid_class.cpp
               ${SRC}/matrix.cpp
               ${SRC}/print_functions.cpp
               ${SRC}/ps_integrator.cpp
               ${SRC}/tree_class.cpp)
+set(HDR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-########################
-# Include header files #
-########################
+################################################################################
+# Set up the program
+################################################################################
 
-set(HEADER_FILES ${INC}
-                 ${ENSIGN_SRC_DIR}/include
-                 ${ENSIGN_BUILD_DIR}/extern/OpenBLAS/opt/OpenBLAS/include
-                 ${ENSIGN_BUILD_DIR}/extern/fftw/include)
+add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp ${SRC_FILES})
 
-#########################
-# Create static library #
-#########################
+target_include_directories(${PROJECT_NAME} PRIVATE ${HDR_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE Ensign::Ensign)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
+target_link_libraries(${PROJECT_NAME} PRIVATE cxxopts::cxxopts)
 
-add_library(${LIBNAME} STATIC ${SRC_FILES} ${ENSIGN_FILES})
-add_dependencies(${LIBNAME} Ensign)
-set_source_files_properties(${ENSIGN_FILES} PROPERTIES GENERATED TRUE)
-target_include_directories(${LIBNAME} PUBLIC ${HEADER_FILES})
-target_link_libraries(${LIBNAME} ${FFTW_LIBRARIES} ${NETCDF_LIBRARIES})
-
-########################################
-# Add src, test and I/O subdirectories #
-########################################
-
-add_subdirectory(${SRC} ${BIN})
-add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/input)
-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/output)
+if (BUILD_TESTING)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+endif()
