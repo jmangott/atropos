@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cassert>
 
-#include <generic/index_functions.hpp>
+#include <generic/index.hpp>
 #include <generic/storage.hpp>
 #include <generic/timer.hpp>
 #include <lr/lr.hpp>
