@@ -8,11 +8,14 @@ __pycache__
 *.npy
 *.npz
 *.out
+/bin/
 /build/
 /core/bin/
 /core/build/
 /core/input/
 /core/output/
+/input/
+/output/
 /plots/
 /Testing/
 /profiling/
