@@ -3,9 +3,9 @@
 
 #include <functional>
 
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Sparse>
-#include <eigen3/unsupported/Eigen/IterativeSolvers>
+#include <Eigen/Core>
+#include <Eigen/Sparse>
+#include <unsupported/Eigen/IterativeSolvers>
 
 #include <generic/matrix.hpp>
 

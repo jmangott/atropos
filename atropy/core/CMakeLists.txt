@@ -45,7 +45,7 @@ endif()
 ################################################################################
 # Eigen
 
-find_package(Eigen3 3.4 REQUIRED)
+find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
 
 ################################################################################
@@ -67,7 +67,6 @@ if(NOT cxxopts_FOUND)
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(cxxopts)
-  find_package(cxxopts REQUIRED)
 endif()
 
 
@@ -90,11 +89,8 @@ endif()
 
 
 ################################################################################
-# Add definitions and directories
+# Create short-hands
 ################################################################################
-
-# Add SOURCE_ROOT as a preprocessor directive
-add_compile_definitions("SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Create `input` and `output` directories
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/input)
@@ -116,11 +112,20 @@ set(HDR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp ${SRC_FILES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${HDR_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE Ensign::Ensign)
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
-target_link_libraries(${PROJECT_NAME} PRIVATE cxxopts::cxxopts)
+# Add SOURCE_ROOT as a preprocessor directive
+target_compile_definitions(${PROJECT_NAME} PRIVATE "SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}")
 
-if (BUILD_TESTING)
+target_include_directories(${PROJECT_NAME} PRIVATE ${HDR_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE Ensign)
+target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
+target_include_directories(${PROJECT_NAME} PRIVATE ${NETCDF_INCLUDE_DIR})
+
+if(cxxopts_FOUND)
+  target_link_libraries(${PROJECT_NAME} PRIVATE cxxopts::cxxopts)
+else()
+  target_link_libraries(${PROJECT_NAME} PRIVATE cxxopts)
+endif()
+
+if(BUILD_TESTING)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 endif()

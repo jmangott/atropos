@@ -51,7 +51,7 @@ target_link_libraries(test_tree_h1 PRIVATE Ensign::Ensign Catch2::Catch2WithMain
 target_link_libraries(test_tree_h2 PRIVATE Ensign::Ensign Catch2::Catch2WithMain)
 
 target_include_directories(test_index_functions PRIVATE ${HDR_DIR})
-target_include_directories(test_matrix_functions PRIVATE ${HDR_DIR})
-target_include_directories(test_orthogonalization PRIVATE ${HDR_DIR})
-target_include_directories(test_tree_h1 PRIVATE ${HDR_DIR})
-target_include_directories(test_tree_h2 PRIVATE ${HDR_DIR})
+target_include_directories(test_matrix_functions PRIVATE ${HDR_DIR} ${NETCDF_INCLUDE_DIR})
+target_include_directories(test_orthogonalization PRIVATE ${HDR_DIR} ${NETCDF_INCLUDE_DIR})
+target_include_directories(test_tree_h1 PRIVATE ${HDR_DIR} ${NETCDF_INCLUDE_DIR})
+target_include_directories(test_tree_h2 PRIVATE ${HDR_DIR} ${NETCDF_INCLUDE_DIR})
