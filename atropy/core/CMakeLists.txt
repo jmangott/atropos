@@ -27,14 +27,26 @@ option("OPENMP" "Enable OpenMP" OFF)
 ################################################################################
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Intel)
-    set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Warn all")
-    set(CMAKE_CXX_FLAGS_DEBUG   "-g -check all -traceback")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ip -xHOST")
+    set(CMAKE_CXX_FLAGS         
+      "${CMAKE_CXX_FLAGS} -Warn all"
+    )
+    set(CMAKE_CXX_FLAGS_DEBUG
+      "-g -check all -traceback"
+    )
+    set(CMAKE_CXX_FLAGS_RELEASE
+      "-O3 -ip -xHOST"
+    )
 
 else(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall")
-    set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3 -ggdb3 -Wall -D_GLIBCXX_DEBUG -fno-omit-frame-pointer -ftrapv")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -mtune=native")
+    set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -Wall"
+    )
+    set(CMAKE_CXX_FLAGS_DEBUG
+      "-O0 -g3 -ggdb3 -Wall -D_GLIBCXX_DEBUG -fno-omit-frame-pointer -ftrapv"
+    )
+    set(CMAKE_CXX_FLAGS_RELEASE
+      "-O3 -DNDEBUG -march=native -mtune=native"
+    )
 endif()
 
 
@@ -110,10 +122,15 @@ set(HDR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 # Set up the program
 ################################################################################
 
-add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp ${SRC_FILES})
+add_executable(${PROJECT_NAME}
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+  ${SRC_FILES}
+)
 
 # Add SOURCE_ROOT as a preprocessor directive
-target_compile_definitions(${PROJECT_NAME} PRIVATE "SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}")
+target_compile_definitions(${PROJECT_NAME}
+  PRIVATE "SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${HDR_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE Ensign)
