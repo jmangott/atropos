@@ -7,7 +7,7 @@ disable-header-and-footer: true
 pagestyle: empty
 header-includes:
   - \usepackage{bm}
-...
+---
 
 # DLR approximation for the kinetic CME
 
