@@ -1,3 +1,14 @@
+---
+title: "README"
+author: [Julian Mangott]
+date: "2025-02-02"
+keywords: [Markdown, README]
+disable-header-and-footer: true
+pagestyle: empty
+header-includes:
+  - \usepackage{bm}
+...
+
 # DLR approximation for the kinetic CME
 
 - [DLR approximation for the kinetic CME](#dlr-approximation-for-the-kinetic-cme)
@@ -15,16 +26,15 @@
   - [References](#references)
 
 ## Objective
-`hierarchical-cme` solves the chemical master equation (CME),
-```math
-\partial_t{P}(t,x) = \sum_{\mu = 1}^{M}\left(a_\mu(x-\nu_\mu)P(t,x-\nu_\mu) - a_\mu(x)P(t,x)\right)
-```
-according to the algorithm proposed in https://arxiv.org/abs/2407.11792, which is based on the projector-splitting integrator for Tree Tensor networks.[^fn1]
+`atropy` solves the chemical master equation (CME),
+$$\partial_t{P}(t,\mathbf{x}) = \sum_{\mu = 0}^{M-1}\left(\alpha_\mu(\mathbf{x}-\bm{\nu}_\mu)P(t,\mathbf{x}-\bm{\nu}_\mu) - \alpha_\mu(\mathbf{x})P(t,\mathbf{x})\right)$$
 
-$`P(t,x)\,\mathrm{d}t`$ is the probability of finding a population number of $`x = (x_1, \dots, x_N)`$ molecules of species $`S_1, \dots, S_N`$ in the time interval $`[t,\,t + \mathrm{d}t]`$.
-The CME describes the time evolution of this probability distribution $`P(t,x)`$ in a chemical reaction network with $`N`$ different species $`S_1, \dots, S_N`$, which can react via $`M`$ reaction channels $`R_1, \dots, R_M`$. For a given reaction $`\mu`$, the stoichiometric vector $`\nu_\mu`$ denotes the population change by that reaction and the propensity functions $`a_\mu(x)`$ and $`a_\mu(x-\nu_\mu)`$ are proportional to the transition probabilities $`T(x+\nu_\mu|x)`$ and $`T(x|x-\nu_\mu)`$.
+according to the algorithm proposed in https://arxiv.org/abs/2407.11792, which is based on the projector-splitting integrator for Tree Tensor networks \[1\].
 
-`hierarchical-cme` makes use of the low-rank framework `Ensign`.[^fn2]
+$P(t,\mathbf{x})\,\mathrm{d}t$ is the probability of finding a population number of $\mathbf{x} = (x_0, \dots, x_{N-1})$ molecules of species $S_0, \dots, S_{N-1}$ in the time interval $[t,\,t + \mathrm{d}t]$.
+The CME describes the time evolution of this probability distribution $P(t,\mathbf{x})$ in a chemical reaction network with $N$ different species $S_0, \dots, S_{N-1}$, which can react via $M$ reaction channels $R_0, \dots, R_{M-1}$. For a given reaction $\mu$, the stoichiometric vector $\bm{\nu}_\mu$ denotes the population change by that reaction and the propensity functions $\alpha_\mu(\mathbf{x})$ and $\alpha_\mu(\mathbf{x}-\bm{\nu}_\mu)$ are proportional to the transition probabilities $T(\mathbf{x}+\bm{\nu}_\mu|\mathbf{x})$ and $T(\mathbf{x}|\mathbf{x}-\bm{\nu}_\mu)$.
+
+`atropy` makes use of the low-rank framework `Ensign` \[2\].
 
 ## Requirements
 - CMake (3.22.1 or later)
@@ -34,12 +44,10 @@ The CME describes the time evolution of this probability distribution $`P(t,x)`$
 - HDF5 (1.10.x)
 - netCDF4
 - Python (>3.8)
+- OpenMP (optional)
+- Intel MKL (optional)
 
 Check via `nc-config --has-hdf5`, whether HDF5 was used in the netCDF4 build.
-
-Optionally:
-- OpenMP
-- Intel MKL
 
 ## Installation
 Build the program in the project root by executing
@@ -48,7 +56,7 @@ cmake -B <build> -DCMAKE_BUILD_TYPE=Release
 cmake --build <build>
 ```
 
-The generated executable `hierarchical-cme` can be found in `bin`.
+The generated executable `atropy` can be found in `bin`.
 
 To enable compiler options for debugging, use `-DCMAKE_BUILD_TYPE=Debug` instead.
 Unit tests for C++ files are provided in the `tests` folder. They can be run with 
@@ -78,7 +86,7 @@ Make sure that the `OMP_NUM_THREADS` environment variable is in accordance with 
 ```shell
 ctest --test-dir <build>
 ```
-to ensure that OpenMP and `hierarchical-cme` work correctly.
+to ensure that OpenMP and `atropy` work correctly.
 
 MacOS: Note that XCode compilers do not support OpenMP. For using OpenMP on macOS, a manual installation (e.g. of `gcc11`) is required and the `CXX`, `CC` and `FC` environment variables have to be set accordingly.
 
@@ -104,9 +112,9 @@ pytest scripts/tests
 ```
 
 ## Run the program
-`hierarchical-cme` has to be run with
+`atropy` has to be run with
 ```
-  ./bin/hierarchical-cme [OPTION...]
+  ./bin/atropy [OPTION...]
 ```
 and expects the following command line arguments:
 - `-i`, `--input`: Name of the input .nc file (default: `input/input.nc`)
@@ -138,7 +146,7 @@ python3 scripts/input_generation/set_lambda_phage.py --help
 ```
 <!-- TODO: ### Describe examples in more detail -->
 
-Note that `hierarchical-cme` assumes that the propensity function is factorizable for the species in different partitions. However, the input scripts rely on the `ReactionSystem` class (cf. `scripts/reaction_class.py`), which assumes that the propensity function is factorizable in *all* species. This is a valid assumption for most scenarios. For problems where species in a partition are not factorizable, the propensity function can be adjusted manually after initializing the `Tree` with the method `initialize`.
+Note that `atropy` assumes that the propensity function is factorizable for the species in different partitions. However, the input scripts rely on the `ReactionSystem` class (cf. `scripts/reaction_class.py`), which assumes that the propensity function is factorizable in *all* species. This is a valid assumption for most scenarios. For problems where species in a partition are not factorizable, the propensity function can be adjusted manually after initializing the `Tree` with the method `initialize`.
 
 <!-- #### Writing a model file with the `ReactionSystem` class
 The model file contains all reactions $`R_\mu`$ ($`\mu=1,\dots,M`$) of the specific problem and has to be imported in the input scripts. -->
@@ -147,7 +155,7 @@ The model file contains all reactions $`R_\mu`$ ($`\mu=1,\dots,M`$) of the speci
 
 
 ## Output
-`hierarchical-cme` automatically creates a folder in `output/` with a name set by the `-o`/`--output` parameter.
+`atropy` automatically creates a folder in `output/` with a name set by the `-o`/`--output` parameter.
 The low-rank factors and coupling coefficients as well as the chosen model parameters are stored in this folder as `output_t<ts>.nc` (`<ts>` denotes the time step) in intervals according to the `-s`/`--snapshot` parameter.
 
 <!-- TODO: Describe the structure of the .netCDF file -->
@@ -169,7 +177,7 @@ sh scripts/shell/run_cascade.sh
 ```
 
 ## References
-[^fn1]: Ceruti, G., Lubich, C., and Walach, H.: Time integration of Tree Tensor networks", SIAM J. Numer. Anal. **59** (2021)
+\[1\]: Ceruti, G., Lubich, C., and Walach, H.: Time integration of Tree Tensor networks", SIAM J. Numer. Anal. **59** (2021)
 <!-- Lubich, C., Oseledets, I.: "A projector-splitting integrator for dynamical low-rank approximation", BIT Numerical Mathematics **54** (2014) -->
 
-[^fn2]: Cassini, F., and Einkemmer, L.: "Efficient 6D Vlasov simulation using the dynamical low-rank framework Ensign", Comp. Phys. Comm. **280** (2022)
+\[2\]: Cassini, F., and Einkemmer, L.: "Efficient 6D Vlasov simulation using the dynamical low-rank framework Ensign", Comp. Phys. Comm. **280** (2022)
