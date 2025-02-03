@@ -1,10 +1,9 @@
 import os
 import pathlib
-
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext as build_ext_orig
-
 import subprocess
+
+from setuptools import Extension, setup
+from setuptools.command.build_ext import build_ext as build_ext_orig
 from setuptools.command.install import install
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -12,29 +11,31 @@ here = os.path.abspath(os.path.dirname(__file__))
 class MyInstall(install):
     def run(self):
         try:
-            cmake_args = [
-                '-DCMAKE_BUILD_TYPE=Release'
-            ]
-            subprocess.call(['cmake', '-B', 'build'] + cmake_args, cwd=os.path.join(here,'atropy/core'))
-            subprocess.call(['cmake', '--build', 'build'], cwd=os.path.join(here,'atropy/core'))
-            print('DID WORK')
+            cmake_args = ["-DCMAKE_BUILD_TYPE=Release"]
+            subprocess.call(
+                ["cmake", "-B", "build"] + cmake_args,
+                cwd=os.path.join(here, "atropy/core"),
+            )
+            subprocess.call(
+                ["cmake", "--build", "build"], cwd=os.path.join(here, "atropy/core")
+            )
+            print("DID WORK")
         except Exception as e:
             print(e)
             print("Error compiling")
             exit(1)
         else:
-            print('DID NOT WORK')
+            print("DID NOT WORK")
             install.run(self)
 
-class CMakeExtension(Extension):
 
+class CMakeExtension(Extension):
     def __init__(self, name):
         # don't invoke the original build_ext for this special extension
         super().__init__(name, sources=[])
 
 
 class build_ext(build_ext_orig):
-
     def run(self):
         for ext in self.extensions:
             self.build_cmake(ext)
@@ -61,7 +62,6 @@ class build_ext(build_ext_orig):
         # Troubleshooting: if fail on line above then delete all possible 
         # temporary CMake files including "CMakeCache.txt" in top level dir.
         os.chdir(str(cwd))
-
 
 
 setup(
