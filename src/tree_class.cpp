@@ -127,7 +127,7 @@ void WriteHelpers::WriteSpeciesNames(int ncid, const std::vector<std::string> sp
     NETCDF_CHECK(nc_inq_dimid(ncid, "d", &id_d));
 
     std::vector<const char*> species_names_char(species_names.size());
-    std::transform(species_names.begin(), species_names.end(), species_names_char.begin(), std::mem_fun_ref(&std::string::c_str));
+    std::transform(species_names.begin(), species_names.end(), species_names_char.begin(), std::mem_fn(&std::string::c_str));
 
     int varid_species_names;
     NETCDF_CHECK(nc_def_var(ncid, "species_names", NC_STRING, 1, &id_d, &varid_species_names));
