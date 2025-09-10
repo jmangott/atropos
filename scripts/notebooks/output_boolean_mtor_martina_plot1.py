@@ -3071,6 +3071,7 @@ M32max = 0.01633032165986715
 
 
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+colors[6] = "#808080"
 
 fig, ax1 = plt.subplots(figsize=(5.5, 3.5))
 ax1.plot(BLUEidx, BLUEmax, "x", fillstyle="none", color=colors[0])
@@ -3085,14 +3086,18 @@ ax1.plot(M4idx, M4max, "x", fillstyle="none", color=colors[4])
 l4, = ax1.plot(M4, color=colors[4], label="M4")
 ax1.plot(M6idx, M6max, "x", fillstyle="none", color=colors[5])
 l5, = ax1.plot(M6, color=colors[5], label="M6")
-ax1.plot(M7idx, M7max, "x", fillstyle="none", color=colors[6])
-l6, = ax1.plot(M7, color=colors[6], label="M7")
 ax1.plot(GREENidx, GREENmax, "x", fillstyle="none", color=colors[7])
 l7, = ax1.plot(GREEN, color=colors[7], label="GREEN")
 ax1.plot(M32idx, M32max, "x", fillstyle="none", color=colors[8])
+l6, = ax1.plot(M7, color=colors[6], label="M7")
+ax1.plot(M7idx, M7max, "x", fillstyle="none", color=colors[6])
 l8, = ax1.plot(M32, color=colors[8], label="M32")
 
 lines = [l0, l1, l2, l3, l4, l5, l6, l7, l8]
+
+l0.set_linewidth(2.0)
+l3.set_linewidth(2.0)
+l7.set_linewidth(2.0)
 
 fig.legend(
     ncol=3,
@@ -3124,7 +3129,8 @@ for i, line in enumerate(lines):
         color=colors[i],
         alpha=0.5,
         ls="dashed",
-        clip_on=False
+        clip_on=False,
+        linewidth=line.get_linewidth()
     )
 
     ax1.text(

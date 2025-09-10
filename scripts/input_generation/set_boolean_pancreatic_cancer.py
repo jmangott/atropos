@@ -55,10 +55,11 @@ parser.add_argument('-p',
                     dest='partition', 
                     )
 
-parser.add_argument('-r', 
-                    '--rank', 
-                    type=int, 
-                    required=True, 
+parser.add_argument('-r',
+                    '--rank',
+                    nargs='+',
+                    type=int,
+                    required=True,
                     help="Specify the ranks of the internal nodes",
                     )
 args = parser.parse_args()
@@ -87,7 +88,7 @@ grid = GridParms(n, binsize, liml)
 # Set up the partition tree
 tree = Tree(partition_str, grid)
 
-r_out = np.ones(tree.n_internal_nodes, dtype="int") * args.rank
+r_out = np.array(args.rank, dtype="int")
 n_basisfunctions = np.ones(r_out.size, dtype="int")
 tree.initialize(reaction_system, r_out)
 
