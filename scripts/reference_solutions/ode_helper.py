@@ -1,9 +1,9 @@
 """Helper module for solving the full CME."""
+
 from numba import njit
 import numpy as np
-import matplotlib.pyplot as plt
 
-from scripts.index_functions import incrVecIndex
+from scripts.index_functions import incrVecIndex, tensorUnfold
 
 
 @njit
@@ -19,7 +19,9 @@ def calculateShift(nu: np.ndarray, interval: np.ndarray) -> float:
 
 
 @njit
-def shiftArray(input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray) -> np.ndarray:
+def shiftArray(
+    input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray
+) -> np.ndarray:
     """Calculate the shifted probability distribution in the CME for a given stoichiometric vector `nu`."""
     output_array = np.copy(input_array)
     shift = calculateShift(nu, interval)
@@ -34,7 +36,9 @@ def shiftArray(input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray) ->
             incrVecIndex(vec_index, interval, m)
             continue
         for k in range(m):
-            if (nu[k] > 0 and vec_index[k] - nu[k] < 0) or (nu[k] < 0 and vec_index[k] - nu[k] >= interval[k]):
+            if (nu[k] > 0 and vec_index[k] - nu[k] < 0) or (
+                nu[k] < 0 and vec_index[k] - nu[k] >= interval[k]
+            ):
                 output_array[i] = 0.0
                 break
         incrVecIndex(vec_index, interval, m)
@@ -42,7 +46,9 @@ def shiftArray(input_array: np.ndarray, nu: np.ndarray, interval: np.ndarray) ->
 
 
 @njit
-def evaluateProp(prop_fun: callable, nu: np.ndarray, interval: np.ndarray) -> np.ndarray:
+def evaluateProp(
+    prop_fun: callable, nu: np.ndarray, interval: np.ndarray
+) -> np.ndarray:
     """Evaluate a given propensity function `prop_fun`."""
     dx = np.prod(interval)
     output_array = np.zeros(dx)
@@ -66,7 +72,9 @@ def constructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
     return P0 / np.sum(P0)
 
 
-def calculateObservables(y: np.ndarray, interval: np.ndarray, slice_vec: np.ndarray, idx_2D: np.ndarray):
+def calculateObservables(
+    y: np.ndarray, interval: np.ndarray, slice_vec: np.ndarray, idx_2D: np.ndarray
+):
     """Calculate marginal and sliced distributions and the best approximation."""
     dx = np.prod(interval)
     m = interval.size
@@ -116,3 +124,22 @@ def calculateBestApproximation(y: np.ndarray, interval: np.ndarray, r: int, m1: 
         P_best_approximation[i, :] = ((X1 * S) @ X2h).flatten()
 
     return P_best_approximation
+
+
+# Helper function for factorizing a low-rank factor
+def factorizeLRFactor(x, rank, rank_child, dx_child):
+    x_tensor = np.zeros((dx_child[0], dx_child[1], rank))
+    for i in range(rank):
+        x_tensor[:, :, i] = x[:, i].reshape((dx_child[0], dx_child[1]), order="F")
+
+    x_mat = tensorUnfold(x_tensor, 0)
+    u, _, _ = np.linalg.svd(x_mat, full_matrices=False)
+    x0 = u[:, : rank_child[0]]
+
+    x_mat = tensorUnfold(x_tensor, 1)
+    u, _, _ = np.linalg.svd(x_mat, full_matrices=False)
+    x1 = u[:, : rank_child[1]]
+
+    q = np.einsum("ik,jl,ijm", x0, x1, x_tensor)
+
+    return q, x0, x1
