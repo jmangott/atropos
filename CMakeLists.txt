@@ -59,7 +59,7 @@ ExternalProject_Add(Ensign
   GIT_REPOSITORY https://github.com/leinkemmer/Ensign.git
   GIT_TAG "929dd03"
   INSTALL_COMMAND ""
-  CMAKE_ARGS -DMKL_ENABLED=${MKL_ENABLED} -DOPENMP=${OPENMP_ENABLED}
+  CMAKE_ARGS -DMKL_ENABLED=${MKL_ENABLED} -DOPENMP=${OPENMP}
   UPDATE_COMMAND "" # do not rebuild external projects as part of the normal workflow
 )
 set(ENSIGN_SRC_DIR ${EXTERNALS_DIR}/src/Ensign)
