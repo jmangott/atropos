@@ -21,7 +21,7 @@ for i in range(1, d):
 
 # Annihilation
 for i in range(d):
-    nu_a = np.zeros(d, dtype=int)
+    nu_a = np.zeros(d, dtype="int")
     nu_a[i] = -1
     reactions[i + d] = Reaction({i: lambda x: km * x}, nu_a)
 
