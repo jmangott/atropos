@@ -155,7 +155,7 @@ The low-rank factors and coupling coefficients as well as the chosen model param
 ## Example problems
 Input generation scripts for the example problems (lambda phage and reaction cascade) are provided in `scripts/input_generation` and the corresponding model files can be found in `scripts/models`.
 
-All required output files and reference solutions for reproducing the plots in https://arxiv.org/abs/2407.11792 can be computed with the shell scripts provided in `scripts/shell`. Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
+All required output files and reference solutions for reproducing the plots in "A hierarchical dynamical low-rank algorithm for the stochastic description of large reaction networks" (preprint on https://arxiv.org/abs/2407.11792) can be computed with the shell scripts provided in `scripts/shell`. Before generating the plots with the interactive Python notebooks provided in `scripts/output/notebooks`, a `plots` folder has to be created in the project root:
 ```shell
 mkdir plots
 ```
@@ -163,10 +163,12 @@ Then, for the lambda phage example one has to run
 ```shell
 sh scripts/shell/run_lambda_phage.sh
 ```
-and for the cascade reaction example
+and plots can be generated with `output_lambda_phage.ipynb`. 
+For the cascade reaction example, run
 ```shell
 sh scripts/shell/run_cascade.sh
 ```
+and generate plots with `output_cascade.ipynb`.
 
 ## References
 [^fn1]: Ceruti, G., Lubich, C., and Walach, H.: Time integration of Tree Tensor networks", SIAM J. Numer. Anal. **59** (2021)
