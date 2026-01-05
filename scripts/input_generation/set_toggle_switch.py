@@ -1,7 +1,7 @@
 """Script for setting the initial conditions for the toggle switch model."""
+
 import argparse
 import numpy as np
-import sys
 
 from scripts.grid_class import GridParms
 from scripts.initial_condition_class import InitialCondition
@@ -10,23 +10,38 @@ from scripts.index_functions import incrVecIndex
 
 import scripts.models.toggle_switch as model
 
-parser = argparse.ArgumentParser(
-                    prog='set_toggle_switch',
-                    usage='python3 scripts/input_generation/set_toggle_switch.py --rank 5',
-                    description='This script sets the initial conditions for the toggle switch model.')
 
-parser.add_argument('-r', 
-                    '--rank', 
-                    type=int, 
-                    required=True, 
-                    help="Specify the ranks of the internal nodes",
-                    )
+def constructP0(eval_P0: callable, interval: np.ndarray) -> np.ndarray:
+    """Set up the initial probability distribution according to a given function `eval_P0`."""
+    dx = np.prod(interval)
+    m = interval.size
+    P0 = np.zeros(dx)
+    vec_index = np.zeros(m)
+    for i in range(dx):
+        P0[i] = eval_P0(vec_index)
+        incrVecIndex(vec_index, interval, m)
+    return P0 / np.sum(P0)
+
+
+parser = argparse.ArgumentParser(
+    prog="set_toggle_switch",
+    usage="python3 scripts/input_generation/set_toggle_switch.py --rank 5",
+    description="This script sets the initial conditions for the toggle switch model.",
+)
+
+parser.add_argument(
+    "-r",
+    "--rank",
+    type=int,
+    required=True,
+    help="Specify the ranks of the internal nodes",
+)
 
 args = parser.parse_args()
 
-partition_str = '(0)(1)'
+partition_str = "(0)(1)"
 r_out = np.array([args.rank])
-n_basisfunctions = np.ones(r_out.size, dtype="int")
+n_basisfunctions = r_out
 
 # Grid parameters
 n = np.array([51, 51])
@@ -39,33 +54,26 @@ grid = GridParms(n, binsize, liml)
 tree = Tree(partition_str, grid)
 tree.initialize(model.reaction_system, r_out)
 
-C = 0.2
-Cinv = 1 / C
+# Set up the initial condition
+C = 0.5 * np.array([[75, -15], [-15, 75]])
+Cinv = np.linalg.inv(C)
 mu = np.array([30, 5])
 
-def eval_x(x: np.ndarray, mu: np.ndarray):
-    return np.exp(-0.5 * Cinv * np.dot(np.transpose(x - mu), (x - mu)))
+
+def eval_P0(x: np.ndarray) -> float:
+    return np.exp(-0.5 * np.dot(np.transpose(x - mu), np.dot(Cinv, (x - mu))))
+
+
+P0 = constructP0(eval_P0, n)
+
+u, s, vh = np.linalg.svd(np.reshape(P0, (n[0], n[1]), order="F"), full_matrices=False)
 
 # Low-rank initial conditions
 initial_conditions = InitialCondition(tree, n_basisfunctions)
 
-for Q in initial_conditions.Q:
-    Q[0, 0, 0] = 1.0
-
-idx = 0
-mu_perm = mu[tree.species]
-for node in range(tree.n_external_nodes):
-    vec_index = np.zeros(initial_conditions.external_nodes[node].grid.d())
-    for i in range(initial_conditions.external_nodes[node].grid.dx()):
-        initial_conditions.X[node][i, :] = eval_x(vec_index, mu_perm[idx : idx+len(vec_index)])
-        incrVecIndex(vec_index, initial_conditions.external_nodes[node].grid.n, initial_conditions.external_nodes[node].grid.d())
-    idx += len(vec_index)
-
-# Calculate norm
-_, marginal_distribution = tree.calculateObservables(np.zeros(tree.root.grid.d(), dtype="int"))
-norm = np.sum(marginal_distribution[0])
-print("norm:", norm)
-tree.root.Q[0, 0, 0] /= norm
+tree.root.child[0].X = u[:, : r_out[0]]
+tree.root.child[1].X = vh[: r_out[0], :].T
+tree.root.Q[:, :, 0] = np.diag(s[: r_out[0]])
 
 # Print tree and write it to a netCDF file
 print(tree)

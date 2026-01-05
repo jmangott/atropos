@@ -12,7 +12,7 @@ from numba import njit
 t = 10
 n = np.array([16, 41, 11, 11, 11], dtype="int64")
 slice_vec = np.array([0, 9, 1, 1, 1])
-r = 4
+r = 5
 m = n.size
 m1 = 2
 dx = np.prod(n)
@@ -154,7 +154,7 @@ t_eval = np.arange(0, t + t_step, t_step)
 t_start = time.time_ns()
 sol = solve_ivp(
     lambda t, P: cme(t, P, n),
-    [0, t + 1],
+    [0, t],
     P0,
     method="RK45",
     t_eval=t_eval,
@@ -173,7 +173,7 @@ P_full, P_marginal, P_marginal2D, P_sliced, P_sliced2D = (
     ode_helper.calculateObservables(y, n, slice_vec, np.array([0, 1], dtype="int64"))
 )
 
-P_best_approximation = ode_helper.calculateBestApproximation(y, n, 5, m1)
+P_best_approximation = ode_helper.calculateBestApproximation(y, n, r, m1)
 
 # # Calculate the (quasi-optimal) best-approximation for the TTN
 # interval = np.array([16, 41, 11, 11, 11])
@@ -198,7 +198,7 @@ P_best_approximation = ode_helper.calculateBestApproximation(y, n, 5, m1)
 #     best_approx = x0 @ q @ X1.T
 #     P_best_approximation[i] = np.linalg.norm(best_approx - P_mat)
 
-with open("scripts/reference_solutions/lp_ode_ref_r5.npz", "wb") as f:
+with open(f"scripts/reference_solutions/lp_ode_ref_r{r}.npz", "wb") as f:
     np.savez(
         f, P_full=P_full, P_best_approximation=P_best_approximation, wall_time=wall_time
     )
